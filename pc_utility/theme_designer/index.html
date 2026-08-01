@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 CYD Theme Designer & Studio</title>
+    <style>
+        :root {
+            --bg-body: #0d1117;
+            --bg-panel: #161b22;
+            --bg-card: #21262d;
+            --border-color: #30363d;
+            --accent-color: #58a6ff;
+            --text-main: #c9d1d9;
+            --text-dim: #8b949e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 24px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        /* Color Controls */
+        .color-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg-card);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .color-item label {
+            font-size: 0.82rem;
+            color: var(--text-dim);
+        }
+
+        .color-item input[type="color"] {
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+        }
+
+        /* Preset Buttons */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .preset-btn {
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--accent-color);
+            background: #282e37;
+        }
+
+        /* Deployment Bar */
+        .deploy-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+            background: var(--bg-card);
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .deploy-box input[type="text"] {
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: #238636;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover { background: #2ea043; }
+
+        .btn-secondary {
+            background: #21262d;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .btn-secondary:hover { background: #30363d; }
+
+        /* Preview Canvas */
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .canvas-frame {
+            background: #000;
+            padding: 12px;
+            border-radius: 16px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+            border: 2px solid #30363d;
+        }
+
+        canvas {
+            display: block;
+            border-radius: 4px;
+            image-rendering: pixelated;
+        }
+
+        .page-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .page-tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-dim);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .page-tab.active {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 600;
+            border-color: var(--accent-color);
+        }
+
+        .status-msg {
+            font-size: 0.85rem;
+            min-height: 20px;
+            text-align: center;
+        }
+        .status-success { color: #3fb950; }
+        .status-error { color: #f85149; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Left Controls Panel -->
+    <div class="panel">
+        <h2>🎨 Theme Presets</h2>
+        <div class="presets-grid">
+            <button class="preset-btn" onclick="loadPreset('ocean_dark')">🌊 Ocean Dark</button>
+            <button class="preset-btn" onclick="loadPreset('cyberpunk')">🟣 Cyberpunk</button>
+            <button class="preset-btn" onclick="loadPreset('forest')">🌲 Forest</button>
+            <button class="preset-btn" onclick="loadPreset('cherry')">🔴 Cherry</button>
+            <button class="preset-btn" onclick="loadPreset('light_day')">☀️ Light Day</button>
+            <button class="preset-btn" onclick="loadPreset('retro_green')">🎮 Retro Green</button>
+        </div>
+
+        <h2>🌈 Custom Color Palette</h2>
+        <div class="color-grid">
+            <div class="color-item"><label>Background</label><input type="color" id="clr-bg" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Card Fill</label><input type="color" id="clr-card" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Header</label><input type="color" id="clr-hdr" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Cyan Accent</label><input type="color" id="clr-cyan" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Orange Accent</label><input type="color" id="clr-orange" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Green Accent</label><input type="color" id="clr-green" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Yellow Accent</label><input type="color" id="clr-yellow" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Red Accent</label><input type="color" id="clr-red" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Text Primary</label><input type="color" id="clr-white" onchange="updateCustomColor()"></div>
+            <div class="color-item"><label>Text Dim</label><input type="color" id="clr-dim" onchange="updateCustomColor()"></div>
+        </div>
+
+        <h2>🌤️ Weather Location</h2>
+        <div class="deploy-box">
+            <label style="font-size: 0.8rem; color: var(--text-dim);">Select City / Province:</label>
+            <select id="city-select" onchange="onCitySelectChange()" style="background: var(--bg-body); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.9rem; margin-bottom: 6px;">
+                <option value="Hanoi" selected>Hà Nội (Hanoi)</option>
+                <option value="Ho Chi Minh">TP. Hồ Chí Minh (Ho Chi Minh)</option>
+                <option value="Da Nang">Đà Nẵng (Da Nang)</option>
+                <option value="Hai Phong">Hải Phòng (Hai Phong)</option>
+                <option value="Can Tho">Cần Thơ (Can Tho)</option>
+                <option value="Nha Trang">Nha Trang (Khánh Hòa)</option>
+                <option value="Da Lat">Đà Lạt (Lâm Đồng)</option>
+                <option value="Hue">Thừa Thiên Huế (Hue)</option>
+                <option value="Vung Tau">Bà Rịa - Vũng Tàu</option>
+                <option value="Quy Nhon">Quy Nhơn (Bình Định)</option>
+                <option value="Buon Ma Thuot">Buôn Ma Thuột (Đắk Lắk)</option>
+                <option value="Ha Long">Hạ Long (Quảng Ninh)</option>
+                <option value="Phan Thiet">Phan Thiết (Bình Thuận)</option>
+                <option value="Thanh Hoa">Thành phố Thanh Hóa</option>
+                <option value="Vinh">Thành phố Vinh (Nghệ An)</option>
+                <option value="Nam Dinh">Thành phố Nam Định</option>
+                <option value="Thai Nguyen">Thành phố Thái Nguyên</option>
+                <option value="Bac Ninh">Thành phố Bắc Ninh</option>
+                <option value="Vinh Yen">Vĩnh Yên (Vĩnh Phúc)</option>
+                <option value="Phu Quoc">Đảo Phú Quốc</option>
+                <option value="Rach Gia">Rạch Giá (Kiên Giang)</option>
+                <option value="Long Xuyen">Long Xuyên (An Giang)</option>
+                <option value="Ca Mau">Thành phố Cà Mau</option>
+                <option value="CUSTOM">-- Khác (Tự nhập tên) --</option>
+            </select>
+            <div id="custom-city-wrapper" style="display: none; gap: 8px; margin-bottom: 6px;">
+                <input type="text" id="city-name" value="Hanoi" placeholder="Tên thành phố tiếng Anh..." style="flex:1;">
+            </div>
+            <button class="btn-secondary" onclick="updateWeatherCity()">🌤️ Set Weather City</button>
+            <div id="city-status" class="status-msg"></div>
+        </div>
+
+        <h2>🚀 Device Deployment</h2>
+        <div class="deploy-box">
+            <label style="font-size: 0.8rem; color: var(--text-dim);">ESP32 IP Address:</label>
+            <input type="text" id="device-ip" value="192.168.1.13">
+            <button class="btn-primary" onclick="deployToDevice()">🚀 Deploy Theme to ESP32</button>
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+                <button class="btn-secondary" style="flex:1" onclick="exportJSON()">💾 Export JSON</button>
+                <button class="btn-secondary" style="flex:1" onclick="importJSON()">📂 Load JSON</button>
+            </div>
+            <div id="status" class="status-msg"></div>
+        </div>
+    </div>
+
+    <!-- Right Live Canvas Preview Panel -->
+    <div class="panel preview-area">
+        <h2>📱 Live 320x240 TFT Simulator</h2>
+        <div class="canvas-frame">
+            <canvas id="cyd-screen" width="640" height="480"></canvas>
+        </div>
+
+        <div class="page-tabs">
+            <button class="page-tab active" onclick="setPreviewPage(0)">0: Weather Clock</button>
+            <button class="page-tab" onclick="setPreviewPage(1)">1: Calendar</button>
+            <button class="page-tab" onclick="setPreviewPage(2)">2: Gold & Finance</button>
+            <button class="page-tab" onclick="setPreviewPage(3)">3: CPU / RAM</button>
+            <button class="page-tab" onclick="setPreviewPage(4)">4: GPU / VRAM</button>
+            <button class="page-tab" onclick="setPreviewPage(5)">5: Network</button>
+            <button class="page-tab" onclick="setPreviewPage(6)">6: Pomodoro</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Presets catalog
+    const PRESETS = {
+        ocean_dark:  { bg: "#080c18", card: "#0d1f3c", hdr: "#060e20", cyan: "#00d4ff", orange: "#ff6b35", green: "#00e676", yellow: "#ffd740", red: "#ff5252", purple: "#bb86fc", white: "#e8eaf6", dim: "#546e7a" },
+        cyberpunk:   { bg: "#0a0012", card: "#12002a", hdr: "#08000f", cyan: "#00f5ff", orange: "#ff00cc", green: "#39ff14", yellow: "#ffe000", red: "#ff003c", purple: "#cc00ff", white: "#f0f0ff", dim: "#6633aa" },
+        forest:      { bg: "#051008", card: "#0a2010", hdr: "#030c05", cyan: "#39ff14", orange: "#ffb300", green: "#00e676", yellow: "#f9a825", red: "#ff5252", purple: "#69f0ae", white: "#e8f5e9", dim: "#4caf50" },
+        cherry:      { bg: "#120008", card: "#200010", hdr: "#0a0005", cyan: "#ff3d6b", orange: "#ff8a00", green: "#69f0ae", yellow: "#ffd600", red: "#d50000", purple: "#ff80ab", white: "#fff0f3", dim: "#ad1457" },
+        light_day:   { bg: "#eef2ff", card: "#ffffff", hdr: "#1a237e", cyan: "#2979ff", orange: "#ff6d00", green: "#00c853", yellow: "#ffd600", red: "#d50000", purple: "#aa00ff", white: "#1a237e", dim: "#455a64" },
+        retro_green: { bg: "#001100", card: "#002200", hdr: "#000900", cyan: "#00ff41", orange: "#00cc33", green: "#33ff33", yellow: "#aaff00", red: "#ff3300", purple: "#00ff99", white: "#aaffaa", dim: "#006600" }
+    };
+
+    let activeTheme = { ...PRESETS.ocean_dark };
+    let previewPage = 0;
+
+    const canvas = document.getElementById('cyd-screen');
+    const ctx = canvas.getContext('2d');
+
+    function applyThemeToInputs(t) {
+        document.getElementById('clr-bg').value = t.bg;
+        document.getElementById('clr-card').value = t.card;
+        document.getElementById('clr-hdr').value = t.hdr;
+        document.getElementById('clr-cyan').value = t.cyan;
+        document.getElementById('clr-orange').value = t.orange;
+        document.getElementById('clr-green').value = t.green;
+        document.getElementById('clr-yellow').value = t.yellow;
+        document.getElementById('clr-red').value = t.red;
+        document.getElementById('clr-white').value = t.white;
+        document.getElementById('clr-dim').value = t.dim;
+    }
+
+    function updateCustomColor() {
+        activeTheme.bg = document.getElementById('clr-bg').value;
+        activeTheme.card = document.getElementById('clr-card').value;
+        activeTheme.hdr = document.getElementById('clr-hdr').value;
+        activeTheme.cyan = document.getElementById('clr-cyan').value;
+        activeTheme.orange = document.getElementById('clr-orange').value;
+        activeTheme.green = document.getElementById('clr-green').value;
+        activeTheme.yellow = document.getElementById('clr-yellow').value;
+        activeTheme.red = document.getElementById('clr-red').value;
+        activeTheme.white = document.getElementById('clr-white').value;
+        activeTheme.dim = document.getElementById('clr-dim').value;
+        renderCanvas();
+    }
+
+    function loadPreset(name) {
+        if (PRESETS[name]) {
+            activeTheme = { ...PRESETS[name] };
+            applyThemeToInputs(activeTheme);
+            renderCanvas();
+        }
+    }
+
+    function setPreviewPage(p) {
+        previewPage = p;
+        document.querySelectorAll('.page-tab').forEach((tab, i) => {
+            tab.classList.toggle('active', i === p);
+        });
+        renderCanvas();
+    }
+
+    // ── Live Canvas Renderer (320x240 scaled by 2) ───────────────────
+    function renderCanvas() {
+        ctx.save();
+        ctx.scale(2, 2); // 320x240 -> 640x480
+
+        // Background
+        ctx.fillStyle = activeTheme.bg;
+        ctx.fillRect(0, 0, 320, 240);
+
+        // Header
+        ctx.fillStyle = activeTheme.hdr;
+        ctx.fillRect(0, 0, 320, 28);
+        ctx.fillStyle = activeTheme.cyan;
+        ctx.fillRect(0, 27, 320, 1);
+
+        // Header text
+        ctx.fillStyle = activeTheme.dim;
+        ctx.font = "bold 12px sans-serif";
+        const titles = ["Weather", "Calendar", "Finance", "CPU & RAM", "GPU & VRAM", "Network", "Pomodoro"];
+        ctx.fillText(titles[previewPage], 28, 18);
+
+        ctx.fillStyle = activeTheme.white;
+        ctx.fillText("21:34:52", 200, 18);
+
+        // Header indicator dots
+        for (let i = 0; i < 7; i++) {
+            ctx.fillStyle = (i === previewPage) ? activeTheme.cyan : activeTheme.dim;
+            ctx.beginPath();
+            ctx.arc(276 + i * 6, 13, (i === previewPage) ? 3 : 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Render Page Content
+        if (previewPage === 0) { // Weather Clock
+            ctx.fillStyle = activeTheme.cyan;
+            ctx.font = "bold 44px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("21:34", 160, 75);
+
+            ctx.fillStyle = activeTheme.white;
+            ctx.font = "12px sans-serif";
+            ctx.fillText("Thu, 31/07/2026", 160, 96);
+
+            ctx.fillStyle = activeTheme.yellow;
+            ctx.fillText("Am Lich: 06/07/Binh Ngo", 160, 114);
+
+            // Card
+            ctx.fillStyle = activeTheme.card;
+            roundRect(ctx, 10, 128, 300, 102, 8, true, true, activeTheme.cyan);
+
+            ctx.fillStyle = activeTheme.orange;
+            ctx.font = "bold 24px sans-serif";
+            ctx.textAlign = "left";
+            ctx.fillText("34.2 °C", 114, 160);
+
+            ctx.fillStyle = activeTheme.white;
+            ctx.font = "12px sans-serif";
+            ctx.fillText("Partly Cloudy", 114, 180);
+
+            ctx.fillStyle = activeTheme.cyan;
+            ctx.fillText("Hum: 72%", 114, 198);
+
+            // Weather sun icon
+            ctx.fillStyle = activeTheme.yellow;
+            ctx.beginPath();
+            ctx.arc(56, 175, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else if (previewPage === 3) { // CPU/RAM Gauges
+            // Left Gauge (CPU)
+            drawGauge(ctx, 80, 120, 48, 67, activeTheme.cyan, "CPU");
+            // Right Gauge (RAM)
+            drawGauge(ctx, 240, 120, 48, 45, activeTheme.orange, "RAM");
+
+        } else if (previewPage === 6) { // Pomodoro
+            ctx.lineWidth = 10;
+            ctx.strokeStyle = activeTheme.orange;
+            ctx.beginPath();
+            ctx.arc(160, 125, 55, 0, Math.PI * 1.5);
+            ctx.stroke();
+
+            ctx.fillStyle = activeTheme.orange;
+            ctx.font = "bold 36px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("24:35", 160, 133);
+
+            ctx.fillStyle = activeTheme.dim;
+            ctx.font = "12px sans-serif";
+            ctx.fillText("FOCUS SESSION", 160, 160);
+        } else {
+            // Generic page preview
+            ctx.fillStyle = activeTheme.card;
+            roundRect(ctx, 15, 45, 290, 180, 8, true, true, activeTheme.cyan);
+            ctx.fillStyle = activeTheme.white;
+            ctx.font = "16px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Page " + previewPage + " Preview", 160, 120);
+        }
+
+        ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r, fill, stroke, strokeColor) {
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+        if (fill) ctx.fill();
+        if (stroke) {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = strokeColor || "#555";
+            ctx.stroke();
+        }
+    }
+
+    function drawGauge(ctx, cx, cy, r, pct, color, label) {
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = activeTheme.card;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+
+        ctx.strokeStyle = color;
+        ctx.beginPath(); ctx.arc(cx, cy, r, -Math.PI/2, (-Math.PI/2) + (Math.PI * 2 * pct / 100)); ctx.stroke();
+
+        ctx.fillStyle = color;
+        ctx.font = "bold 20px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(pct + "%", cx, cy + 6);
+
+        ctx.fillStyle = activeTheme.dim;
+        ctx.font = "12px sans-serif";
+        ctx.fillText(label, cx, cy + 24);
+    }
+
+    function onCitySelectChange() {
+        const sel = document.getElementById('city-select').value;
+        const customWrap = document.getElementById('custom-city-wrapper');
+        if (sel === "CUSTOM") {
+            customWrap.style.display = "flex";
+        } else {
+            customWrap.style.display = "none";
+            document.getElementById('city-name').value = sel;
+        }
+    }
+
+    async function updateWeatherCity() {
+        const ip = document.getElementById('device-ip').value.trim();
+        const sel = document.getElementById('city-select').value;
+        const city = (sel === "CUSTOM") ? document.getElementById('city-name').value.trim() : sel;
+        const status = document.getElementById('city-status');
+        if (!city) return;
+        status.className = "status-msg";
+        status.innerText = "Updating city to " + city + "...";
+        try {
+            const resp = await fetch(`http://${ip}/api/weather/city`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ city: city })
+            });
+            if (resp.ok) {
+                status.className = "status-msg status-success";
+                status.innerText = "✅ City set to " + city + "!";
+            } else {
+                throw new Error("HTTP " + resp.status);
+            }
+        } catch(e) {
+            status.className = "status-msg status-error";
+            status.innerText = "❌ Failed: " + e.message + "\n(Or open http://" + ip + "/ in browser!)";
+        }
+    }
+
+    async function deployToDevice() {
+        const ip = document.getElementById('device-ip').value.trim();
+        const status = document.getElementById('status');
+        status.className = "status-msg";
+        status.innerText = "Connecting to " + ip + "...";
+
+        try {
+            const resp = await fetch(`http://${ip}/api/theme`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(activeTheme)
+            });
+            if (resp.ok) {
+                status.className = "status-msg status-success";
+                status.innerText = "✅ Theme applied successfully to ESP32!";
+            } else {
+                throw new Error("HTTP " + resp.status);
+            }
+        } catch (e) {
+            status.className = "status-msg status-error";
+            status.innerText = "❌ Failed: " + e.message + "\n(Tip: You can also open http://" + ip + "/ directly in browser!)";
+        }
+    }
+
+    function exportJSON() {
+        const blob = new Blob([JSON.stringify(activeTheme, null, 2)], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = "esp32_cyd_theme.json";
+        a.click();
+    }
+
+    function importJSON() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = e => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    activeTheme = { ...activeTheme, ...data };
+                    applyThemeToInputs(activeTheme);
+                    renderCanvas();
+                } catch (err) {
+                    alert("Invalid Theme JSON");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    // Init
+    applyThemeToInputs(activeTheme);
+    renderCanvas();
+</script>
+</body>
+</html>
