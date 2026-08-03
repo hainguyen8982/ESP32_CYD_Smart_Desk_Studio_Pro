@@ -47,6 +47,7 @@ static uint16_t getPageAccent(uint8_t page) {
         case 4: return theme.orange;
         case 5: return theme.green;
         case 6: return theme.orange;
+        case 7: return theme.purple;
         default: return theme.cyan;
     }
 }
@@ -171,12 +172,18 @@ void DisplayManager::renderHeader() {
             spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
             spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
             break;
+        case 7: // Settings gear icon
+            spr.drawCircle(ix, iy, 5, C_PURPLE);
+            spr.fillCircle(ix, iy, 2, C_HDR);
+            spr.fillRect(ix-1, iy-7, 2, 14, C_PURPLE);
+            spr.fillRect(ix-7, iy-1, 14, 2, C_PURPLE);
+            break;
     }
 
     // ── Page title ────────────────────────────────────────────────────
     static const char* titles[] = {
         "Weather", "Calendar", "Finance",
-        "CPU & RAM", "GPU & VRAM", "Network", "Pomodoro"
+        "CPU & RAM", "GPU & VRAM", "Network", "Pomodoro", "Settings"
     };
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(C_DIM, C_HDR);
