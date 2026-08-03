@@ -52,6 +52,7 @@ class CYDMonitorApp(ctk.CTk):
         self.resizable(False, False)
 
         self.esp32_ip = "192.168.1.13"
+        self.cached_ip = self.esp32_ip  # thread-safe copy — never call ip_entry.get() from bg thread!
         self.is_streaming = True
         self.tray_icon = None
 
@@ -65,6 +66,9 @@ class CYDMonitorApp(ctk.CTk):
         # Start background hardware metrics streaming thread
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
         self.stream_thread.start()
+
+        # Poll & sync IP from entry box every 2s on main thread
+        self._sync_ip_loop()
 
     def create_widgets(self):
         # ── Header Frame ──────────────────────────────────────────────
@@ -201,6 +205,22 @@ class CYDMonitorApp(ctk.CTk):
             font=ctk.CTkFont(size=12), text_color="#8b949e"
         )
         self.metrics_lbl.pack(anchor="w", padx=12, pady=(0, 10))
+
+    def _sync_ip_loop(self):
+        """Runs on main thread every 2s — copies IP entry to cached_ip for background thread."""
+        try:
+            self.cached_ip = self.ip_entry.get().strip()
+        except Exception:
+            pass
+        self.after(2000, self._sync_ip_loop)
+
+    def _set_metrics_text(self, cpu, ram, down, up):
+        self.metrics_lbl.configure(
+            text=f"CPU: {cpu}% | RAM: {ram}% | Net\u2193 {down} KB/s | Net\u2191 {up} KB/s"
+        )
+
+    def _set_status(self, text, color):
+        self.status_lbl.configure(text=text, text_color=color)
 
     def highlight_active_page(self, page_id):
         if page_id == self.active_page_id:
@@ -342,13 +362,13 @@ class CYDMonitorApp(ctk.CTk):
                     "disks": disks
                 }
 
-                # Update live GUI label IMMEDIATELY (thread-safe via after)
+                # Update live GUI label IMMEDIATELY (thread-safe)
                 self.after(0, lambda c=cpu_pct, r=ram_pct, d=down_speed, u=up_speed:
-                    self.metrics_lbl.configure(
-                        text=f"CPU: {c}% | RAM: {r}% | Net↓ {d} KB/s | Net↑ {u} KB/s"
-                    )
-                )
-            except Exception as ex:
+                           self._set_metrics_text(c, r, d, u))
+            except Exception:
+                import traceback
+                with open("debug.log", "a") as _f:
+                    _f.write(f"[METRICS ERR] {time.time():.0f}: {traceback.format_exc()}\n")
                 time.sleep(1)
                 continue
 
@@ -420,8 +440,8 @@ class CYDMonitorApp(ctk.CTk):
                     except Exception: pass
                     ser = None
 
-            # 3. WiFi HTTP Streaming
-            ip = self.ip_entry.get().strip()
+            # 3. WiFi HTTP Streaming — use cached_ip (thread-safe, no Tkinter call)
+            ip = self.cached_ip
             if ip:
                 try:
                     resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
@@ -431,26 +451,23 @@ class CYDMonitorApp(ctk.CTk):
                             res_data = resp.json()
                             page_val = res_data.get("page", -1)
                             theme_val = res_data.get("theme", "")
-                            # clamp page to valid 0-6 range, ignore splash/invalid
-                            if 0 <= page_val <= 6:
+                            if page_val >= 0:
                                 self.after(0, lambda v=page_val: self.highlight_active_page(v))
                             if theme_val:
                                 self.after(0, lambda v=theme_val: self.highlight_active_theme(v))
                         except Exception:
                             pass
-                except Exception:
-                    pass
+                except Exception as wifi_ex:
+                    with open("debug.log", "a") as _f:
+                        _f.write(f"[WIFI ERR] {time.time():.0f} ip={ip}: {wifi_ex}\n")
 
-            # 4. Status Indicator Update (must use after for thread safety)
+            # 4. Status Indicator Update (thread-safe via after)
             if connected_usb:
-                self.after(0, lambda p=ser_port: self.status_lbl.configure(
-                    text=f"● Connected (USB {p})", text_color="#2ea043"))
+                self.after(0, lambda p=ser_port: self._set_status(f"\u25cf Connected (USB {p})", "#2ea043"))
             elif connected_wifi:
-                self.after(0, lambda i=ip: self.status_lbl.configure(
-                    text=f"● Connected (WiFi {i})", text_color="#2ea043"))
+                self.after(0, lambda i=ip: self._set_status(f"\u25cf Connected (WiFi {i})", "#2ea043"))
             else:
-                self.after(0, lambda: self.status_lbl.configure(
-                    text="● Searching for CYD...", text_color="#d29922"))
+                self.after(0, lambda: self._set_status("\u25cf Searching for CYD...", "#d29922"))
 
             # no extra sleep — cpu_percent(interval=1) already blocked 1s
 
