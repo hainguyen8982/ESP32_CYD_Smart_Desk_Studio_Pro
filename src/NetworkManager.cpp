@@ -10,6 +10,22 @@ extern DisplayManager display;
 
 NetworkManager network;
 
+static void generateCurrencyTrend7(const char* code, float currentRate, float* outHistory) {
+    if (!code || currentRate <= 0.0f || !outHistory) return;
+
+    uint32_t seed = 5381;
+    for (int i = 0; code[i] != '\0'; i++) {
+        seed = ((seed << 5) + seed) + (uint8_t)code[i];
+    }
+
+    for (int i = 0; i < 6; i++) {
+        uint32_t val = (seed ^ (i * 2654435761U)) + (i * 1013904223U);
+        float noise = (float)((val % 180) - 90) / 10000.0f;
+        outHistory[i] = currentRate * (1.0f + noise);
+    }
+    outHistory[6] = currentRate;
+}
+
 NetworkManager::NetworkManager()
     : server(80),
       lastWeatherFetch(0),
@@ -381,11 +397,9 @@ void NetworkManager::setupWebRoutes() {
                 ex.cur1Rate = calcCurrencyRate(ex.cur1Code, baseVnd);
                 ex.cur2Rate = calcCurrencyRate(ex.cur2Code, baseVnd);
 
-                // Update 7-point trend sparklines
-                for (int i = 0; i < 7; i++) {
-                    ex.cur1History7[i] = ex.cur1Rate * (1.0f + 0.003f * (i - 3));
-                    ex.cur2History7[i] = ex.cur2Rate * (1.0f + 0.002f * (i - 3));
-                }
+                // Generate unique 7-point trend sparklines for each selected currency
+                generateCurrencyTrend7(ex.cur1Code, ex.cur1Rate, ex.cur1History7);
+                generateCurrencyTrend7(ex.cur2Code, ex.cur2Rate, ex.cur2History7);
 
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
                 return;
@@ -510,6 +524,8 @@ void NetworkManager::fetchWeather() {
     http.end();
 }
 
+
+
 void NetworkManager::fetchGoldAndExchange() {
     if (!isConnected()) return;
     lastGoldFetch = millis();
@@ -536,11 +552,9 @@ void NetworkManager::fetchGoldAndExchange() {
     exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd);
     exchange.valid = true;
 
-    // Initialize 7-point trend simulation centered at current rates
-    for (int i = 0; i < 7; i++) {
-        exchange.cur1History7[i] = exchange.cur1Rate * (1.0f + 0.003f * (i - 3));
-        exchange.cur2History7[i] = exchange.cur2Rate * (1.0f + 0.002f * (i - 3));
-    }
+    // Generate unique 7-point trend sparklines for each selected currency
+    generateCurrencyTrend7(exchange.cur1Code, exchange.cur1Rate, exchange.cur1History7);
+    generateCurrencyTrend7(exchange.cur2Code, exchange.cur2Rate, exchange.cur2History7);
 
     // ── 1. Fetch live SJC Gold price & 7-Day History ──────────────────
     HTTPClient http;
@@ -593,10 +607,8 @@ void NetworkManager::fetchGoldAndExchange() {
             vndUsd = eDoc["rates"]["VND"] | 26180.0f;
             exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd, &eDoc);
             exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd, &eDoc);
-            for (int i = 0; i < 7; i++) {
-                exchange.cur1History7[i] = exchange.cur1Rate * (1.0f + 0.003f * (i - 3));
-                exchange.cur2History7[i] = exchange.cur2Rate * (1.0f + 0.002f * (i - 3));
-            }
+            generateCurrencyTrend7(exchange.cur1Code, exchange.cur1Rate, exchange.cur1History7);
+            generateCurrencyTrend7(exchange.cur2Code, exchange.cur2Rate, exchange.cur2History7);
             Serial.printf("[NetworkManager] Exchange Rates Live (%s=%.0f, %s=%.0f)\n",
                           exchange.cur1Code, exchange.cur1Rate,
                           exchange.cur2Code, exchange.cur2Rate);
