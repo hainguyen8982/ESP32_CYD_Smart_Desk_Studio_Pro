@@ -3460,3 +3460,729 @@ NameError: name 'os' is not defined. Did you forget to import 'os'?
            ^^
 NameError: name 'os' is not defined. Did you forget to import 'os'?
 
+[METRICS ERR] 1785736534: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736536: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736538: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736540: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736542: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736544: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736546: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736548: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736550: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736552: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736554: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736556: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736558: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736560: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736562: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736564: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736566: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736568: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736570: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736572: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736574: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736576: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736578: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736580: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736582: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736584: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736586: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736588: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736590: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736592: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736594: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736597: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736599: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736601: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736603: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736605: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736607: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736609: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736611: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736613: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736615: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736617: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736619: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736621: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736623: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736625: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736627: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736629: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736631: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736633: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736635: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736637: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736639: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736641: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736643: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736645: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736647: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736649: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736652: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736654: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736656: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736658: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736660: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736662: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736664: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736666: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736668: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736670: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736672: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736674: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736676: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736678: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736680: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736682: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736685: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736687: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736689: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736691: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736693: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736695: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736697: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736699: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736701: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736703: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736705: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736707: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736709: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736711: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736713: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736715: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736717: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736719: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736721: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736724: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736726: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736728: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736730: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736732: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736734: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736736: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736738: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736740: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736742: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736744: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736746: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736748: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736750: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736752: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736754: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736757: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    for letter in string.ascii_uppercase:
+           ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736759: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736761: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736763: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736765: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736767: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736769: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736771: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736773: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736775: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736777: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+
+[METRICS ERR] 1785736779: Traceback (most recent call last):
+  File "D:\Projects_2026\ESP32_CYD_Smart_Desk_Dashboard\pc_utility\pc_monitor_app\main.py", line 336, in stream_loop
+    down_speed = up_speed = 0
+       ^^
+NameError: name 'os' is not defined. Did you forget to import 'os'?
+

@@ -67,6 +67,12 @@ class CYDMonitorApp(ctk.CTk):
         self.create_widgets()
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
 
+        # Clear debug log on each startup
+        try:
+            open("debug.log", "w").close()
+        except Exception:
+            pass
+
         # Start background hardware metrics streaming thread
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
         self.stream_thread.start()
@@ -473,34 +479,48 @@ class CYDMonitorApp(ctk.CTk):
             # no extra sleep — cpu_percent(interval=1) already blocked 1s
 
     def create_tray_icon(self):
-        # Create a simple blue icon for system tray
-        image = Image.new('RGB', (64, 64), color=(13, 17, 23))
+        """Runs in its own non-daemon thread. Blocking call."""
+        # Draw ESP32 chip icon
+        image = Image.new('RGBA', (64, 64), (0, 0, 0, 0))
         d = ImageDraw.Draw(image)
-        d.ellipse((12, 12, 52, 52), fill=(88, 166, 255))
-        d.rectangle((24, 24, 40, 40), fill=(13, 17, 23))
+        d.rectangle((8, 8, 56, 56), fill=(13, 17, 23))
+        d.ellipse((16, 16, 48, 48), fill=(88, 166, 255))
+        d.rectangle((26, 26, 38, 38), fill=(13, 17, 23))
+
+        def on_open(icon, item):
+            self.after(0, self.deiconify)
+
+        def on_exit(icon, item):
+            icon.stop()
+            self.after(0, self._do_exit)
 
         menu = pystray.Menu(
-            pystray.MenuItem("Open Studio", self.show_from_tray, default=True),
-            pystray.MenuItem("Exit", self.exit_app)
+            pystray.MenuItem("Open Studio", on_open, default=True),
+            pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Exit", on_exit)
         )
-        self.tray_icon = pystray.Icon("CYDStudio", image, "ESP32 CYD Dashboard Studio", menu)
-        self.tray_icon.run()
+        self.tray_icon = pystray.Icon("CYDStudio", image, "CYD Dashboard Studio", menu)
+        self.tray_icon.run()  # blocks until icon.stop()
 
     def minimize_to_tray(self):
         self.withdraw()
-        if not self.tray_icon:
-            # daemon=False ensures tray thread survives as long as needed
+        if self.tray_icon is None:
             t = threading.Thread(target=self.create_tray_icon, daemon=False)
             t.start()
+        # if already running, just stay hidden
 
     def show_from_tray(self, icon=None, item=None):
         self.deiconify()
 
+    def _do_exit(self):
+        self.tray_icon = None
+        self.destroy()
+        sys.exit(0)
+
     def exit_app(self, icon=None, item=None):
         if self.tray_icon:
             self.tray_icon.stop()
-        self.destroy()
-        sys.exit(0)
+        self._do_exit()
 
 if __name__ == "__main__":
     app = CYDMonitorApp()
