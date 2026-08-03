@@ -292,7 +292,12 @@ void NetworkManager::setupWebRoutes() {
     auto handlePCStatus = [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
         String jsonStr = String((char*)data).substring(0, len);
         if (pcMonitor.parseJsonData(jsonStr.c_str())) {
-            sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
+            char respBuf[128];
+            snprintf(respBuf, sizeof(respBuf),
+                     "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\"}",
+                     display.getCurrentPage(),
+                     getCurrentThemePresetName());
+            sendCORSResponse(request, 200, respBuf);
         } else {
             sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
         }

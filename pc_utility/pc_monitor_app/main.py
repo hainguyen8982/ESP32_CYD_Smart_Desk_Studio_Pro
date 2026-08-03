@@ -132,6 +132,11 @@ class CYDMonitorApp(ctk.CTk):
         set_ex_btn = ctk.CTkButton(ex_inner, text="Set Currencies", width=110, command=self.apply_currencies)
         set_ex_btn.pack(side="left")
 
+        self.page_buttons = {}
+        self.theme_buttons = {}
+        self.active_page_id = -1
+        self.active_theme_key = ""
+
         # ── Theme Presets Section ─────────────────────────────────────
         t_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
         t_frame.pack(fill="x", padx=15, pady=5)
@@ -146,9 +151,11 @@ class CYDMonitorApp(ctk.CTk):
             r, c = divmod(idx, 3)
             btn = ctk.CTkButton(
                 t_grid, text=name, width=155, height=32,
+                fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9",
                 command=lambda k=key: self.apply_theme(k)
             )
             btn.grid(row=r, column=c, padx=5, pady=5)
+            self.theme_buttons[key] = btn
 
         # ── Remote Page Switcher ──────────────────────────────────────
         p_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
@@ -169,10 +176,12 @@ class CYDMonitorApp(ctk.CTk):
         for idx, (p_name, p_id) in enumerate(pages):
             r, c = divmod(idx, 3)
             btn = ctk.CTkButton(
-                p_grid, text=p_name, width=155, height=30, fg_color="#21262d", hover_color="#30363d",
+                p_grid, text=p_name, width=155, height=30,
+                fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9",
                 command=lambda pid=p_id: self.switch_page(pid)
             )
             btn.grid(row=r, column=c, padx=5, pady=4)
+            self.page_buttons[p_id] = btn
 
         # ── Hardware Live Status Preview ──────────────────────────────
         m_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
@@ -186,6 +195,26 @@ class CYDMonitorApp(ctk.CTk):
             font=ctk.CTkFont(size=12), text_color="#8b949e"
         )
         self.metrics_lbl.pack(anchor="w", padx=12, pady=(0, 10))
+
+    def highlight_active_page(self, page_id):
+        if page_id == self.active_page_id:
+            return
+        self.active_page_id = page_id
+        for pid, btn in self.page_buttons.items():
+            if pid == page_id:
+                btn.configure(fg_color="#1f6feb", hover_color="#388bfd", text_color="#ffffff")
+            else:
+                btn.configure(fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9")
+
+    def highlight_active_theme(self, theme_key):
+        if theme_key == self.active_theme_key:
+            return
+        self.active_theme_key = theme_key
+        for key, btn in self.theme_buttons.items():
+            if key == theme_key:
+                btn.configure(fg_color="#238636", hover_color="#2ea043", text_color="#ffffff")
+            else:
+                btn.configure(fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9")
 
     def apply_city(self):
         sel = self.city_combo.get()
@@ -215,6 +244,7 @@ class CYDMonitorApp(ctk.CTk):
             self.status_lbl.configure(text="❌ Currency error", text_color="#f85149")
 
     def apply_theme(self, theme_key):
+        self.highlight_active_theme(theme_key)
         ip = self.ip_entry.get().strip()
         try:
             resp = requests.post(f"http://{ip}/api/theme", json={"preset": theme_key}, timeout=2)
@@ -224,6 +254,7 @@ class CYDMonitorApp(ctk.CTk):
             self.status_lbl.configure(text="❌ Theme error", text_color="#f85149")
 
     def switch_page(self, page_id):
+        self.highlight_active_page(page_id)
         ip = self.ip_entry.get().strip()
         try:
             requests.get(f"http://{ip}/api/page?id={page_id}", timeout=2)
@@ -286,6 +317,14 @@ class CYDMonitorApp(ctk.CTk):
                     resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
                     if resp.ok:
                         self.status_lbl.configure(text="● Streaming Active", text_color="#2ea043")
+                        try:
+                            res_data = resp.json()
+                            if "page" in res_data:
+                                self.highlight_active_page(res_data["page"])
+                            if "theme" in res_data:
+                                self.highlight_active_theme(res_data["theme"])
+                        except Exception:
+                            pass
                     else:
                         self.status_lbl.configure(text="● Disconnected", text_color="#f85149")
                 except Exception:

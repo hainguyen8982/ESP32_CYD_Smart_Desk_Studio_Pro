@@ -1513,10 +1513,12 @@ void DisplayManager::renderSplashScreen() {
     spr.drawRoundRect(12, 10, 296, 220, 12, C_CYAN);
     spr.drawRoundRect(13, 11, 294, 218, 11, C_CYAN); // Bold 2px border
 
-    // ── Main Header Title (1 Line Font 2, Gold text, perfectly centered) ─
+    // ── Main Header Title (Smooth 18px FreeSansBold Vector Font) ─────────
+    spr.setFreeFont(&FreeSansBold9pt7b);
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("SMART DESK DASHBOARD", 160, 24, 2);
+    spr.drawString("SMART DESK DASHBOARD", 160, 20);
+    spr.setFreeFont(NULL); // Reset to default bitmap font
 
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
