@@ -52,7 +52,9 @@ NetworkManager::NetworkManager()
       lastGoldFetch(0),
       remotePage(-1),
       bootState(BOOT_CONNECTING_WIFI),
-      bootProgress(15) {
+      bootProgress(15),
+      bootStartTime(0),
+      wifiConnectedTime(0) {
     memset(&weather, 0, sizeof(weather));
     memset(&gold, 0, sizeof(gold));
     memset(&exchange, 0, sizeof(exchange));
@@ -62,6 +64,7 @@ NetworkManager::NetworkManager()
 
 void NetworkManager::begin() {
     Serial.println("[NetworkManager] Connecting WiFi via WiFiManager...");
+    bootStartTime = millis();
     bootState = BOOT_CONNECTING_WIFI;
     bootProgress = 25;
     snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[1/3] Connecting WiFi...");
@@ -91,6 +94,7 @@ void NetworkManager::begin() {
         Serial.println(WiFi.localIP());
         hardware.setRGBColor(COLOR_GREEN);
 
+        wifiConnectedTime = millis();
         bootState = BOOT_SYNCING_TIME;
         bootProgress = 60;
         snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[2/3] Syncing NTP Time (VN GMT+7)...");
@@ -129,11 +133,6 @@ void NetworkManager::begin() {
     Serial.println("[NetworkManager] AsyncWebServer Started on Port 80");
 
     if (isConnected()) {
-        bootState = BOOT_FETCHING_DATA;
-        bootProgress = 85;
-        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[3/3] Fetching Weather & Market Data...");
-        display.update();
-
         fetchWeather();
         fetchGoldAndExchange();
 
@@ -143,6 +142,11 @@ void NetworkManager::begin() {
             bootState = BOOT_READY;
             bootProgress = 100;
             snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
+            display.update();
+        } else {
+            bootState = BOOT_SYNCING_TIME;
+            bootProgress = 75;
+            snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[2/3] Syncing NTP Time (VN GMT+7)...");
             display.update();
         }
     }
@@ -472,15 +476,18 @@ void NetworkManager::update() {
     // Process boot transition check: Keep Splash Screen active until NTP time is synced & data loaded
     if (bootState != BOOT_READY && bootState != BOOT_OFFLINE) {
         time_t now = time(NULL);
-        if (now > 1600000000 && weather.valid) {
+        if (now > 1600000000) {
+            if (!weather.valid && isConnected()) fetchWeather();
+            if (!gold.valid && isConnected()) fetchGoldAndExchange();
+
             bootState = BOOT_READY;
             bootProgress = 100;
             snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
-            Serial.println("[NetworkManager] NTP Time & Weather Synced -> Boot Ready");
-        } else if (millis() - bootStartTime > 5000) {
+            Serial.printf("[NetworkManager] NTP Time Synced (Time=%ld) -> Boot Ready\n", (long)now);
+        } else if (wifiConnectedTime > 0 && millis() - wifiConnectedTime > 15000) {
             bootState = BOOT_READY;
             bootProgress = 100;
-            Serial.println("[NetworkManager] Boot Timeout Safety -> Opening Dashboard");
+            Serial.println("[NetworkManager] Boot Timeout Safety (15s) -> Opening Dashboard");
         }
     }
 

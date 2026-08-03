@@ -65,17 +65,7 @@ public:
     BootState getBootState() const { return bootState; }
     const char* getBootStatusMsg() const { return bootStatusMsg; }
     uint8_t getBootProgressPct() const { return bootProgress; }
-    bool isBootComplete() const {
-        if (bootState == BOOT_OFFLINE) return true;
-        if (bootState == BOOT_READY) {
-            time_t now = time(NULL);
-            // Require NTP time sync (year >= 2020) or 5s safety timeout
-            if (now > 1600000000 || millis() - bootStartTime > 5000) {
-                return true;
-            }
-        }
-        return false;
-    }
+    bool isBootComplete() const { return bootState == BOOT_READY || bootState == BOOT_OFFLINE; }
 
     void fetchWeather();
     void fetchGoldAndExchange();
@@ -106,6 +96,7 @@ private:
     char bootStatusMsg[64];
     uint8_t bootProgress;
     unsigned long bootStartTime;
+    unsigned long wifiConnectedTime;
 };
 
 extern NetworkManager network;
