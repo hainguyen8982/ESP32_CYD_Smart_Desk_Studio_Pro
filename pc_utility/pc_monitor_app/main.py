@@ -372,6 +372,16 @@ class CYDMonitorApp(ctk.CTk):
                                 if "PONG" in res or "PING" in res:
                                     ser = s
                                     ser_port = p.device
+                                    try:
+                                        if "{" in res and "}" in res:
+                                            j_str = res[res.find("{"):res.rfind("}")+1]
+                                            st_data = json.loads(j_str)
+                                            if "page" in st_data:
+                                                self.highlight_active_page(st_data["page"])
+                                            if "theme" in st_data:
+                                                self.highlight_active_theme(st_data["theme"])
+                                    except Exception:
+                                        pass
                                     break
                                 s.close()
                             except Exception:

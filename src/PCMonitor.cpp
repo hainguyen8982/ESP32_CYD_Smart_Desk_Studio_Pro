@@ -1,4 +1,6 @@
 #include "PCMonitor.h"
+#include "DisplayManager.h"
+#include "Theme.h"
 
 PCMonitor pcMonitor;
 
@@ -26,9 +28,11 @@ void PCMonitor::update() {
         String line = Serial.readStringUntil('\n');
         line.trim();
 
-        // Handshake protocol support
+        // Handshake protocol support with real-time state query
         if (line == "PING_DASHBOARD" || line == "PING") {
-            Serial.println("PONG_DASHBOARD");
+            Serial.printf("PONG_DASHBOARD {\"page\":%d,\"theme\":\"%s\"}\n",
+                          display.getCurrentPage(),
+                          getCurrentThemePresetName());
             return;
         }
 
