@@ -1,5 +1,9 @@
 import sys
+import os
 import time
+import string
+import json
+import traceback
 import threading
 import requests
 import psutil
@@ -298,14 +302,12 @@ class CYDMonitorApp(ctk.CTk):
         except Exception:
             pass
 
-        import json
-        import string as _string
         ser = None
         ser_port = ""
         connected_usb = False
         connected_wifi = False
 
-        # Blocking first call so next call(interval=None) returns real data
+        # Blocking first call so next call(interval=1) gives real data right away
         psutil.cpu_percent(interval=1)
 
         while True:
@@ -331,7 +333,7 @@ class CYDMonitorApp(ctk.CTk):
                 self.last_time = now_time
 
                 disks = []
-                for letter in _string.ascii_uppercase:
+                for letter in string.ascii_uppercase:
                     drive_path = f"{letter}:\\"
                     if os.path.exists(drive_path):
                         try:
@@ -366,7 +368,6 @@ class CYDMonitorApp(ctk.CTk):
                 self.after(0, lambda c=cpu_pct, r=ram_pct, d=down_speed, u=up_speed:
                            self._set_metrics_text(c, r, d, u))
             except Exception:
-                import traceback
                 with open("debug.log", "a") as _f:
                     _f.write(f"[METRICS ERR] {time.time():.0f}: {traceback.format_exc()}\n")
                 time.sleep(1)
