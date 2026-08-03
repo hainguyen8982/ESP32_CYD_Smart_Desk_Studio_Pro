@@ -292,21 +292,39 @@ class CYDMonitorApp(ctk.CTk):
                     self.last_net = curr_net
                     self.last_time = now_time
 
-                    disk_pct = int(psutil.disk_usage('/').percent)
+                    # Get disk stats for all drive partitions (C, D, E...)
+                    disks = []
+                    try:
+                        for part in psutil.disk_partitions(all=False):
+                            if 'cdrom' not in part.opts:
+                                try:
+                                    u = psutil.disk_usage(part.mountpoint)
+                                    drive_letter = part.mountpoint.split(':')[0].upper()
+                                    if drive_letter:
+                                        disks.append({"name": drive_letter, "used": int(u.percent)})
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
 
                     payload = {
+                        "cpu": cpu_pct,
                         "cpuLoad": cpu_pct,
+                        "cputemp": 45,
                         "cpuTemp": 45,
+                        "ram": ram_pct,
                         "ramLoad": ram_pct,
-                        "ramUsed": round(psutil.virtual_memory().used / (1024**3), 1),
-                        "ramTotal": round(psutil.virtual_memory().total / (1024**3), 1),
-                        "gpuLoad": cpu_pct,  # fallback to CPU load if no pynvml
+                        "gpu": cpu_pct,
+                        "gpuLoad": cpu_pct,
+                        "gputemp": 48,
                         "gpuTemp": 48,
+                        "vram": ram_pct,
                         "vramLoad": ram_pct,
+                        "net_down": down_speed,
                         "netDown": down_speed,
+                        "net_up": up_speed,
                         "netUp": up_speed,
-                        "disk1Load": disk_pct,
-                        "disk2Load": 0
+                        "disks": disks if disks else [{"name": "C", "used": disk_pct}]
                     }
 
                     # Update live GUI label

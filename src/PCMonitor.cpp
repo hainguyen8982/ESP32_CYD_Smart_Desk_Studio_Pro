@@ -39,20 +39,37 @@ void PCMonitor::update() {
 }
 
 bool PCMonitor::parseJsonData(const char* jsonStr) {
+    if (!jsonStr) return false;
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, jsonStr);
     if (error) {
+        Serial.printf("[PCMonitor] JSON Parse Error: %s\n", error.c_str());
         return false;
     }
 
-    if (doc.containsKey("cpu")) cpuLoad = doc["cpu"].as<uint8_t>();
-    if (doc.containsKey("cputemp")) cpuTemp = doc["cputemp"].as<uint8_t>();
-    if (doc.containsKey("ram")) ramLoad = doc["ram"].as<uint8_t>();
-    if (doc.containsKey("gpu")) gpuLoad = doc["gpu"].as<uint8_t>();
-    if (doc.containsKey("gputemp")) gpuTemp = doc["gputemp"].as<uint8_t>();
-    if (doc.containsKey("vram")) vramLoad = doc["vram"].as<uint8_t>();
-    if (doc.containsKey("net_down")) netDown = doc["net_down"].as<uint32_t>();
-    if (doc.containsKey("net_up")) netUp = doc["net_up"].as<uint32_t>();
+    if (!doc["cpu"].isNull())         cpuLoad  = doc["cpu"].as<uint8_t>();
+    else if (!doc["cpuLoad"].isNull()) cpuLoad  = doc["cpuLoad"].as<uint8_t>();
+
+    if (!doc["cputemp"].isNull())     cpuTemp  = doc["cputemp"].as<uint8_t>();
+    else if (!doc["cpuTemp"].isNull()) cpuTemp  = doc["cpuTemp"].as<uint8_t>();
+
+    if (!doc["ram"].isNull())         ramLoad  = doc["ram"].as<uint8_t>();
+    else if (!doc["ramLoad"].isNull()) ramLoad  = doc["ramLoad"].as<uint8_t>();
+
+    if (!doc["gpu"].isNull())         gpuLoad  = doc["gpu"].as<uint8_t>();
+    else if (!doc["gpuLoad"].isNull()) gpuLoad  = doc["gpuLoad"].as<uint8_t>();
+
+    if (!doc["gputemp"].isNull())     gpuTemp  = doc["gputemp"].as<uint8_t>();
+    else if (!doc["gpuTemp"].isNull()) gpuTemp  = doc["gpuTemp"].as<uint8_t>();
+
+    if (!doc["vram"].isNull())        vramLoad = doc["vram"].as<uint8_t>();
+    else if (!doc["vramLoad"].isNull()) vramLoad = doc["vramLoad"].as<uint8_t>();
+
+    if (!doc["net_down"].isNull())    netDown  = doc["net_down"].as<uint32_t>();
+    else if (!doc["netDown"].isNull()) netDown  = doc["netDown"].as<uint32_t>();
+
+    if (!doc["net_up"].isNull())      netUp    = doc["net_up"].as<uint32_t>();
+    else if (!doc["netUp"].isNull())   netUp    = doc["netUp"].as<uint32_t>();
 
     // Shift history for line charts
     for (int i = 0; i < HISTORY_SIZE - 1; i++) {
@@ -62,8 +79,8 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
     cpuHistory[HISTORY_SIZE - 1] = cpuLoad;
     gpuHistory[HISTORY_SIZE - 1] = gpuLoad;
 
-    // Parse Disks Array
-    if (doc.containsKey("disks") && doc["disks"].is<JsonArray>()) {
+    // Parse Disks Array or disk1Load/disk2Load fallback
+    if (!doc["disks"].isNull() && doc["disks"].is<JsonArray>()) {
         JsonArray diskArr = doc["disks"].as<JsonArray>();
         diskCount = 0;
         for (JsonObject d : diskArr) {
@@ -73,8 +90,18 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
             disks[diskCount].usedPercent = d["used"] | 0;
             diskCount++;
         }
+    } else if (!doc["disk1Load"].isNull()) {
+        diskCount = 1;
+        snprintf(disks[0].name, sizeof(disks[0].name), "C");
+        disks[0].usedPercent = doc["disk1Load"].as<uint8_t>();
+        if (!doc["disk2Load"].isNull() && doc["disk2Load"].as<uint8_t>() > 0) {
+            snprintf(disks[1].name, sizeof(disks[1].name), "D");
+            disks[1].usedPercent = doc["disk2Load"].as<uint8_t>();
+            diskCount = 2;
+        }
     }
 
     lastDataTime = millis();
+    Serial.printf("[PCMonitor] Data Recv -> CPU:%d%%, RAM:%d%%, GPU:%d%%\n", cpuLoad, ramLoad, gpuLoad);
     return true;
 }
