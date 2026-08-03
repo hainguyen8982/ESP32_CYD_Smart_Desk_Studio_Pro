@@ -22,6 +22,23 @@ Dự án Đồng hồ thời tiết để bàn thông minh, Lịch vạn niên �
   - Tốc độ mạng Tải/Tải lên (DL/UL speed), Dung lượng các ổ đĩa C:, D:, E:... & IP ESP32 CYD.
 * **⏱️ Trang 6: Desk Utilities (Pomodoro Timer & Báo Thức)**
   - Bộ đếm tập trung Pomodoro 25m/5m, Báo thức phát còi và nhấp nháy đèn RGB LED.
+* **⚙️ Trang 7: Settings Page (Cài Đặt Hệ Thống)**
+  - Auto Touch Calibration, Bật/Tắt Auto Brightness, Thông tin WiFi & IP Address.
+
+---
+
+## ⏱️ Tần Suất Cập Nhật Thông Số (Data Refresh Intervals)
+
+| Hạng mục / Thông số | Tần suất cập nhật | Nguồn dữ liệu / Phương thức |
+| :--- | :--- | :--- |
+| **PC Hardware Metrics** (CPU, RAM, GPU, Net, Disks) | **1 giây / lần (Realtime)** | Nạp từ PC App (`pc_monitor_app`) qua WiFi |
+| **Giá Vàng SJC (Mua / Bán / Biến động)** | **5 phút / lần** | API `vang.today` (`SJL1L10`) |
+| **Biểu đồ Vàng SJC 5 Ngày Quá khứ** | **5 phút / lần** | API `vang.today` (`days=5`) |
+| **Giá Vàng Thế Giới (XAU/USD)** | **5 phút / lần** | API Binance Realtime (`PAXGUSDT`) |
+| **Tỷ Giá Ngoại Tệ (USD, EUR, JPY, CAD...)** | **5 phút / lần** | API Quốc tế `open.er-api.com` |
+| **Thời Tiết & Dự Báo 3 Ngày** | **15 phút / lần** | API OpenWeatherMap |
+| **Đồng Hồ & Lịch Âm Dương** | **100ms (Nội bộ)** | NTP Time Server (`vn.pool.ntp.org`) & Thuật toán Âm lịch VN |
+| **Cấu hình Ngoại tệ, Theme, Calibration** | **Tức thì & Lưu NVS Flash** | Bộ nhớ Flash vĩnh viễn NVS (`Preferences`) |
 
 ---
 

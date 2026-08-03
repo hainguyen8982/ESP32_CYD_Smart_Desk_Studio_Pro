@@ -28,6 +28,7 @@ struct GoldData {
     float sjcSell;
     float sjcDelta;
     float xauUsd;
+    float history5Days[5];
     bool valid;
 };
 

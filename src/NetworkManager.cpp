@@ -520,10 +520,15 @@ void NetworkManager::fetchGoldAndExchange() {
     lastGoldFetch = millis();
 
     // Accurate defaults matching Vietnam market (137M buy, 141M sell SJC)
-    gold.sjcBuy = 137.00f;
-    gold.sjcSell = 141.00f;
-    gold.sjcDelta = 0.00f;
+    gold.sjcBuy = 137.50f;
+    gold.sjcSell = 141.50f;
+    gold.sjcDelta = 0.50f;
     gold.xauUsd = 4064.00f;
+    gold.history5Days[0] = 137.70f;
+    gold.history5Days[1] = 137.90f;
+    gold.history5Days[2] = 137.00f;
+    gold.history5Days[3] = 137.00f;
+    gold.history5Days[4] = 137.50f;
     gold.valid = true;
 
     if (exchange.cur1Code[0] == '\0') strncpy(exchange.cur1Code, "USD", sizeof(exchange.cur1Code));
@@ -536,18 +541,34 @@ void NetworkManager::fetchGoldAndExchange() {
     exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd);
     exchange.valid = true;
 
-    // ── 1. Fetch live SJC Gold price & Live XAUUSD World Gold price ──────
+    // ── 1. Fetch live SJC Gold price & 5-Day History ──────────────────
     HTTPClient http;
-    http.begin("https://www.vang.today/api/prices?type=SJL1L10");
+    http.begin("https://www.vang.today/api/prices?type=SJL1L10&days=5");
     if (http.GET() == 200) {
         JsonDocument gDoc;
         if (!deserializeJson(gDoc, http.getString())) {
-            float b = gDoc["buy"] | 137000000.0f;
-            float s = gDoc["sell"] | 141000000.0f;
-            gold.sjcBuy = b / 1000000.0f;
-            gold.sjcSell = s / 1000000.0f;
-            gold.sjcDelta = (gDoc["change_buy"] | 0.0f) / 1000000.0f;
-            Serial.printf("[NetworkManager] SJC Gold Live: Buy=%.2fM, Sell=%.2fM\n", gold.sjcBuy, gold.sjcSell);
+            if (gDoc["history"].is<JsonArray>()) {
+                JsonArray hist = gDoc["history"];
+                size_t n = hist.size();
+                for (size_t i = 0; i < n && i < 5; i++) {
+                    // JSON history is newest first (i=0 is today, i=4 is 5 days ago)
+                    // We store in chronological order: index 0 = oldest, index 4 = today
+                    float b = hist[i]["prices"]["SJL1L10"]["buy"] | 137000000.0f;
+                    gold.history5Days[4 - i] = b / 1000000.0f;
+                }
+                gold.sjcBuy = gold.history5Days[4];
+                float s = hist[0]["prices"]["SJL1L10"]["sell"] | 141500000.0f;
+                gold.sjcSell = s / 1000000.0f;
+                gold.sjcDelta = (hist[0]["prices"]["SJL1L10"]["day_change_buy"] | 0.0f) / 1000000.0f;
+                Serial.printf("[NetworkManager] SJC 5-Day History Live: Today=%.2fM, Oldest=%.2fM\n",
+                              gold.history5Days[4], gold.history5Days[0]);
+            } else {
+                float b = gDoc["buy"] | 137000000.0f;
+                float s = gDoc["sell"] | 141000000.0f;
+                gold.sjcBuy = b / 1000000.0f;
+                gold.sjcSell = s / 1000000.0f;
+                gold.sjcDelta = (gDoc["change_buy"] | 0.0f) / 1000000.0f;
+            }
         }
     }
     http.end();

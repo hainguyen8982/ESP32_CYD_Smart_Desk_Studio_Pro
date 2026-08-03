@@ -681,6 +681,15 @@ void DisplayManager::renderPage2_FinanceGold() {
         spr.setTextDatum(MC_DATUM);
         spr.setTextColor(C_BG, dc);
         spr.drawString(dBuf, 274, 69, 1);
+
+        // ── 5-Day SJC Gold History Trend Chart ───────────────────────────
+        int gx = 202, gy = 84, gw = 101, gh = 42;
+        spr.setTextDatum(TL_DATUM);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.drawString("BD 5 NGAY", gx, gy, 1);
+
+        uint16_t trendColor = (g.history5Days[4] >= g.history5Days[0]) ? C_GREEN : C_RED;
+        drawFloatSparkline(gx, gy + 11, gw, gh - 11, g.history5Days, 5, trendColor);
     }
 
     // ── Exchange card ─────────────────────────────────────────────────
@@ -944,6 +953,37 @@ void DisplayManager::drawSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
         y2 = constrain(y2, y, y + h);
         spr.drawLine(x1, y1, x2, y2, color);
     }
+}
+
+void DisplayManager::drawFloatSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
+                                         const float* data, uint8_t cnt, uint16_t color) {
+    spr.drawRoundRect(x, y, w, h, 2, C_TRACE);
+    if (cnt < 2) return;
+
+    float minVal = data[0];
+    float maxVal = data[0];
+    for (uint8_t i = 1; i < cnt; i++) {
+        if (data[i] < minVal) minVal = data[i];
+        if (data[i] > maxVal) maxVal = data[i];
+    }
+    float range = maxVal - minVal;
+    if (range < 0.05f) range = 0.5f;
+
+    float stepX = (float)(w - 8) / (cnt - 1);
+    for (uint8_t i = 0; i < cnt - 1; i++) {
+        int x1 = x + 4 + (int)(i * stepX);
+        int y1 = y + h - 3 - (int)(((data[i] - minVal) / range) * (h - 7));
+        int x2 = x + 4 + (int)((i + 1) * stepX);
+        int y2 = y + h - 3 - (int)(((data[i + 1] - minVal) / range) * (h - 7));
+        y1 = constrain(y1, y + 2, y + h - 2);
+        y2 = constrain(y2, y + 2, y + h - 2);
+        spr.drawLine(x1, y1, x2, y2, color);
+        spr.fillCircle(x1, y1, 2, color);
+    }
+    int xLast = x + 4 + (int)((cnt - 1) * stepX);
+    int yLast = y + h - 3 - (int)(((data[cnt - 1] - minVal) / range) * (h - 7));
+    yLast = constrain(yLast, y + 2, y + h - 2);
+    spr.fillCircle(xLast, yLast, 2, color);
 }
 
 void DisplayManager::drawHorizBar(int16_t x, int16_t y, int16_t w, int16_t h,

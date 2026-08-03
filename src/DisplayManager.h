@@ -40,6 +40,8 @@ private:
                       float pct, uint16_t fg, uint16_t track, const char* label);
     void drawSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
                        const uint8_t* data, uint8_t cnt, uint16_t color);
+    void drawFloatSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
+                            const float* data, uint8_t cnt, uint16_t color);
     void drawHorizBar(int16_t x, int16_t y, int16_t w, int16_t h,
                       float pct, uint16_t fg);
     void drawSectionTitle(const char* title, uint16_t color);
