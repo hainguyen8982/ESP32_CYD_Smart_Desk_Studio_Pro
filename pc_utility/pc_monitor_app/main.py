@@ -279,11 +279,14 @@ class CYDMonitorApp(ctk.CTk):
             pass
 
         import json
+        import string as _string
         ser = None
         ser_port = ""
+        connected_usb = False
+        connected_wifi = False
 
-        # First call to initialize cpu_percent baseline
-        psutil.cpu_percent(interval=None)
+        # Blocking first call so next call(interval=None) returns real data
+        psutil.cpu_percent(interval=1)
 
         while True:
             if not self.is_streaming:
@@ -308,8 +311,7 @@ class CYDMonitorApp(ctk.CTk):
                 self.last_time = now_time
 
                 disks = []
-                import string
-                for letter in string.ascii_uppercase:
+                for letter in _string.ascii_uppercase:
                     drive_path = f"{letter}:\\"
                     if os.path.exists(drive_path):
                         try:
@@ -348,6 +350,7 @@ class CYDMonitorApp(ctk.CTk):
                 time.sleep(1)
                 continue
 
+            # Reset connection flags each loop iteration
             connected_usb = False
             connected_wifi = False
 
@@ -367,19 +370,22 @@ class CYDMonitorApp(ctk.CTk):
                                 s.open()
                                 time.sleep(0.1)
                                 s.write(b"PING_DASHBOARD\n")
-                                time.sleep(0.15)
+                                time.sleep(0.5)  # Give ESP32 enough time to respond
                                 res = s.read_all().decode('utf-8', errors='ignore')
-                                if "PONG" in res or "PING" in res:
+                                if "PONG" in res:
                                     ser = s
                                     ser_port = p.device
+                                    # Parse real-time page/theme state from PONG response
                                     try:
-                                        if "{" in res and "}" in res:
-                                            j_str = res[res.find("{"):res.rfind("}")+1]
+                                        brace_start = res.find("{")
+                                        brace_end = res.rfind("}")
+                                        if brace_start != -1 and brace_end > brace_start:
+                                            j_str = res[brace_start:brace_end+1]
                                             st_data = json.loads(j_str)
                                             if "page" in st_data:
-                                                self.highlight_active_page(st_data["page"])
+                                                self.after(0, lambda v=st_data["page"]: self.highlight_active_page(v))
                                             if "theme" in st_data:
-                                                self.highlight_active_theme(st_data["theme"])
+                                                self.after(0, lambda v=st_data["theme"]: self.highlight_active_theme(v))
                                     except Exception:
                                         pass
                                     break
@@ -394,6 +400,19 @@ class CYDMonitorApp(ctk.CTk):
                     json_line = json.dumps(payload) + "\n"
                     ser.write(json_line.encode('utf-8'))
                     connected_usb = True
+                    # Read any response for page/theme sync (non-blocking)
+                    if ser.in_waiting:
+                        try:
+                            resp_line = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
+                            if "{" in resp_line:
+                                j_str = resp_line[resp_line.find("{"):resp_line.rfind("}")+1]
+                                st_data = json.loads(j_str)
+                                if "page" in st_data:
+                                    self.after(0, lambda v=st_data["page"]: self.highlight_active_page(v))
+                                if "theme" in st_data:
+                                    self.after(0, lambda v=st_data["theme"]: self.highlight_active_theme(v))
+                        except Exception:
+                            pass
                 except Exception:
                     try: ser.close()
                     except Exception: pass
@@ -444,7 +463,9 @@ class CYDMonitorApp(ctk.CTk):
     def minimize_to_tray(self):
         self.withdraw()
         if not self.tray_icon:
-            threading.Thread(target=self.create_tray_icon, daemon=True).start()
+            # daemon=False ensures tray thread survives as long as needed
+            t = threading.Thread(target=self.create_tray_icon, daemon=False)
+            t.start()
 
     def show_from_tray(self, icon=None, item=None):
         self.deiconify()
