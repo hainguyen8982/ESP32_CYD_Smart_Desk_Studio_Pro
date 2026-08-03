@@ -322,6 +322,26 @@ void NetworkManager::setupWebRoutes() {
         serializeJson(doc, res);
         sendCORSResponse(request, 200, res);
     });
+
+    // Exchange Selection API - POST { "cur1": "USD", "cur2": "EUR" }
+    server.on("/api/exchange", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
+        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            JsonDocument doc;
+            if (!deserializeJson(doc, data, len)) {
+                if (!doc["cur1"].isNull()) {
+                    strncpy(network.getExchangeMutable().cur1Code, doc["cur1"], 7);
+                }
+                if (!doc["cur2"].isNull()) {
+                    strncpy(network.getExchangeMutable().cur2Code, doc["cur2"], 7);
+                }
+                if (!doc["cur3"].isNull()) {
+                    strncpy(network.getExchangeMutable().cur3Code, doc["cur3"], 7);
+                }
+                sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
+                return;
+            }
+            sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+        });
 }
 
 void NetworkManager::update() {
@@ -444,16 +464,51 @@ void NetworkManager::fetchGoldAndExchange() {
     if (!isConnected()) return;
     lastGoldFetch = millis();
 
-    // Default realistic mock values (or parse real API if online)
-    gold.sjcBuy = 84.50f;
-    gold.sjcSell = 86.50f;
-    gold.sjcDelta = 0.50f;
-    gold.xauUsd = 2415.80f;
+    // Accurate defaults matching Vietnam market (137M buy, 141M sell SJC)
+    gold.sjcBuy = 137.00f;
+    gold.sjcSell = 141.00f;
+    gold.sjcDelta = 0.00f;
+    gold.xauUsd = 2890.50f;
     gold.valid = true;
 
-    exchange.usdRate = 25420.0f;
+    if (exchange.cur1Code[0] == '\0') strncpy(exchange.cur1Code, "USD", sizeof(exchange.cur1Code));
+    if (exchange.cur2Code[0] == '\0') strncpy(exchange.cur2Code, "EUR", sizeof(exchange.cur2Code));
+    if (exchange.cur3Code[0] == '\0') strncpy(exchange.cur3Code, "JPY", sizeof(exchange.cur3Code));
+
+    exchange.usdRate = 26180.0f;
     exchange.eurRate = 27650.0f;
     exchange.jpyRate = 164.2f;
     exchange.valid = true;
-    Serial.println("[NetworkManager] Financial Data Updated");
+
+    // ── 1. Fetch live SJC Gold price ─────────────────────────────────
+    HTTPClient http;
+    http.begin("https://www.vang.today/api/prices?type=SJL1L10");
+    if (http.GET() == 200) {
+        JsonDocument gDoc;
+        if (!deserializeJson(gDoc, http.getString())) {
+            float b = gDoc["buy"] | 137000000.0f;
+            float s = gDoc["sell"] | 141000000.0f;
+            gold.sjcBuy = b / 1000000.0f;
+            gold.sjcSell = s / 1000000.0f;
+            gold.sjcDelta = (gDoc["change_buy"] | 0.0f) / 1000000.0f;
+            Serial.printf("[NetworkManager] SJC Gold Live: Buy=%.2fM, Sell=%.2fM\n", gold.sjcBuy, gold.sjcSell);
+        }
+    }
+    http.end();
+
+    // ── 2. Fetch live Exchange rates ──────────────────────────────
+    http.begin("https://open.er-api.com/v6/latest/USD");
+    if (http.GET() == 200) {
+        JsonDocument eDoc;
+        if (!deserializeJson(eDoc, http.getString())) {
+            float vndUsd = eDoc["rates"]["VND"] | 26180.0f;
+            exchange.usdRate = vndUsd;
+            float eurUsd = eDoc["rates"]["EUR"] | 0.8667f;
+            exchange.eurRate = vndUsd / eurUsd;
+            float jpyUsd = eDoc["rates"]["JPY"] | 158.0f;
+            exchange.jpyRate = vndUsd / jpyUsd;
+            Serial.printf("[NetworkManager] Exchange Rates Live: USD=%.0f, EUR=%.0f, JPY=%.1f\n", exchange.usdRate, exchange.eurRate, exchange.jpyRate);
+        }
+    }
+    http.end();
 }

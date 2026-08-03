@@ -46,7 +46,7 @@ class CYDMonitorApp(ctk.CTk):
         super().__init__()
 
         self.title("ESP32 CYD Desk Dashboard Studio")
-        self.geometry("560x680")
+        self.geometry("560x740")
         self.resizable(False, False)
 
         self.esp32_ip = "192.168.1.13"
@@ -108,6 +108,29 @@ class CYDMonitorApp(ctk.CTk):
 
         set_city_btn = ctk.CTkButton(w_inner, text="Set City", width=100, command=self.apply_city)
         set_city_btn.pack(side="left")
+
+        # ── Foreign Exchange Rates Section ─────────────────────────────
+        ex_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
+        ex_frame.pack(fill="x", padx=15, pady=5)
+
+        ex_title = ctk.CTkLabel(ex_frame, text="💱 Foreign Exchange Rates (Chọn 2 Tỷ Giá)", font=ctk.CTkFont(size=14, weight="bold"))
+        ex_title.pack(anchor="w", padx=12, pady=(10, 5))
+
+        ex_inner = ctk.CTkFrame(ex_frame, fg_color="transparent")
+        ex_inner.pack(fill="x", padx=12, pady=(0, 10))
+
+        currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW", "CAD"]
+
+        self.cur1_combo = ctk.CTkOptionMenu(ex_inner, values=currencies, width=130)
+        self.cur1_combo.set("USD")
+        self.cur1_combo.pack(side="left", padx=(0, 10))
+
+        self.cur2_combo = ctk.CTkOptionMenu(ex_inner, values=currencies, width=130)
+        self.cur2_combo.set("EUR")
+        self.cur2_combo.pack(side="left", padx=(0, 10))
+
+        set_ex_btn = ctk.CTkButton(ex_inner, text="Set Currencies", width=110, command=self.apply_currencies)
+        set_ex_btn.pack(side="left")
 
         # ── Theme Presets Section ─────────────────────────────────────
         t_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
@@ -179,6 +202,17 @@ class CYDMonitorApp(ctk.CTk):
                 self.status_lbl.configure(text=f"✅ City: {sel}", text_color="#2ea043")
         except Exception as e:
             self.status_lbl.configure(text="❌ Error setting city", text_color="#f85149")
+
+    def apply_currencies(self):
+        c1 = self.cur1_combo.get()
+        c2 = self.cur2_combo.get()
+        ip = self.ip_entry.get().strip()
+        try:
+            resp = requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
+            if resp.ok:
+                self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
+        except Exception:
+            self.status_lbl.configure(text="❌ Currency error", text_color="#f85149")
 
     def apply_theme(self, theme_key):
         ip = self.ip_entry.get().strip()

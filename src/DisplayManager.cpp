@@ -189,18 +189,34 @@ void DisplayManager::renderHeader() {
     spr.setTextColor(C_DIM, C_HDR);
     spr.drawString(titles[currentPage], 26, 13, 2);
 
-    // ── Time HH:MM:SS (right-aligned, hidden on Page 0 to avoid redundancy) ──
+    // ── Time HH:MM:SS (center-aligned with exact 1-2px padding around colons) ──
     if (currentPage != 0) {
         time_t now = time(NULL);
         struct tm ti;
-        char timeBuf[12] = "--:--:--";
         if (now >= 1600000000 && localtime_r(&now, &ti)) {
-            snprintf(timeBuf, sizeof(timeBuf), "%02d:%02d:%02d",
-                     ti.tm_hour, ti.tm_min, ti.tm_sec);
+            char h[3], m[3], s[3];
+            snprintf(h, sizeof(h), "%02d", ti.tm_hour);
+            snprintf(m, sizeof(m), "%02d", ti.tm_min);
+            snprintf(s, sizeof(s), "%02d", ti.tm_sec);
+
+            int wH = spr.textWidth(h, 2);
+            int wM = spr.textWidth(m, 2);
+            int wS = spr.textWidth(s, 2);
+            int wC = spr.textWidth(":", 2);
+            int pad = 2; // 2px padding around colon
+
+            int totalW = wH + wC + (pad * 2) + wM + wC + (pad * 2) + wS;
+            int x = 160 - totalW / 2;
+            int y = 6;
+
+            spr.setTextDatum(TL_DATUM);
+            spr.setTextColor(C_WHITE, C_HDR);
+            spr.drawString(h, x, y, 2); x += wH + pad;
+            spr.drawString(":", x, y, 2); x += wC + pad;
+            spr.drawString(m, x, y, 2); x += wM + pad;
+            spr.drawString(":", x, y, 2); x += wC + pad;
+            spr.drawString(s, x, y, 2);
         }
-        spr.setTextDatum(MC_DATUM);
-        spr.setTextColor(C_WHITE, C_HDR);
-        spr.drawString(timeBuf, 160, 13, 2);
     }
 
     // ── Status Bar Header (Tight & Balanced Spacing) ─────────────────
@@ -601,8 +617,29 @@ void DisplayManager::renderPage1_LunarCalendar() {
 // ─────────────────────────────────────────────────────────────────────
 //  PAGE 2 — FINANCE & GOLD
 // ─────────────────────────────────────────────────────────────────────
+static void formatWithCommas(char* out, size_t size, float val) {
+    long n = (long)val;
+    if (n >= 1000000) {
+        snprintf(out, size, "%ld,%03ld,%03ld", n / 1000000, (n / 1000) % 1000, n % 1000);
+    } else if (n >= 1000) {
+        snprintf(out, size, "%ld,%03ld", n / 1000, n % 1000);
+    } else {
+        if (val < 1000 && (val - (int)val > 0.05f)) {
+            snprintf(out, size, "%.1f", val);
+        } else {
+            snprintf(out, size, "%ld", n);
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  PAGE 2 — FINANCE & GOLD
+// ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderPage2_FinanceGold() {
-    drawSectionTitle("TAI CHINH & GIA VANG SJC", C_YELLOW);
+    // Title without line underneath as requested
+    spr.setTextDatum(TC_DATUM);
+    spr.setTextColor(C_YELLOW, C_BG);
+    spr.drawString("TAI CHINH & GIA VANG SJC", 160, 34, 2);
 
     const GoldData&    g  = network.getGold();
     const ExchangeData& ex = network.getExchange();
@@ -654,10 +691,19 @@ void DisplayManager::renderPage2_FinanceGold() {
     spr.setTextColor(C_CYAN, C_CARD);
     spr.drawString("TY GIA NGOAI TE (VND)", 20, 152, 1);
 
+    const char* c1 = ex.cur1Code[0] ? ex.cur1Code : "USD";
+    const char* c2 = ex.cur2Code[0] ? ex.cur2Code : "EUR";
+    const char* c3 = ex.cur3Code[0] ? ex.cur3Code : "JPY";
+
+    char val1[16], val2[16], val3[16];
+    formatWithCommas(val1, sizeof(val1), ex.usdRate);
+    formatWithCommas(val2, sizeof(val2), ex.eurRate);
+    formatWithCommas(val3, sizeof(val3), ex.jpyRate);
+
     char usdBuf[32], eurBuf[32], jpyBuf[32];
-    snprintf(usdBuf, sizeof(usdBuf), "USD: %,.0f", ex.usdRate);
-    snprintf(eurBuf, sizeof(eurBuf), "EUR: %,.0f", ex.eurRate);
-    snprintf(jpyBuf, sizeof(jpyBuf), "JPY: %,.0f", ex.jpyRate);
+    snprintf(usdBuf, sizeof(usdBuf), "%s: %s", c1, val1);
+    snprintf(eurBuf, sizeof(eurBuf), "%s: %s", c2, val2);
+    snprintf(jpyBuf, sizeof(jpyBuf), "%s: %s", c3, val3);
 
     spr.setTextColor(C_WHITE, C_CARD);
     spr.drawString(usdBuf, 20, 168, 2);
@@ -665,14 +711,15 @@ void DisplayManager::renderPage2_FinanceGold() {
     spr.setTextColor(C_DIM, C_CARD);
     spr.drawString(jpyBuf, 180, 190, 2);
 
-    // USD flag accent
-    spr.fillRect(248, 168, 20, 14, C_CYAN);
+    // Currency Badges
+    spr.fillRoundRect(245, 166, 28, 16, 3, C_CYAN);
     spr.setTextDatum(MC_DATUM);
     spr.setTextColor(C_BG, C_CYAN);
-    spr.drawString("US", 258, 174, 1);
-    spr.fillRect(276, 168, 20, 14, C_GREEN);
+    spr.drawString(c1, 259, 174, 1);
+
+    spr.fillRoundRect(276, 166, 28, 16, 3, C_GREEN);
     spr.setTextColor(C_BG, C_GREEN);
-    spr.drawString("EU", 286, 174, 1);
+    spr.drawString(c2, 290, 174, 1);
 }
 
 // ─────────────────────────────────────────────────────────────────────

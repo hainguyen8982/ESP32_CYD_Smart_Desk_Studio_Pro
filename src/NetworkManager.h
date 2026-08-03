@@ -32,8 +32,11 @@ struct GoldData {
 };
 
 struct ExchangeData {
+    char cur1Code[8];
     float usdRate;
+    char cur2Code[8];
     float eurRate;
+    char cur3Code[8];
     float jpyRate;
     bool valid;
 };
@@ -55,6 +58,7 @@ public:
     const WeatherData& getWeather() const { return weather; }
     const GoldData& getGold() const { return gold; }
     const ExchangeData& getExchange() const { return exchange; }
+    ExchangeData& getExchangeMutable() { return exchange; }
 
     // Remote navigation request from Web Portal
     int getRemoteRequestedPage() const { return remotePage; }
