@@ -60,10 +60,16 @@ cd ESP32_CYD_Smart_Desk_Dashboard
 pio run -t upload -e esp32_display
 ```
 
-### 2. Dịch Vụ Giám Sát PC (Windows)
-```bash
-cd pc_utility
-pip install psutil pyserial wmi pyinstaller
-python pc_monitor.py
-```
-*(Để chạy ẩn cùng Windows: `pyinstaller --onefile --noconsole pc_monitor.py` và copy file `.exe` vào `shell:startup`)*
+### 2. Dịch Vụ Giám Sát PC (Windows Studio App)
+- **File thực thi `.exe` độc lập không cửa sổ đen Terminal**:  
+  `pc_utility/pc_monitor_app/dist/CYD_Smart_Desk_Studio.exe`
+
+---
+
+## 📌 Lộ Trình Phát Hành & Đóng Gói App PC (Future Installer Roadmap)
+
+Kế hoạch đóng gói ứng dụng PC chuyên nghiệp cho người dùng cuối (End-users):
+- 📦 **Bộ cài đặt chuyên nghiệp (`Setup_CYD_Desk_Studio.exe`)**: Xây dựng kịch bản cài đặt tự động qua **Inno Setup / NSIS**.
+- 🖥️ **Tạo Shortcut Chuẩn**: Tự động tạo biểu tượng ứng dụng trên Desktop & Start Menu.
+- ⚡ **Tự Động Khởi Động Cùng Windows (Autostart on Boot)**: Tùy chọn chạy ẩn trong Windows System Tray ngay khi bật máy tính để phát dữ liệu phần cứng liên tục sang ESP32 CYD mà không cần bấm thủ công.
+- 🗑️ **Gỡ Cài Đặt (Uninstaller)**: Tích hợp gỡ ứng dụng sạch sẽ trong Windows *Add/Remove Programs*.
