@@ -28,17 +28,17 @@ struct GoldData {
     float sjcSell;
     float sjcDelta;
     float xauUsd;
-    float history5Days[5];
+    float history7Days[7];
     bool valid;
 };
 
 struct ExchangeData {
     char cur1Code[8];
     float cur1Rate;
+    float cur1History7[7];
     char cur2Code[8];
     float cur2Rate;
-    char cur3Code[8];
-    float cur3Rate;
+    float cur2History7[7];
     bool valid;
 };
 

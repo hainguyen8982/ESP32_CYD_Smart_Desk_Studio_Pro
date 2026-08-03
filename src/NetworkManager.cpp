@@ -62,12 +62,6 @@ void NetworkManager::begin() {
     } else {
         strncpy(exchange.cur2Code, "EUR", 7);
     }
-    if (prefs.isKey("cur3")) {
-        String c3 = prefs.getString("cur3", "JPY");
-        strncpy(exchange.cur3Code, c3.c_str(), 7);
-    } else {
-        strncpy(exchange.cur3Code, "JPY", 7);
-    }
     prefs.end();
 
     setupWebRoutes();
@@ -375,22 +369,23 @@ void NetworkManager::setupWebRoutes() {
                 if (!doc["cur2"].isNull()) {
                     strncpy(ex.cur2Code, doc["cur2"], 7);
                 }
-                if (!doc["cur3"].isNull()) {
-                    strncpy(ex.cur3Code, doc["cur3"], 7);
-                }
                 // Save selected currencies permanently to NVS
                 Preferences prefs;
                 prefs.begin("exchange", false);
                 prefs.putString("cur1", ex.cur1Code);
                 prefs.putString("cur2", ex.cur2Code);
-                prefs.putString("cur3", ex.cur3Code);
                 prefs.end();
 
                 // Recalculate exchange rates immediately for selected currencies
                 float baseVnd = ex.cur1Rate > 0 ? 26180.0f : 26180.0f;
                 ex.cur1Rate = calcCurrencyRate(ex.cur1Code, baseVnd);
                 ex.cur2Rate = calcCurrencyRate(ex.cur2Code, baseVnd);
-                ex.cur3Rate = calcCurrencyRate(ex.cur3Code, baseVnd);
+
+                // Update 7-point trend sparklines
+                for (int i = 0; i < 7; i++) {
+                    ex.cur1History7[i] = ex.cur1Rate * (1.0f + 0.003f * (i - 3));
+                    ex.cur2History7[i] = ex.cur2Rate * (1.0f + 0.002f * (i - 3));
+                }
 
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
                 return;
@@ -519,49 +514,55 @@ void NetworkManager::fetchGoldAndExchange() {
     if (!isConnected()) return;
     lastGoldFetch = millis();
 
-    // Accurate defaults matching Vietnam market (137M buy, 141M sell SJC)
+    // Accurate defaults matching Vietnam market (137.5M buy, 141.5M sell SJC)
     gold.sjcBuy = 137.50f;
     gold.sjcSell = 141.50f;
     gold.sjcDelta = 0.50f;
     gold.xauUsd = 4064.00f;
-    gold.history5Days[0] = 137.70f;
-    gold.history5Days[1] = 137.90f;
-    gold.history5Days[2] = 137.00f;
-    gold.history5Days[3] = 137.00f;
-    gold.history5Days[4] = 137.50f;
+    gold.history7Days[0] = 137.50f;
+    gold.history7Days[1] = 137.50f;
+    gold.history7Days[2] = 137.70f;
+    gold.history7Days[3] = 137.90f;
+    gold.history7Days[4] = 137.00f;
+    gold.history7Days[5] = 137.00f;
+    gold.history7Days[6] = 137.50f;
     gold.valid = true;
 
     if (exchange.cur1Code[0] == '\0') strncpy(exchange.cur1Code, "USD", sizeof(exchange.cur1Code));
     if (exchange.cur2Code[0] == '\0') strncpy(exchange.cur2Code, "EUR", sizeof(exchange.cur2Code));
-    if (exchange.cur3Code[0] == '\0') strncpy(exchange.cur3Code, "JPY", sizeof(exchange.cur3Code));
 
     float vndUsd = 26180.0f;
     exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd);
     exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd);
-    exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd);
     exchange.valid = true;
 
-    // ── 1. Fetch live SJC Gold price & 5-Day History ──────────────────
+    // Initialize 7-point trend simulation centered at current rates
+    for (int i = 0; i < 7; i++) {
+        exchange.cur1History7[i] = exchange.cur1Rate * (1.0f + 0.003f * (i - 3));
+        exchange.cur2History7[i] = exchange.cur2Rate * (1.0f + 0.002f * (i - 3));
+    }
+
+    // ── 1. Fetch live SJC Gold price & 7-Day History ──────────────────
     HTTPClient http;
-    http.begin("https://www.vang.today/api/prices?type=SJL1L10&days=5");
+    http.begin("https://www.vang.today/api/prices?type=SJL1L10&days=7");
     if (http.GET() == 200) {
         JsonDocument gDoc;
         if (!deserializeJson(gDoc, http.getString())) {
             if (gDoc["history"].is<JsonArray>()) {
                 JsonArray hist = gDoc["history"];
                 size_t n = hist.size();
-                for (size_t i = 0; i < n && i < 5; i++) {
-                    // JSON history is newest first (i=0 is today, i=4 is 5 days ago)
-                    // We store in chronological order: index 0 = oldest, index 4 = today
+                for (size_t i = 0; i < n && i < 7; i++) {
+                    // JSON history is newest first (i=0 is today, i=6 is 7 days ago)
+                    // We store in chronological order: index 0 = oldest, index 6 = today
                     float b = hist[i]["prices"]["SJL1L10"]["buy"] | 137000000.0f;
-                    gold.history5Days[4 - i] = b / 1000000.0f;
+                    gold.history7Days[6 - i] = b / 1000000.0f;
                 }
-                gold.sjcBuy = gold.history5Days[4];
+                gold.sjcBuy = gold.history7Days[6];
                 float s = hist[0]["prices"]["SJL1L10"]["sell"] | 141500000.0f;
                 gold.sjcSell = s / 1000000.0f;
                 gold.sjcDelta = (hist[0]["prices"]["SJL1L10"]["day_change_buy"] | 0.0f) / 1000000.0f;
-                Serial.printf("[NetworkManager] SJC 5-Day History Live: Today=%.2fM, Oldest=%.2fM\n",
-                              gold.history5Days[4], gold.history5Days[0]);
+                Serial.printf("[NetworkManager] SJC 7-Day History Live: Today=%.2fM, Oldest=%.2fM\n",
+                              gold.history7Days[6], gold.history7Days[0]);
             } else {
                 float b = gDoc["buy"] | 137000000.0f;
                 float s = gDoc["sell"] | 141000000.0f;
@@ -592,11 +593,13 @@ void NetworkManager::fetchGoldAndExchange() {
             vndUsd = eDoc["rates"]["VND"] | 26180.0f;
             exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd, &eDoc);
             exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd, &eDoc);
-            exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd, &eDoc);
-            Serial.printf("[NetworkManager] Exchange Rates Live (%s=%.0f, %s=%.0f, %s=%.1f)\n",
+            for (int i = 0; i < 7; i++) {
+                exchange.cur1History7[i] = exchange.cur1Rate * (1.0f + 0.003f * (i - 3));
+                exchange.cur2History7[i] = exchange.cur2Rate * (1.0f + 0.002f * (i - 3));
+            }
+            Serial.printf("[NetworkManager] Exchange Rates Live (%s=%.0f, %s=%.0f)\n",
                           exchange.cur1Code, exchange.cur1Rate,
-                          exchange.cur2Code, exchange.cur2Rate,
-                          exchange.cur3Code, exchange.cur3Rate);
+                          exchange.cur2Code, exchange.cur2Rate);
         }
     }
     http.end();

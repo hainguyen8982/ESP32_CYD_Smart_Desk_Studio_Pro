@@ -682,14 +682,14 @@ void DisplayManager::renderPage2_FinanceGold() {
         spr.setTextColor(C_BG, dc);
         spr.drawString(dBuf, 274, 69, 1);
 
-        // ── 5-Day SJC Gold History Trend Chart ───────────────────────────
+        // ── 7-Day SJC Gold History Trend Chart ───────────────────────────
         int gx = 202, gy = 84, gw = 101, gh = 42;
         spr.setTextDatum(TL_DATUM);
         spr.setTextColor(C_DIM, C_CARD);
-        spr.drawString("BD 5 NGAY", gx, gy, 1);
+        spr.drawString("BD 7 NGAY", gx, gy, 1);
 
-        uint16_t trendColor = (g.history5Days[4] >= g.history5Days[0]) ? C_GREEN : C_RED;
-        drawFloatSparkline(gx, gy + 11, gw, gh - 11, g.history5Days, 5, trendColor);
+        uint16_t trendColor = (g.history7Days[6] >= g.history7Days[0]) ? C_GREEN : C_RED;
+        drawFloatSparkline(gx, gy + 11, gw, gh - 11, g.history7Days, 7, trendColor);
     }
 
     // ── Exchange card ─────────────────────────────────────────────────
@@ -702,33 +702,27 @@ void DisplayManager::renderPage2_FinanceGold() {
 
     const char* c1 = ex.cur1Code[0] ? ex.cur1Code : "USD";
     const char* c2 = ex.cur2Code[0] ? ex.cur2Code : "EUR";
-    const char* c3 = ex.cur3Code[0] ? ex.cur3Code : "JPY";
 
-    char val1[16], val2[16], val3[16];
+    char val1[16], val2[16];
     formatWithCommas(val1, sizeof(val1), ex.cur1Rate);
     formatWithCommas(val2, sizeof(val2), ex.cur2Rate);
-    formatWithCommas(val3, sizeof(val3), ex.cur3Rate);
 
-    char usdBuf[32], eurBuf[32], jpyBuf[32];
-    snprintf(usdBuf, sizeof(usdBuf), "%s: %s", c1, val1);
-    snprintf(eurBuf, sizeof(eurBuf), "%s: %s", c2, val2);
-    snprintf(jpyBuf, sizeof(jpyBuf), "%s: %s", c3, val3);
+    char buf1[32], buf2[32];
+    snprintf(buf1, sizeof(buf1), "%s: %s", c1, val1);
+    snprintf(buf2, sizeof(buf2), "%s: %s", c2, val2);
 
     spr.setTextColor(C_WHITE, C_CARD);
-    spr.drawString(usdBuf, 20, 168, 2);
-    spr.drawString(eurBuf, 20, 190, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.drawString(jpyBuf, 180, 190, 2);
+    spr.drawString(buf1, 20, 168, 2);
+    spr.drawString(buf2, 20, 194, 2);
 
-    // Currency Badges
-    spr.fillRoundRect(245, 166, 28, 16, 3, C_CYAN);
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_BG, C_CYAN);
-    spr.drawString(c1, 259, 174, 1);
+    // ── 2 Currency Trend Sparkline Charts on Right Side ───────────────
+    if (ex.valid) {
+        uint16_t color1 = (ex.cur1History7[6] >= ex.cur1History7[0]) ? C_GREEN : C_RED;
+        drawFloatSparkline(180, 166, 120, 20, ex.cur1History7, 7, color1);
 
-    spr.fillRoundRect(276, 166, 28, 16, 3, C_GREEN);
-    spr.setTextColor(C_BG, C_GREEN);
-    spr.drawString(c2, 290, 174, 1);
+        uint16_t color2 = (ex.cur2History7[6] >= ex.cur2History7[0]) ? C_GREEN : C_RED;
+        drawFloatSparkline(180, 192, 120, 20, ex.cur2History7, 7, color2);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────
