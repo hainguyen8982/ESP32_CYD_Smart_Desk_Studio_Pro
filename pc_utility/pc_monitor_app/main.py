@@ -3,6 +3,8 @@ import time
 import threading
 import requests
 import psutil
+import serial
+import serial.tools.list_ports
 import customtkinter as ctk
 from PIL import Image, ImageDraw
 import pystray
@@ -272,6 +274,43 @@ class CYDMonitorApp(ctk.CTk):
         except Exception:
             pass
 
+        import json
+        ser = None
+        ser_port = ""
+
+        def check_usb_port():
+            nonlocal ser, ser_port
+            if ser is not None and ser.is_open:
+                return ser, ser_port
+            try:
+                ports = list(serial.tools.list_ports.comports())
+                for p in ports:
+                    if p.vid is not None and p.pid is not None:
+                        try:
+                            s = serial.Serial()
+                            s.port = p.device
+                            s.baudrate = 115200
+                            s.dtr = False
+                            s.rts = False
+                            s.timeout = 0.3
+                            s.open()
+                            time.sleep(0.15)
+                            s.write(b"PING_DASHBOARD\n")
+                            time.sleep(0.2)
+                            res = s.read_all().decode('utf-8', errors='ignore')
+                            if "PONG" in res or "PING" in res:
+                                ser = s
+                                ser_port = p.device
+                                return ser, ser_port
+                            s.close()
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+            ser = None
+            ser_port = ""
+            return None, ""
+
         while True:
             if self.is_streaming:
                 try:
@@ -331,20 +370,42 @@ class CYDMonitorApp(ctk.CTk):
                         text=f"CPU: {cpu_pct}% | RAM: {ram_pct}% | Net Down: {down_speed} KB/s | Net Up: {up_speed} KB/s"
                     )
 
-                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
-                    if resp.ok:
-                        self.status_lbl.configure(text="● Streaming Active", text_color="#2ea043")
+                    connected_status = False
+
+                    # 1. Stream over USB Serial if available
+                    usb_ser, p_name = check_usb_port()
+                    if usb_ser and usb_ser.is_open:
                         try:
-                            res_data = resp.json()
-                            if "page" in res_data:
-                                self.highlight_active_page(res_data["page"])
-                            if "theme" in res_data:
-                                self.highlight_active_theme(res_data["theme"])
+                            json_line = json.dumps(payload) + "\n"
+                            usb_ser.write(json_line.encode('utf-8'))
+                            connected_status = True
+                            self.status_lbl.configure(text=f"● Connected (USB {p_name})", text_color="#2ea043")
                         except Exception:
-                            pass
-                    else:
-                        self.status_lbl.configure(text="● Disconnected", text_color="#f85149")
-                except Exception:
+                            try: usb_ser.close()
+                            except Exception: pass
+                            ser = None
+
+                    # 2. Stream over WiFi HTTP if IP is configured
+                    try:
+                        resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
+                        if resp.ok:
+                            connected_status = True
+                            self.status_lbl.configure(text=f"● Connected (WiFi {ip})", text_color="#2ea043")
+                            try:
+                                res_data = resp.json()
+                                if "page" in res_data:
+                                    self.highlight_active_page(res_data["page"])
+                                if "theme" in res_data:
+                                    self.highlight_active_theme(res_data["theme"])
+                            except Exception:
+                                pass
+                    except Exception:
+                        pass
+
+                    if not connected_status:
+                        self.status_lbl.configure(text="● Searching for CYD...", text_color="#d29922")
+
+                except Exception as e:
                     self.status_lbl.configure(text="● Offline", text_color="#f85149")
                     time.sleep(2)
             else:
