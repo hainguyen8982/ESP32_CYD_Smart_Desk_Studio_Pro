@@ -137,10 +137,14 @@ void NetworkManager::begin() {
         fetchWeather();
         fetchGoldAndExchange();
 
-        bootState = BOOT_READY;
-        bootProgress = 100;
-        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
-        display.update();
+        // Check if NTP time is synced immediately; if not, NetworkManager::update() will complete boot
+        time_t now = time(NULL);
+        if (now > 1600000000 && weather.valid) {
+            bootState = BOOT_READY;
+            bootProgress = 100;
+            snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
+            display.update();
+        }
     }
 }
 
@@ -465,6 +469,21 @@ void NetworkManager::setupWebRoutes() {
 }
 
 void NetworkManager::update() {
+    // Process boot transition check: Keep Splash Screen active until NTP time is synced & data loaded
+    if (bootState != BOOT_READY && bootState != BOOT_OFFLINE) {
+        time_t now = time(NULL);
+        if (now > 1600000000 && weather.valid) {
+            bootState = BOOT_READY;
+            bootProgress = 100;
+            snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
+            Serial.println("[NetworkManager] NTP Time & Weather Synced -> Boot Ready");
+        } else if (millis() - bootStartTime > 5000) {
+            bootState = BOOT_READY;
+            bootProgress = 100;
+            Serial.println("[NetworkManager] Boot Timeout Safety -> Opening Dashboard");
+        }
+    }
+
     if (!isConnected()) return;
 
     // Fetch Weather every 15 minutes

@@ -1516,11 +1516,11 @@ void DisplayManager::renderSplashScreen() {
     // ── Main Header Title (Branding text: SMART DESK DASHBOARD) ─────────
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("SMART DESK DASHBOARD", 160, 22, 4);
+    spr.drawString("SMART DESK DASHBOARD", 160, 20, 2);
 
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 54, 1);
+    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 44, 1);
 
     // ── Stylized Center Glowing Badge / Vector Graphic ──────────────────
     spr.fillCircle(160, 102, 24, C_TRACE);
