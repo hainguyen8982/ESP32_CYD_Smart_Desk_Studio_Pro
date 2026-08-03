@@ -1513,30 +1513,26 @@ void DisplayManager::renderSplashScreen() {
     spr.drawRoundRect(12, 10, 296, 220, 12, C_CYAN);
     spr.drawRoundRect(13, 11, 294, 218, 11, C_CYAN); // Bold 2px border
 
-    // ── Main Header Title (Bold, prominent 2-line Font 4 text) ──────────
+    // ── Main Header Title (1 Line Font 2, Gold text, perfectly centered) ─
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("SMART DESK", 160, 16, 4);
+    spr.drawString("SMART DESK DASHBOARD", 160, 24, 2);
 
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString("DASHBOARD", 160, 44, 4);
-
-    spr.setTextDatum(TC_DATUM);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 72, 1);
+    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 48, 1);
 
     // ── Stylized Center Glowing Badge / Vector Graphic ──────────────────
-    spr.fillCircle(160, 102, 24, C_TRACE);
-    spr.drawCircle(160, 102, 25, C_CYAN);
-    spr.drawCircle(160, 102, 26, C_CYAN);
+    spr.fillCircle(160, 104, 22, C_TRACE);
+    spr.drawCircle(160, 104, 23, C_CYAN);
+    spr.drawCircle(160, 104, 24, C_CYAN);
 
     // Clock Icon inside center badge
-    spr.fillCircle(160, 102, 17, C_BG);
-    spr.drawCircle(160, 102, 18, C_YELLOW);
-    spr.drawFastVLine(160, 90, 13, C_YELLOW);
-    spr.drawFastHLine(160, 102, 8, C_YELLOW);
-    spr.fillCircle(160, 102, 3, C_WHITE);
+    spr.fillCircle(160, 104, 15, C_BG);
+    spr.drawCircle(160, 104, 16, C_YELLOW);
+    spr.drawFastVLine(160, 93, 11, C_YELLOW);
+    spr.drawFastHLine(160, 104, 7, C_YELLOW);
+    spr.fillCircle(160, 104, 3, C_WHITE);
 
     // ── Status Text & Progress Bar ──────────────────────────────────────
     const char* statusMsg = network.getBootStatusMsg();
@@ -1544,19 +1540,19 @@ void DisplayManager::renderSplashScreen() {
     BootState bState = network.getBootState();
 
     // Progress Bar Track
-    spr.fillRoundRect(40, 142, 240, 12, 6, C_TRACE);
-    spr.drawRoundRect(40, 142, 240, 12, 6, C_DIM);
+    spr.fillRoundRect(40, 146, 240, 12, 6, C_TRACE);
+    spr.drawRoundRect(40, 146, 240, 12, 6, C_DIM);
 
     // Fill Bar
     int fillW = (int)(pct * 240.0f / 100.0f);
     fillW = constrain(fillW, 8, 240);
     uint16_t barColor = (bState == BOOT_AP_MODE) ? C_ORANGE : (bState == BOOT_OFFLINE) ? C_RED : C_GREEN;
-    spr.fillRoundRect(40, 142, fillW, 12, 6, barColor);
+    spr.fillRoundRect(40, 146, fillW, 12, 6, barColor);
 
     // Dynamic Status Text
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_WHITE, C_CARD);
-    spr.drawString(statusMsg ? statusMsg : "Initializing...", 160, 160, 1);
+    spr.drawString(statusMsg ? statusMsg : "Initializing...", 160, 166, 1);
 
     // ── Footer Commercial Branding ──────────────────────────────────────
     spr.setTextDatum(BC_DATUM);
