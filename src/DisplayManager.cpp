@@ -1038,9 +1038,80 @@ void DisplayManager::iconBell(int16_t cx, int16_t cy, uint16_t color) {
 }
 
 void DisplayManager::iconGold(int16_t cx, int16_t cy, uint16_t color) {
-    spr.fillRoundRect(cx-11, cy-3, 22, 9, 2, color);
-    spr.fillRect(cx-8, cy-7, 16, 4, color);
-    spr.drawFastVLine(cx-4, cy-6, 10, 0xFFFE);  // shine
+    // ── 3D Rich Money Bag & Gold Coins Illustration ────────────────────
+    uint16_t goldDark   = spr.color565(180, 120, 0);   // Dark amber shadow
+    uint16_t goldMid    = spr.color565(255, 180, 0);   // Deep gold
+    uint16_t goldBright = spr.color565(255, 230, 40);  // Bright yellow gold
+    uint16_t goldWhite  = C_WHITE;                     // Specular shine
+    uint16_t ropeBrown  = spr.color565(130, 60, 15);   // Rope tie dark brown
+
+    // ── 1. Gold Coin Stacks at Base (Left & Right) ─────────────────────
+    // Left Coin Stack (3 coins stacked)
+    for (int i = 2; i >= 0; i--) {
+        int py = cy + 11 + i * 3;
+        spr.fillRoundRect(cx - 19, py, 14, 6, 2, goldDark);
+        spr.fillRoundRect(cx - 19, py, 13, 5, 2, goldMid);
+        spr.fillRoundRect(cx - 18, py, 11, 3, 1, goldBright);
+        spr.drawFastHLine(cx - 17, py, 4, goldWhite); // Shine
+    }
+
+    // Right Coin Stack (4 coins stacked)
+    for (int i = 3; i >= 0; i--) {
+        int py = cy + 8 + i * 3;
+        spr.fillRoundRect(cx + 6, py, 15, 6, 2, goldDark);
+        spr.fillRoundRect(cx + 6, py, 14, 5, 2, goldMid);
+        spr.fillRoundRect(cx + 7, py, 12, 3, 1, goldBright);
+        spr.drawFastHLine(cx + 8, py, 4, goldWhite); // Shine
+    }
+
+    // ── 2. Money Bag Body ────────────────────────────────────────────────
+    // Bag main bulb (3D shaded spheres)
+    spr.fillCircle(cx, cy + 2, 17, goldDark);       // Outer shadow rim
+    spr.fillCircle(cx - 1, cy + 1, 16, goldMid);    // Mid tone body
+    spr.fillCircle(cx - 3, cy - 1, 13, goldBright); // Bright highlight sphere
+
+    // Bag ruffled top / neck opening
+    spr.fillTriangle(cx - 10, cy - 17, cx + 10, cy - 17, cx, cy - 8, goldDark);
+    spr.fillTriangle(cx - 9,  cy - 16, cx + 9,  cy - 16, cx, cy - 9, goldMid);
+    spr.fillTriangle(cx - 7,  cy - 16, cx + 4,  cy - 16, cx - 1, cy - 10, goldBright);
+
+    // Bag gathered folds detail
+    spr.drawLine(cx - 6, cy - 16, cx - 2, cy - 9, goldDark);
+    spr.drawLine(cx + 6, cy - 16, cx + 2, cy - 9, goldDark);
+
+    // Tied Rope & Knot
+    spr.fillRoundRect(cx - 8, cy - 10, 16, 4, 2, ropeBrown);
+    spr.fillCircle(cx - 4, cy - 8, 3, ropeBrown); // Rope knot left
+    spr.fillCircle(cx - 1, cy - 7, 2, ropeBrown); // Rope knot right
+    spr.drawLine(cx - 5, cy - 7, cx - 8, cy - 2, ropeBrown); // Hanging rope end 1
+    spr.drawLine(cx - 4, cy - 7, cx - 5, cy - 1, ropeBrown); // Hanging rope end 2
+
+    // ── 3. Dollar Sign ($) Emblem ───────────────────────────────────────
+    // Embossed $ in center of bag
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(ropeBrown, goldBright);
+    spr.drawString("$", cx - 1, cy + 3, 2);
+
+    // ── 4. Front Spilled Coins at Base ──────────────────────────────────
+    // Coin 1 in front center
+    spr.fillRoundRect(cx - 9, cy + 16, 12, 5, 2, goldDark);
+    spr.fillRoundRect(cx - 9, cy + 16, 11, 4, 2, goldBright);
+    spr.drawFastHLine(cx - 8, cy + 16, 4, goldWhite);
+
+    // Coin 2 in front right
+    spr.fillRoundRect(cx + 1, cy + 17, 11, 5, 2, goldDark);
+    spr.fillRoundRect(cx + 1, cy + 17, 10, 4, 2, goldBright);
+    spr.drawFastHLine(cx + 2, cy + 17, 3, goldWhite);
+
+    // ── 5. Golden Sparkles / Twinkles ────────────────────────────────────
+    // Top-Left Sparkle
+    spr.drawFastVLine(cx - 15, cy - 15, 7, goldWhite);
+    spr.drawFastHLine(cx - 18, cy - 12, 7, goldWhite);
+    spr.fillCircle(cx - 15, cy - 12, 1, goldBright);
+
+    // Top-Right Sparkle
+    spr.drawFastVLine(cx + 16, cy - 10, 5, goldWhite);
+    spr.drawFastHLine(cx + 14, cy - 8, 5, goldWhite);
 }
 
 void DisplayManager::iconCal(int16_t cx, int16_t cy, uint16_t color) {
