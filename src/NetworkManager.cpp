@@ -77,6 +77,25 @@ static void sendCORSResponse(AsyncWebServerRequest *request, int code, const Str
     request->send(response);
 }
 
+static float calcCurrencyRate(const char* code, float vndUsd, JsonDocument* eDoc = nullptr) {
+    if (!code || code[0] == '\0' || strcmp(code, "USD") == 0) return vndUsd;
+    float r = 0.0f;
+    if (eDoc && !(*eDoc)["rates"][code].isNull()) {
+        r = (*eDoc)["rates"][code];
+    } else {
+        if (strcmp(code, "EUR") == 0) r = 0.8667f;
+        else if (strcmp(code, "JPY") == 0) r = 158.0f;
+        else if (strcmp(code, "CAD") == 0) r = 1.4013f;
+        else if (strcmp(code, "GBP") == 0) r = 0.7417f;
+        else if (strcmp(code, "AUD") == 0) r = 1.4203f;
+        else if (strcmp(code, "SGD") == 0) r = 1.2820f;
+        else if (strcmp(code, "CNY") == 0) r = 6.7597f;
+        else if (strcmp(code, "KRW") == 0) r = 1440.5f;
+        else if (strcmp(code, "CHF") == 0) r = 0.8073f;
+    }
+    return (r > 0.0001f) ? (vndUsd / r) : vndUsd;
+}
+
 void NetworkManager::setupWebRoutes() {
     // Enable CORS for PC Theme Designer Web App & Chrome Private Network Access
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
@@ -328,15 +347,22 @@ void NetworkManager::setupWebRoutes() {
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
             JsonDocument doc;
             if (!deserializeJson(doc, data, len)) {
+                ExchangeData& ex = network.getExchangeMutable();
                 if (!doc["cur1"].isNull()) {
-                    strncpy(network.getExchangeMutable().cur1Code, doc["cur1"], 7);
+                    strncpy(ex.cur1Code, doc["cur1"], 7);
                 }
                 if (!doc["cur2"].isNull()) {
-                    strncpy(network.getExchangeMutable().cur2Code, doc["cur2"], 7);
+                    strncpy(ex.cur2Code, doc["cur2"], 7);
                 }
                 if (!doc["cur3"].isNull()) {
-                    strncpy(network.getExchangeMutable().cur3Code, doc["cur3"], 7);
+                    strncpy(ex.cur3Code, doc["cur3"], 7);
                 }
+                // Recalculate exchange rates immediately for selected currencies
+                float baseVnd = ex.cur1Rate > 0 ? 26180.0f : 26180.0f;
+                ex.cur1Rate = calcCurrencyRate(ex.cur1Code, baseVnd);
+                ex.cur2Rate = calcCurrencyRate(ex.cur2Code, baseVnd);
+                ex.cur3Rate = calcCurrencyRate(ex.cur3Code, baseVnd);
+
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
                 return;
             }
@@ -475,9 +501,10 @@ void NetworkManager::fetchGoldAndExchange() {
     if (exchange.cur2Code[0] == '\0') strncpy(exchange.cur2Code, "EUR", sizeof(exchange.cur2Code));
     if (exchange.cur3Code[0] == '\0') strncpy(exchange.cur3Code, "JPY", sizeof(exchange.cur3Code));
 
-    exchange.usdRate = 26180.0f;
-    exchange.eurRate = 27650.0f;
-    exchange.jpyRate = 164.2f;
+    float vndUsd = 26180.0f;
+    exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd);
+    exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd);
+    exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd);
     exchange.valid = true;
 
     // ── 1. Fetch live SJC Gold price ─────────────────────────────────
@@ -501,13 +528,14 @@ void NetworkManager::fetchGoldAndExchange() {
     if (http.GET() == 200) {
         JsonDocument eDoc;
         if (!deserializeJson(eDoc, http.getString())) {
-            float vndUsd = eDoc["rates"]["VND"] | 26180.0f;
-            exchange.usdRate = vndUsd;
-            float eurUsd = eDoc["rates"]["EUR"] | 0.8667f;
-            exchange.eurRate = vndUsd / eurUsd;
-            float jpyUsd = eDoc["rates"]["JPY"] | 158.0f;
-            exchange.jpyRate = vndUsd / jpyUsd;
-            Serial.printf("[NetworkManager] Exchange Rates Live: USD=%.0f, EUR=%.0f, JPY=%.1f\n", exchange.usdRate, exchange.eurRate, exchange.jpyRate);
+            vndUsd = eDoc["rates"]["VND"] | 26180.0f;
+            exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd, &eDoc);
+            exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd, &eDoc);
+            exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd, &eDoc);
+            Serial.printf("[NetworkManager] Exchange Rates Live (%s=%.0f, %s=%.0f, %s=%.1f)\n",
+                          exchange.cur1Code, exchange.cur1Rate,
+                          exchange.cur2Code, exchange.cur2Rate,
+                          exchange.cur3Code, exchange.cur3Rate);
         }
     }
     http.end();

@@ -33,11 +33,11 @@ struct GoldData {
 
 struct ExchangeData {
     char cur1Code[8];
-    float usdRate;
+    float cur1Rate;
     char cur2Code[8];
-    float eurRate;
+    float cur2Rate;
     char cur3Code[8];
-    float jpyRate;
+    float cur3Rate;
     bool valid;
 };
 

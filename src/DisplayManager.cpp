@@ -696,9 +696,9 @@ void DisplayManager::renderPage2_FinanceGold() {
     const char* c3 = ex.cur3Code[0] ? ex.cur3Code : "JPY";
 
     char val1[16], val2[16], val3[16];
-    formatWithCommas(val1, sizeof(val1), ex.usdRate);
-    formatWithCommas(val2, sizeof(val2), ex.eurRate);
-    formatWithCommas(val3, sizeof(val3), ex.jpyRate);
+    formatWithCommas(val1, sizeof(val1), ex.cur1Rate);
+    formatWithCommas(val2, sizeof(val2), ex.cur2Rate);
+    formatWithCommas(val3, sizeof(val3), ex.cur3Rate);
 
     char usdBuf[32], eurBuf[32], jpyBuf[32];
     snprintf(usdBuf, sizeof(usdBuf), "%s: %s", c1, val1);
