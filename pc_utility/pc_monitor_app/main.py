@@ -89,7 +89,7 @@ class CYDMonitorApp(ctk.CTk):
         self.ip_entry.pack(side="left", padx=5, pady=10)
 
         self.status_lbl = ctk.CTkLabel(
-            conn_frame, text="● Connected", font=ctk.CTkFont(size=12, weight="bold"), text_color="#2ea043"
+            conn_frame, text="● Searching for CYD...", font=ctk.CTkFont(size=12, weight="bold"), text_color="#d29922"
         )
         self.status_lbl.pack(side="right", padx=15, pady=10)
 
@@ -184,6 +184,10 @@ class CYDMonitorApp(ctk.CTk):
             )
             btn.grid(row=r, column=c, padx=5, pady=4)
             self.page_buttons[p_id] = btn
+
+        # Highlight default active buttons at launch
+        self.highlight_active_page(0)
+        self.highlight_active_theme("ocean_dark")
 
         # ── Hardware Live Status Preview ──────────────────────────────
         m_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
@@ -387,7 +391,7 @@ class CYDMonitorApp(ctk.CTk):
 
             # 3. WiFi HTTP Streaming
             ip = self.ip_entry.get().strip()
-            if ip and ip != "192.168.1.13":
+            if ip:
                 try:
                     resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.0)
                     if resp.ok:
