@@ -292,20 +292,19 @@ class CYDMonitorApp(ctk.CTk):
                     self.last_net = curr_net
                     self.last_time = now_time
 
-                    # Get disk stats for all drive partitions (C, D, E...)
+                    # Get disk stats for all drive partitions (C, D, E...) using reliable drive scanning
                     disks = []
-                    try:
-                        for part in psutil.disk_partitions(all=False):
-                            if 'cdrom' not in part.opts:
-                                try:
-                                    u = psutil.disk_usage(part.mountpoint)
-                                    drive_letter = part.mountpoint.split(':')[0].upper()
-                                    if drive_letter:
-                                        disks.append({"name": drive_letter, "used": int(u.percent)})
-                                except Exception:
-                                    pass
-                    except Exception:
-                        pass
+                    import string
+                    for letter in string.ascii_uppercase:
+                        drive_path = f"{letter}:\\"
+                        if os.path.exists(drive_path):
+                            try:
+                                usage = psutil.disk_usage(drive_path)
+                                if usage.total > 0:
+                                    used_pct = int(round((usage.used / usage.total) * 100))
+                                    disks.append({"name": letter, "used": used_pct})
+                            except Exception:
+                                pass
 
                     payload = {
                         "cpu": cpu_pct,
@@ -324,7 +323,7 @@ class CYDMonitorApp(ctk.CTk):
                         "netDown": down_speed,
                         "net_up": up_speed,
                         "netUp": up_speed,
-                        "disks": disks if disks else [{"name": "C", "used": disk_pct}]
+                        "disks": disks
                     }
 
                     # Update live GUI label

@@ -822,24 +822,29 @@ void DisplayManager::renderPage5_PcNetDisks() {
     const DiskInfo* disks = pcMonitor.getDisks();
 
     for (int i = 0; i < (int)cnt && i < 3; i++) {
-        int cardY = 104 + i * 44;
-        spr.fillRoundRect(10, cardY, 300, 36, 5, C_CARD);
+        int cardY = 104 + i * 40;
+        spr.fillRoundRect(10, cardY, 300, 34, 5, C_CARD);
 
         char label[16];
-        snprintf(label, sizeof(label), " %s:", disks[i].name);
+        snprintf(label, sizeof(label), "O %s:", disks[i].name);
         spr.setTextDatum(ML_DATUM);
-        spr.setTextColor(C_WHITE, C_CARD);
-        spr.drawString(label, 14, cardY + 10, 2);
+        spr.setTextColor(C_YELLOW, C_CARD);
+        spr.drawString(label, 14, cardY + 17, 2);
+
+        // Dynamic color for Disk Usage: Green (<65%), Orange (65-85%), Red (>85%)
+        uint16_t barColor = C_GREEN;
+        if (disks[i].usedPercent >= 85) barColor = C_RED;
+        else if (disks[i].usedPercent >= 65) barColor = C_ORANGE;
 
         // Progress bar
-        drawHorizBar(90, cardY + 6, 188, 14, disks[i].usedPercent, C_CYAN);
+        drawHorizBar(85, cardY + 10, 160, 14, disks[i].usedPercent, barColor);
 
         // Percent text
-        char pStr[8];
+        char pStr[12];
         snprintf(pStr, sizeof(pStr), "%d%%", disks[i].usedPercent);
         spr.setTextDatum(MR_DATUM);
-        spr.setTextColor(C_DIM, C_CARD);
-        spr.drawString(pStr, 304, cardY + 18, 1);
+        spr.setTextColor(barColor, C_CARD);
+        spr.drawString(pStr, 300, cardY + 17, 2);
     }
 }
 
