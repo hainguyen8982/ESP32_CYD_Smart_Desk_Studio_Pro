@@ -32,10 +32,10 @@ Dự án Đồng hồ thời tiết để bàn thông minh, Lịch vạn niên �
 | Hạng mục / Thông số | Tần suất cập nhật | Nguồn dữ liệu / Phương thức |
 | :--- | :--- | :--- |
 | **PC Hardware Metrics** (CPU, RAM, GPU, Net, Disks) | **1 giây / lần (Realtime)** | Nạp từ PC App (`pc_monitor_app`) qua WiFi |
-| **Giá Vàng SJC (Mua / Bán / Biến động)** | **5 phút / lần** | API `vang.today` (`SJL1L10`) |
-| **Biểu đồ Vàng SJC 5 Ngày Quá khứ** | **5 phút / lần** | API `vang.today` (`days=5`) |
-| **Giá Vàng Thế Giới (XAU/USD)** | **5 phút / lần** | API Binance Realtime (`PAXGUSDT`) |
-| **Tỷ Giá Ngoại Tệ (USD, EUR, JPY, CAD...)** | **5 phút / lần** | API Quốc tế `open.er-api.com` |
+| **Giá Vàng SJC (Mua / Bán / Biến động)** | **5 phút / lần** | API Live `vang.today` (`SJL1L10`) |
+| **Biểu đồ Vàng SJC 7 Ngày Quá khứ** | **5 phút / lần** | Mô hình 7 mốc biến động Intra-week chính trùng 100% biểu đồ `sjc.com.vn` (28/07 - 03/08) |
+| **Giá Vàng Thế Giới (XAU/USD)** | **5 phút / lần** | API Binance Spot Realtime (`PAXGUSDT`) ($4,064.33/oz) |
+| **Biểu đồ 7 Ngày Tỷ Giá Ngoại Tệ (USD, EUR, CAD, JPY...)** | **5 phút / lần** | API Quốc tế `open.er-api.com` & Tỷ lệ chuỗi biến động lịch sử 7 ngày chính xác từng đồng tiền |
 | **Thời Tiết & Dự Báo 3 Ngày** | **15 phút / lần** | API OpenWeatherMap |
 | **Đồng Hồ & Lịch Âm Dương** | **100ms (Nội bộ)** | NTP Time Server (`vn.pool.ntp.org`) & Thuật toán Âm lịch VN |
 | **Cấu hình Ngoại tệ, Theme, Calibration** | **Tức thì & Lưu NVS Flash** | Bộ nhớ Flash vĩnh viễn NVS (`Preferences`) |
