@@ -40,12 +40,33 @@ void NetworkManager::begin() {
     // Configure NTP Time (Vietnam GMT+7)
     configTime(7 * 3600, 0, "vn.pool.ntp.org", "time.google.com", "pool.ntp.org");
 
-    // Load saved Weather City from NVS
+    // Load saved Weather City & Exchange Currencies from NVS
     Preferences prefs;
     prefs.begin("weather", true);
     if (prefs.isKey("city")) {
         String savedCity = prefs.getString("city", DEFAULT_CITY);
         snprintf(weather.city, sizeof(weather.city), "%s", savedCity.c_str());
+    }
+    prefs.end();
+
+    prefs.begin("exchange", true);
+    if (prefs.isKey("cur1")) {
+        String c1 = prefs.getString("cur1", "USD");
+        strncpy(exchange.cur1Code, c1.c_str(), 7);
+    } else {
+        strncpy(exchange.cur1Code, "USD", 7);
+    }
+    if (prefs.isKey("cur2")) {
+        String c2 = prefs.getString("cur2", "EUR");
+        strncpy(exchange.cur2Code, c2.c_str(), 7);
+    } else {
+        strncpy(exchange.cur2Code, "EUR", 7);
+    }
+    if (prefs.isKey("cur3")) {
+        String c3 = prefs.getString("cur3", "JPY");
+        strncpy(exchange.cur3Code, c3.c_str(), 7);
+    } else {
+        strncpy(exchange.cur3Code, "JPY", 7);
     }
     prefs.end();
 
@@ -357,6 +378,14 @@ void NetworkManager::setupWebRoutes() {
                 if (!doc["cur3"].isNull()) {
                     strncpy(ex.cur3Code, doc["cur3"], 7);
                 }
+                // Save selected currencies permanently to NVS
+                Preferences prefs;
+                prefs.begin("exchange", false);
+                prefs.putString("cur1", ex.cur1Code);
+                prefs.putString("cur2", ex.cur2Code);
+                prefs.putString("cur3", ex.cur3Code);
+                prefs.end();
+
                 // Recalculate exchange rates immediately for selected currencies
                 float baseVnd = ex.cur1Rate > 0 ? 26180.0f : 26180.0f;
                 ex.cur1Rate = calcCurrencyRate(ex.cur1Code, baseVnd);
@@ -378,8 +407,8 @@ void NetworkManager::update() {
         fetchWeather();
     }
 
-    // Fetch Gold & Exchange every 30 minutes
-    if (millis() - lastGoldFetch > 30 * 60 * 1000UL || lastGoldFetch == 0) {
+    // Fetch Gold & Exchange every 5 minutes (Realtime financial updates)
+    if (millis() - lastGoldFetch > 5 * 60 * 1000UL || lastGoldFetch == 0) {
         fetchGoldAndExchange();
     }
 }

@@ -231,6 +231,16 @@ class CYDMonitorApp(ctk.CTk):
             pass
 
     def stream_loop(self):
+        # Sync current selected currencies to ESP32 on connect
+        time.sleep(1)
+        try:
+            c1 = self.cur1_combo.get()
+            c2 = self.cur2_combo.get()
+            ip = self.ip_entry.get().strip()
+            requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
+        except Exception:
+            pass
+
         while True:
             if self.is_streaming:
                 try:
