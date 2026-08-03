@@ -48,6 +48,7 @@ private:
     void renderPage7_Settings();
     void renderCalibrationScreen();
     void renderDetailModal();
+    void renderSplashScreen();
 
     // ── UI Widgets ───────────────────────────────────────────
     void drawArcGauge(int16_t cx, int16_t cy, int16_t r, int16_t thick,

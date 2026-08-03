@@ -50,27 +50,51 @@ NetworkManager::NetworkManager()
     : server(80),
       lastWeatherFetch(0),
       lastGoldFetch(0),
-      remotePage(-1) {
+      remotePage(-1),
+      bootState(BOOT_CONNECTING_WIFI),
+      bootProgress(15) {
     memset(&weather, 0, sizeof(weather));
     memset(&gold, 0, sizeof(gold));
     memset(&exchange, 0, sizeof(exchange));
     snprintf(weather.city, sizeof(weather.city), DEFAULT_CITY);
+    snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[1/3] Connecting WiFi...");
 }
 
 void NetworkManager::begin() {
     Serial.println("[NetworkManager] Connecting WiFi via WiFiManager...");
-    
+    bootState = BOOT_CONNECTING_WIFI;
+    bootProgress = 25;
+    snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[1/3] Connecting WiFi...");
+    display.update();
+
     WiFiManager wm;
     wm.setConfigPortalTimeout(180); // 3 minutes timeout if no AP config
     wm.setBreakAfterConfig(true);
 
+    wm.setAPCallback([this](WiFiManager *myWiFiManager) {
+        bootState = BOOT_AP_MODE;
+        bootProgress = 35;
+        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "AP: ESP32_CYD_Desk_Setup (192.168.4.1)");
+        Serial.println("[NetworkManager] Entering AP Config Portal Mode");
+        display.update();
+    });
+
     if (!wm.autoConnect("ESP32_CYD_Desk_Setup")) {
         Serial.println("[NetworkManager] Failed to connect WiFi, running AP mode");
         hardware.setRGBColor(COLOR_YELLOW);
+        bootState = BOOT_OFFLINE;
+        bootProgress = 100;
+        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[Offline Mode] Starting Dashboard...");
+        display.update();
     } else {
         Serial.print("[NetworkManager] WiFi Connected! IP: ");
         Serial.println(WiFi.localIP());
         hardware.setRGBColor(COLOR_GREEN);
+
+        bootState = BOOT_SYNCING_TIME;
+        bootProgress = 60;
+        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[2/3] Syncing NTP Time (VN GMT+7)...");
+        display.update();
     }
 
     // Configure NTP Time (Vietnam GMT+7)
@@ -104,8 +128,20 @@ void NetworkManager::begin() {
     server.begin();
     Serial.println("[NetworkManager] AsyncWebServer Started on Port 80");
 
-    fetchWeather();
-    fetchGoldAndExchange();
+    if (isConnected()) {
+        bootState = BOOT_FETCHING_DATA;
+        bootProgress = 85;
+        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[3/3] Fetching Weather & Market Data...");
+        display.update();
+
+        fetchWeather();
+        fetchGoldAndExchange();
+
+        bootState = BOOT_READY;
+        bootProgress = 100;
+        snprintf(bootStatusMsg, sizeof(bootStatusMsg), "Ready! Opening Dashboard...");
+        display.update();
+    }
 }
 
 void NetworkManager::setCity(const char* newCity) {

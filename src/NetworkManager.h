@@ -42,6 +42,15 @@ struct ExchangeData {
     bool valid;
 };
 
+enum BootState {
+    BOOT_CONNECTING_WIFI = 0,
+    BOOT_AP_MODE,
+    BOOT_SYNCING_TIME,
+    BOOT_FETCHING_DATA,
+    BOOT_READY,
+    BOOT_OFFLINE
+};
+
 class NetworkManager {
 public:
     NetworkManager();
@@ -51,6 +60,12 @@ public:
     bool isConnected() const { return WiFi.status() == WL_CONNECTED; }
     IPAddress getLocalIP() const { return WiFi.localIP(); }
     int8_t getRSSI() const { return WiFi.RSSI(); }
+
+    // Boot progress status for Splash Screen
+    BootState getBootState() const { return bootState; }
+    const char* getBootStatusMsg() const { return bootStatusMsg; }
+    uint8_t getBootProgressPct() const { return bootProgress; }
+    bool isBootComplete() const { return bootState == BOOT_READY || bootState == BOOT_OFFLINE; }
 
     void fetchWeather();
     void fetchGoldAndExchange();
@@ -76,6 +91,10 @@ private:
     unsigned long lastWeatherFetch;
     unsigned long lastGoldFetch;
     int remotePage;
+
+    BootState bootState;
+    char bootStatusMsg[64];
+    uint8_t bootProgress;
 };
 
 extern NetworkManager network;

@@ -98,6 +98,13 @@ void DisplayManager::update() {
     lastRenderTime = millis();
     if (!spriteReady) return;
 
+    // During bootup, render Splash Screen until NetworkManager boot is complete
+    if (!network.isBootComplete()) {
+        renderSplashScreen();
+        spr.pushSprite(0, 0);
+        return;
+    }
+
     // During calibration, render calibration screen instead of normal UI
     if (touch.isCalibrating()) {
         renderCalibrationScreen();
@@ -1493,4 +1500,62 @@ void DisplayManager::renderDetailModal() {
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_DIM, C_CARD);
     spr.drawString("[ Cham bat ky dau de dong chi tiet ]", 160, 228, 1);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  SMART DESK DASHBOARD — BOOT / SPLASH SCREEN
+// ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderSplashScreen() {
+    spr.fillSprite(C_BG);
+
+    // ── Outer Glowing Card Frame ─────────────────────────────────────────
+    spr.fillRoundRect(12, 10, 296, 220, 12, C_CARD);
+    spr.drawRoundRect(12, 10, 296, 220, 12, C_CYAN);
+    spr.drawRoundRect(13, 11, 294, 218, 11, C_CYAN); // Bold 2px border
+
+    // ── Main Header Title (Branding text: SMART DESK DASHBOARD) ─────────
+    spr.setTextDatum(TC_DATUM);
+    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.drawString("SMART DESK DASHBOARD", 160, 22, 4);
+
+    spr.setTextDatum(TC_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 54, 1);
+
+    // ── Stylized Center Glowing Badge / Vector Graphic ──────────────────
+    spr.fillCircle(160, 102, 24, C_TRACE);
+    spr.drawCircle(160, 102, 25, C_CYAN);
+    spr.drawCircle(160, 102, 26, C_CYAN);
+
+    // Clock Icon inside center badge
+    spr.fillCircle(160, 102, 17, C_BG);
+    spr.drawCircle(160, 102, 18, C_YELLOW);
+    spr.drawFastVLine(160, 90, 13, C_YELLOW);
+    spr.drawFastHLine(160, 102, 8, C_YELLOW);
+    spr.fillCircle(160, 102, 3, C_WHITE);
+
+    // ── Status Text & Progress Bar ──────────────────────────────────────
+    const char* statusMsg = network.getBootStatusMsg();
+    uint8_t pct = network.getBootProgressPct();
+    BootState bState = network.getBootState();
+
+    // Progress Bar Track
+    spr.fillRoundRect(40, 142, 240, 12, 6, C_TRACE);
+    spr.drawRoundRect(40, 142, 240, 12, 6, C_DIM);
+
+    // Fill Bar
+    int fillW = (int)(pct * 240.0f / 100.0f);
+    fillW = constrain(fillW, 8, 240);
+    uint16_t barColor = (bState == BOOT_AP_MODE) ? C_ORANGE : (bState == BOOT_OFFLINE) ? C_RED : C_GREEN;
+    spr.fillRoundRect(40, 142, fillW, 12, 6, barColor);
+
+    // Dynamic Status Text
+    spr.setTextDatum(TC_DATUM);
+    spr.setTextColor(C_WHITE, C_CARD);
+    spr.drawString(statusMsg ? statusMsg : "Initializing...", 160, 160, 1);
+
+    // ── Footer Commercial Branding ──────────────────────────────────────
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_DIM, C_CARD);
+    spr.drawString("A Product of FABX Company", 160, 222, 1);
 }
