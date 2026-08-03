@@ -270,7 +270,7 @@ class CYDMonitorApp(ctk.CTk):
             c1 = self.cur1_combo.get()
             c2 = self.cur2_combo.get()
             ip = self.ip_entry.get().strip()
-            requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
+            requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=1)
         except Exception:
             pass
 
@@ -278,138 +278,140 @@ class CYDMonitorApp(ctk.CTk):
         ser = None
         ser_port = ""
 
-        def check_usb_port():
-            nonlocal ser, ser_port
-            if ser is not None and ser.is_open:
-                return ser, ser_port
-            try:
-                ports = list(serial.tools.list_ports.comports())
-                for p in ports:
-                    if p.vid is not None and p.pid is not None:
-                        try:
-                            s = serial.Serial()
-                            s.port = p.device
-                            s.baudrate = 115200
-                            s.dtr = False
-                            s.rts = False
-                            s.timeout = 0.3
-                            s.open()
-                            time.sleep(0.15)
-                            s.write(b"PING_DASHBOARD\n")
-                            time.sleep(0.2)
-                            res = s.read_all().decode('utf-8', errors='ignore')
-                            if "PONG" in res or "PING" in res:
-                                ser = s
-                                ser_port = p.device
-                                return ser, ser_port
-                            s.close()
-                        except Exception:
-                            pass
-            except Exception:
-                pass
-            ser = None
-            ser_port = ""
-            return None, ""
+        # First call to initialize cpu_percent baseline
+        psutil.cpu_percent(interval=None)
 
         while True:
-            if self.is_streaming:
-                try:
-                    ip = self.ip_entry.get().strip()
-                    cpu_pct = int(psutil.cpu_percent(interval=1.0))
-                    ram_pct = int(psutil.virtual_memory().percent)
+            if not self.is_streaming:
+                time.sleep(1)
+                continue
 
-                    # Compute network speed
-                    now_time = time.time()
-                    curr_net = psutil.net_io_counters()
-                    dt = now_time - self.last_time
-                    if dt > 0:
-                        down_speed = int((curr_net.bytes_recv - self.last_net.bytes_recv) / dt / 1024)
-                        up_speed = int((curr_net.bytes_sent - self.last_net.bytes_sent) / dt / 1024)
-                    else:
-                        down_speed = up_speed = 0
+            # 1. Collect Hardware Metrics (GUI label always updates)
+            try:
+                cpu_pct = int(psutil.cpu_percent(interval=None))
+                ram_pct = int(psutil.virtual_memory().percent)
 
-                    self.last_net = curr_net
-                    self.last_time = now_time
+                now_time = time.time()
+                curr_net = psutil.net_io_counters()
+                dt = now_time - self.last_time
+                if dt > 0:
+                    down_speed = int((curr_net.bytes_recv - self.last_net.bytes_recv) / dt / 1024)
+                    up_speed = int((curr_net.bytes_sent - self.last_net.bytes_sent) / dt / 1024)
+                else:
+                    down_speed = up_speed = 0
 
-                    # Get disk stats for all drive partitions (C, D, E...) using reliable drive scanning
-                    disks = []
-                    import string
-                    for letter in string.ascii_uppercase:
-                        drive_path = f"{letter}:\\"
-                        if os.path.exists(drive_path):
-                            try:
-                                usage = psutil.disk_usage(drive_path)
-                                if usage.total > 0:
-                                    used_pct = int(round((usage.used / usage.total) * 100))
-                                    disks.append({"name": letter, "used": used_pct})
-                            except Exception:
-                                pass
+                self.last_net = curr_net
+                self.last_time = now_time
 
-                    payload = {
-                        "cpu": cpu_pct,
-                        "cpuLoad": cpu_pct,
-                        "cputemp": 45,
-                        "cpuTemp": 45,
-                        "ram": ram_pct,
-                        "ramLoad": ram_pct,
-                        "gpu": cpu_pct,
-                        "gpuLoad": cpu_pct,
-                        "gputemp": 48,
-                        "gpuTemp": 48,
-                        "vram": ram_pct,
-                        "vramLoad": ram_pct,
-                        "net_down": down_speed,
-                        "netDown": down_speed,
-                        "net_up": up_speed,
-                        "netUp": up_speed,
-                        "disks": disks
-                    }
-
-                    # Update live GUI label
-                    self.metrics_lbl.configure(
-                        text=f"CPU: {cpu_pct}% | RAM: {ram_pct}% | Net Down: {down_speed} KB/s | Net Up: {up_speed} KB/s"
-                    )
-
-                    connected_status = False
-
-                    # 1. Stream over USB Serial if available
-                    usb_ser, p_name = check_usb_port()
-                    if usb_ser and usb_ser.is_open:
+                disks = []
+                import string
+                for letter in string.ascii_uppercase:
+                    drive_path = f"{letter}:\\"
+                    if os.path.exists(drive_path):
                         try:
-                            json_line = json.dumps(payload) + "\n"
-                            usb_ser.write(json_line.encode('utf-8'))
-                            connected_status = True
-                            self.status_lbl.configure(text=f"● Connected (USB {p_name})", text_color="#2ea043")
+                            usage = psutil.disk_usage(drive_path)
+                            if usage.total > 0:
+                                used_pct = int(round((usage.used / usage.total) * 100))
+                                disks.append({"name": letter, "used": used_pct})
                         except Exception:
-                            try: usb_ser.close()
-                            except Exception: pass
-                            ser = None
+                            pass
 
-                    # 2. Stream over WiFi HTTP if IP is configured
-                    try:
-                        resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
-                        if resp.ok:
-                            connected_status = True
-                            self.status_lbl.configure(text=f"● Connected (WiFi {ip})", text_color="#2ea043")
+                payload = {
+                    "cpu": cpu_pct,
+                    "cpuLoad": cpu_pct,
+                    "cputemp": 45,
+                    "cpuTemp": 45,
+                    "ram": ram_pct,
+                    "ramLoad": ram_pct,
+                    "gpu": cpu_pct,
+                    "gpuLoad": cpu_pct,
+                    "gputemp": 48,
+                    "gpuTemp": 48,
+                    "vram": ram_pct,
+                    "vramLoad": ram_pct,
+                    "net_down": down_speed,
+                    "netDown": down_speed,
+                    "net_up": up_speed,
+                    "netUp": up_speed,
+                    "disks": disks
+                }
+
+                # Update live GUI label IMMEDIATELY
+                self.metrics_lbl.configure(
+                    text=f"CPU: {cpu_pct}% | RAM: {ram_pct}% | Net Down: {down_speed} KB/s | Net Up: {up_speed} KB/s"
+                )
+            except Exception:
+                time.sleep(1)
+                continue
+
+            connected_usb = False
+            connected_wifi = False
+
+            # 2. USB Serial Auto Connection
+            if ser is None or not ser.is_open:
+                try:
+                    ports = list(serial.tools.list_ports.comports())
+                    for p in ports:
+                        if p.vid is not None and p.pid is not None:
                             try:
-                                res_data = resp.json()
-                                if "page" in res_data:
-                                    self.highlight_active_page(res_data["page"])
-                                if "theme" in res_data:
-                                    self.highlight_active_theme(res_data["theme"])
+                                s = serial.Serial()
+                                s.port = p.device
+                                s.baudrate = 115200
+                                s.dtr = False
+                                s.rts = False
+                                s.timeout = 0.2
+                                s.open()
+                                time.sleep(0.1)
+                                s.write(b"PING_DASHBOARD\n")
+                                time.sleep(0.15)
+                                res = s.read_all().decode('utf-8', errors='ignore')
+                                if "PONG" in res or "PING" in res:
+                                    ser = s
+                                    ser_port = p.device
+                                    break
+                                s.close()
                             except Exception:
                                 pass
-                    except Exception:
-                        pass
+                except Exception:
+                    ser = None
 
-                    if not connected_status:
-                        self.status_lbl.configure(text="● Searching for CYD...", text_color="#d29922")
+            if ser and ser.is_open:
+                try:
+                    json_line = json.dumps(payload) + "\n"
+                    ser.write(json_line.encode('utf-8'))
+                    connected_usb = True
+                except Exception:
+                    try: ser.close()
+                    except Exception: pass
+                    ser = None
 
-                except Exception as e:
-                    self.status_lbl.configure(text="● Offline", text_color="#f85149")
-                    time.sleep(2)
+            # 3. WiFi HTTP Streaming
+            ip = self.ip_entry.get().strip()
+            if ip and ip != "192.168.1.13":
+                try:
+                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.0)
+                    if resp.ok:
+                        connected_wifi = True
+                        try:
+                            res_data = resp.json()
+                            if "page" in res_data:
+                                self.highlight_active_page(res_data["page"])
+                            if "theme" in res_data:
+                                self.highlight_active_theme(res_data["theme"])
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+            # 4. Status Indicator Update
+            if connected_usb:
+                self.status_lbl.configure(text=f"● Connected (USB {ser_port})", text_color="#2ea043")
+            elif connected_wifi:
+                self.status_lbl.configure(text=f"● Connected (WiFi {ip})", text_color="#2ea043")
             else:
-                time.sleep(2)
+                self.status_lbl.configure(text="● Searching for CYD...", text_color="#d29922")
+
+            time.sleep(1.0)
 
     def create_tray_icon(self):
         # Create a simple blue icon for system tray
