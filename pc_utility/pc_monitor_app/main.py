@@ -295,7 +295,7 @@ class CYDMonitorApp(ctk.CTk):
 
             # 1. Collect Hardware Metrics (GUI label always updates)
             try:
-                cpu_pct = int(psutil.cpu_percent(interval=None))
+                cpu_pct = int(psutil.cpu_percent(interval=1))  # blocking 1s for accurate reading
                 ram_pct = int(psutil.virtual_memory().percent)
 
                 now_time = time.time()
@@ -342,11 +342,13 @@ class CYDMonitorApp(ctk.CTk):
                     "disks": disks
                 }
 
-                # Update live GUI label IMMEDIATELY
-                self.metrics_lbl.configure(
-                    text=f"CPU: {cpu_pct}% | RAM: {ram_pct}% | Net Down: {down_speed} KB/s | Net Up: {up_speed} KB/s"
+                # Update live GUI label IMMEDIATELY (thread-safe via after)
+                self.after(0, lambda c=cpu_pct, r=ram_pct, d=down_speed, u=up_speed:
+                    self.metrics_lbl.configure(
+                        text=f"CPU: {c}% | RAM: {r}% | Net↓ {d} KB/s | Net↑ {u} KB/s"
+                    )
                 )
-            except Exception:
+            except Exception as ex:
                 time.sleep(1)
                 continue
 
@@ -422,29 +424,35 @@ class CYDMonitorApp(ctk.CTk):
             ip = self.ip_entry.get().strip()
             if ip:
                 try:
-                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.0)
+                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
                     if resp.ok:
                         connected_wifi = True
                         try:
                             res_data = resp.json()
-                            if "page" in res_data:
-                                self.highlight_active_page(res_data["page"])
-                            if "theme" in res_data:
-                                self.highlight_active_theme(res_data["theme"])
+                            page_val = res_data.get("page", -1)
+                            theme_val = res_data.get("theme", "")
+                            # clamp page to valid 0-6 range, ignore splash/invalid
+                            if 0 <= page_val <= 6:
+                                self.after(0, lambda v=page_val: self.highlight_active_page(v))
+                            if theme_val:
+                                self.after(0, lambda v=theme_val: self.highlight_active_theme(v))
                         except Exception:
                             pass
                 except Exception:
                     pass
 
-            # 4. Status Indicator Update
+            # 4. Status Indicator Update (must use after for thread safety)
             if connected_usb:
-                self.status_lbl.configure(text=f"● Connected (USB {ser_port})", text_color="#2ea043")
+                self.after(0, lambda p=ser_port: self.status_lbl.configure(
+                    text=f"● Connected (USB {p})", text_color="#2ea043"))
             elif connected_wifi:
-                self.status_lbl.configure(text=f"● Connected (WiFi {ip})", text_color="#2ea043")
+                self.after(0, lambda i=ip: self.status_lbl.configure(
+                    text=f"● Connected (WiFi {i})", text_color="#2ea043"))
             else:
-                self.status_lbl.configure(text="● Searching for CYD...", text_color="#d29922")
+                self.after(0, lambda: self.status_lbl.configure(
+                    text="● Searching for CYD...", text_color="#d29922"))
 
-            time.sleep(1.0)
+            # no extra sleep — cpu_percent(interval=1) already blocked 1s
 
     def create_tray_icon(self):
         # Create a simple blue icon for system tray
