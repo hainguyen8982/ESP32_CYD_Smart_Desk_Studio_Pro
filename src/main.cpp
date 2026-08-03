@@ -86,7 +86,12 @@ void loop() {
     TouchEvent evt = touch.update();
 
     if (!touch.isCalibrating() && evt.gesture != GESTURE_NONE) {
-        if (evt.gesture == GESTURE_SWIPE_LEFT) {
+        if (display.isModalOpen()) {
+            if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_SWIPE_LEFT || evt.gesture == GESTURE_SWIPE_RIGHT) {
+                display.closeDetailModal();
+                Serial.println("[Touch] Detail Chart Modal Closed");
+            }
+        } else if (evt.gesture == GESTURE_SWIPE_LEFT) {
             display.nextPage();
             Serial.printf("[Touch] Swiped Left -> Page %d\n", display.getCurrentPage());
 
@@ -109,6 +114,21 @@ void loop() {
                 // Top-Left corner: Go to Home (Page 0)
                 display.setCurrentPage(0);
                 Serial.println("[Touch] Home");
+
+            } else if (display.getCurrentPage() == 2 && evt.x >= 180 && evt.x <= 310 && evt.y >= 54 && evt.y <= 134) {
+                // Page 2: Tap Gold Chart -> Open SJC Gold Fullscreen Detail Chart
+                display.openDetailModal(MODAL_GOLD_SJC);
+                Serial.println("[Touch] Finance -> Opened SJC Gold Detail Chart Modal");
+
+            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 155 && evt.y <= 186) {
+                // Page 2: Tap Currency 1 Chart -> Open Currency 1 Detail Chart
+                display.openDetailModal(MODAL_CURRENCY_1);
+                Serial.println("[Touch] Finance -> Opened Currency 1 Detail Chart Modal");
+
+            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 187 && evt.y <= 220) {
+                // Page 2: Tap Currency 2 Chart -> Open Currency 2 Detail Chart
+                display.openDetailModal(MODAL_CURRENCY_2);
+                Serial.println("[Touch] Finance -> Opened Currency 2 Detail Chart Modal");
 
             } else if (display.getCurrentPage() == 1 && evt.y >= 28 && evt.y <= 60) {
                 // Page 1: Month navigation row

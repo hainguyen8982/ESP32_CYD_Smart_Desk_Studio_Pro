@@ -6,6 +6,13 @@
 #include <TFT_eSPI.h>
 #include "Config.h"
 
+enum DetailModalType {
+    MODAL_NONE = 0,
+    MODAL_GOLD_SJC,
+    MODAL_CURRENCY_1,
+    MODAL_CURRENCY_2
+};
+
 class DisplayManager {
 public:
     DisplayManager();
@@ -15,6 +22,12 @@ public:
     uint8_t getCurrentPage() const { return currentPage; }
     void nextPage();
     void previousPage();
+
+    // Fullscreen Chart Detail Modal
+    void openDetailModal(DetailModalType type) { currentModal = type; }
+    void closeDetailModal() { currentModal = MODAL_NONE; }
+    bool isModalOpen() const { return currentModal != MODAL_NONE; }
+    DetailModalType getModalType() const { return currentModal; }
 
     // Month browsing helpers
     void nextCalendarMonth() { calendarMonthOffset++; }
@@ -34,6 +47,7 @@ private:
     void renderPage6_DeskUtilities();
     void renderPage7_Settings();
     void renderCalibrationScreen();
+    void renderDetailModal();
 
     // ── UI Widgets ───────────────────────────────────────────
     void drawArcGauge(int16_t cx, int16_t cy, int16_t r, int16_t thick,
@@ -75,6 +89,7 @@ private:
     TFT_eSPI    tft;
     TFT_eSprite spr;       // Off-screen sprite double-buffer
     uint8_t     currentPage;
+    DetailModalType currentModal;
     int16_t     calendarMonthOffset;
     unsigned long lastRenderTime;
     bool        spriteReady;

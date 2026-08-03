@@ -56,7 +56,7 @@ static uint16_t getPageAccent(uint8_t page) {
 //  CONSTRUCTOR / BEGIN / NAVIGATION / UPDATE
 // ─────────────────────────────────────────────────────────────────────
 DisplayManager::DisplayManager()
-    : tft(), spr(&tft), currentPage(0), calendarMonthOffset(0), lastRenderTime(0), spriteReady(false) {}
+    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), calendarMonthOffset(0), lastRenderTime(0), spriteReady(false) {}
 
 void DisplayManager::begin() {
     loadTheme(); // Load saved theme from NVS or default Ocean Dark
@@ -101,6 +101,13 @@ void DisplayManager::update() {
     // During calibration, render calibration screen instead of normal UI
     if (touch.isCalibrating()) {
         renderCalibrationScreen();
+        spr.pushSprite(0, 0);
+        return;
+    }
+
+    // Render Fullscreen Detail Chart Modal Overlay if open
+    if (isModalOpen()) {
+        renderDetailModal();
         spr.pushSprite(0, 0);
         return;
     }
@@ -1322,4 +1329,168 @@ void DisplayManager::renderPage7_Settings() {
     spr.setTextColor(C_DIM, C_CARD);
     spr.setTextDatum(MR_DATUM);
     spr.drawString("v1.0.0", 290, y + 12, 2);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  FULLSCREEN CHART DETAIL MODAL OVERLAY
+// ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderDetailModal() {
+    spr.fillSprite(C_BG);
+
+    const GoldData& g = network.getGold();
+    const ExchangeData& ex = network.getExchange();
+
+    char titleBuf[64];
+    const char* titleStr = "";
+    uint16_t themeColor = C_YELLOW;
+    const float* dataPtr = nullptr;
+    float currentVal = 0.0f;
+    bool isMoneyFormat = false;
+
+    if (currentModal == MODAL_GOLD_SJC) {
+        snprintf(titleBuf, sizeof(titleBuf), "BIEU DO CHI TIET VANG SJC (7 NGAY)");
+        titleStr = titleBuf;
+        themeColor = C_YELLOW;
+        dataPtr = g.history7Days;
+        currentVal = g.sjcBuy;
+        isMoneyFormat = false; // in Triệu VNĐ
+    } else if (currentModal == MODAL_CURRENCY_1) {
+        snprintf(titleBuf, sizeof(titleBuf), "BIEU DO TY GIA %s/VND (7 NGAY)", ex.cur1Code[0] ? ex.cur1Code : "USD");
+        titleStr = titleBuf;
+        themeColor = C_CYAN;
+        dataPtr = ex.cur1History7;
+        currentVal = ex.cur1Rate;
+        isMoneyFormat = true;
+    } else if (currentModal == MODAL_CURRENCY_2) {
+        snprintf(titleBuf, sizeof(titleBuf), "BIEU DO TY GIA %s/VND (7 NGAY)", ex.cur2Code[0] ? ex.cur2Code : "EUR");
+        titleStr = titleBuf;
+        themeColor = C_GREEN;
+        dataPtr = ex.cur2History7;
+        currentVal = ex.cur2Rate;
+        isMoneyFormat = true;
+    }
+
+    // ── Header Box ──────────────────────────────────────────────────────
+    spr.fillRoundRect(8, 6, 304, 28, 5, C_CARD);
+    spr.drawRoundRect(8, 6, 304, 28, 5, themeColor);
+    spr.setTextDatum(ML_DATUM);
+    spr.setTextColor(themeColor, C_CARD);
+    spr.drawString(titleStr, 14, 20, 1);
+
+    // Close Button [ QUAY LAI ]
+    spr.fillRoundRect(240, 9, 68, 22, 4, C_RED);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_WHITE, C_RED);
+    spr.drawString("QUAY LAI", 274, 20, 1);
+
+    // ── Main Large Chart Box (Full Resolution Grid & Labels) ────────────
+    int cx = 10, cy = 38, cw = 300, ch = 132;
+    spr.fillRoundRect(cx, cy, cw, ch, 6, C_CARD);
+    spr.drawRoundRect(cx, cy, cw, ch, 6, C_TRACE);
+
+    // Horizontal dashed gridlines
+    for (int i = 1; i <= 3; i++) {
+        int gy = cy + i * (ch / 4);
+        for (int gx = cx + 5; gx < cx + cw - 5; gx += 6) {
+            spr.drawFastHLine(gx, gy, 3, C_TRACE);
+        }
+    }
+
+    // Vertical date gridlines & Date X-axis labels
+    const char* dateLabels[7] = { "28/07", "29/07", "30/07", "31/07", "01/08", "02/08", "03/08" };
+    float stepX = (float)(cw - 28) / 6.0f;
+
+    for (int i = 0; i < 7; i++) {
+        int gx = cx + 14 + (int)(i * stepX);
+        spr.drawFastVLine(gx, cy + 5, ch - 22, C_TRACE);
+        spr.setTextDatum(BC_DATUM);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.drawString(dateLabels[i], gx, cy + ch - 3, 1);
+    }
+
+    // High-Res Trend Curve & Price Value Badges
+    if (dataPtr) {
+        float minVal = dataPtr[0];
+        float maxVal = dataPtr[0];
+        for (int i = 1; i < 7; i++) {
+            if (dataPtr[i] < minVal) minVal = dataPtr[i];
+            if (dataPtr[i] > maxVal) maxVal = dataPtr[i];
+        }
+        float range = maxVal - minVal;
+        if (range < 0.05f) range = 0.5f;
+
+        for (int i = 0; i < 6; i++) {
+            int x1 = cx + 14 + (int)(i * stepX);
+            int y1 = cy + ch - 24 - (int)(((dataPtr[i] - minVal) / range) * (ch - 46));
+            int x2 = cx + 14 + (int)((i + 1) * stepX);
+            int y2 = cy + ch - 24 - (int)(((dataPtr[i + 1] - minVal) / range) * (ch - 46));
+            y1 = constrain(y1, cy + 16, cy + ch - 24);
+            y2 = constrain(y2, cy + 16, cy + ch - 24);
+
+            spr.drawLine(x1, y1, x2, y2, themeColor);
+            spr.drawLine(x1, y1 + 1, x2, y2 + 1, themeColor); // Bold 2px line
+        }
+
+        // Draw Dot points & Price text badges
+        for (int i = 0; i < 7; i++) {
+            int px = cx + 14 + (int)(i * stepX);
+            int py = cy + ch - 24 - (int)(((dataPtr[i] - minVal) / range) * (ch - 46));
+            py = constrain(py, cy + 16, cy + ch - 24);
+
+            spr.fillCircle(px, py, 3, C_WHITE);
+            spr.drawCircle(px, py, 4, themeColor);
+
+            // Print price text above dot
+            char pBuf[16];
+            if (isMoneyFormat) {
+                snprintf(pBuf, sizeof(pBuf), "%.0f", dataPtr[i]);
+            } else {
+                snprintf(pBuf, sizeof(pBuf), "%.1f", dataPtr[i]);
+            }
+            spr.setTextDatum(BC_DATUM);
+            spr.setTextColor(C_WHITE, C_CARD);
+            spr.drawString(pBuf, px, py - 5, 1);
+        }
+    }
+
+    // ── Summary Footer Bar ──────────────────────────────────────────────
+    spr.fillRoundRect(10, 174, 300, 60, 6, C_CARD);
+    spr.drawRoundRect(10, 174, 300, 60, 6, C_TRACE);
+
+    float minV = dataPtr ? dataPtr[0] : 0, maxV = dataPtr ? dataPtr[0] : 0;
+    if (dataPtr) {
+        for (int i = 1; i < 7; i++) {
+            if (dataPtr[i] < minV) minV = dataPtr[i];
+            if (dataPtr[i] > maxV) maxV = dataPtr[i];
+        }
+    }
+
+    char lowBuf[32], highBuf[32], curBuf[32];
+    if (isMoneyFormat) {
+        char b1[16], b2[16], b3[16];
+        formatWithCommas(b1, sizeof(b1), minV);
+        formatWithCommas(b2, sizeof(b2), maxV);
+        formatWithCommas(b3, sizeof(b3), currentVal);
+        snprintf(lowBuf, sizeof(lowBuf), "Day: %s", b1);
+        snprintf(highBuf, sizeof(highBuf), "Dinh: %s", b2);
+        snprintf(curBuf, sizeof(curBuf), "Bay gio: %s", b3);
+    } else {
+        snprintf(lowBuf, sizeof(lowBuf), "Day: %.2fM", minV);
+        snprintf(highBuf, sizeof(highBuf), "Dinh: %.2fM", maxV);
+        snprintf(curBuf, sizeof(curBuf), "Bay gio: %.2fM", currentVal);
+    }
+
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_RED, C_CARD);
+    spr.drawString(lowBuf, 20, 182, 1);
+
+    spr.setTextColor(C_GREEN, C_CARD);
+    spr.drawString(highBuf, 118, 182, 1);
+
+    spr.setTextColor(themeColor, C_CARD);
+    spr.drawString(curBuf, 212, 182, 1);
+
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_DIM, C_CARD);
+    spr.drawString("[ Cham bat ky dau de dong chi tiet ]", 160, 228, 1);
 }
