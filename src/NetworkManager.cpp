@@ -494,7 +494,7 @@ void NetworkManager::fetchGoldAndExchange() {
     gold.sjcBuy = 137.00f;
     gold.sjcSell = 141.00f;
     gold.sjcDelta = 0.00f;
-    gold.xauUsd = 2890.50f;
+    gold.xauUsd = 4064.00f;
     gold.valid = true;
 
     if (exchange.cur1Code[0] == '\0') strncpy(exchange.cur1Code, "USD", sizeof(exchange.cur1Code));
@@ -507,7 +507,7 @@ void NetworkManager::fetchGoldAndExchange() {
     exchange.cur3Rate = calcCurrencyRate(exchange.cur3Code, vndUsd);
     exchange.valid = true;
 
-    // ── 1. Fetch live SJC Gold price ─────────────────────────────────
+    // ── 1. Fetch live SJC Gold price & Live XAUUSD World Gold price ──────
     HTTPClient http;
     http.begin("https://www.vang.today/api/prices?type=SJL1L10");
     if (http.GET() == 200) {
@@ -519,6 +519,17 @@ void NetworkManager::fetchGoldAndExchange() {
             gold.sjcSell = s / 1000000.0f;
             gold.sjcDelta = (gDoc["change_buy"] | 0.0f) / 1000000.0f;
             Serial.printf("[NetworkManager] SJC Gold Live: Buy=%.2fM, Sell=%.2fM\n", gold.sjcBuy, gold.sjcSell);
+        }
+    }
+    http.end();
+
+    // Fetch Live XAUUSD (World Gold Spot Price via Binance PAXGUSDT)
+    http.begin("https://api.binance.com/api/v3/ticker/price?symbol=PAXGUSDT");
+    if (http.GET() == 200) {
+        JsonDocument xDoc;
+        if (!deserializeJson(xDoc, http.getString())) {
+            gold.xauUsd = xDoc["price"] | 4064.00f;
+            Serial.printf("[NetworkManager] XAUUSD World Gold Live: $%.2f / oz\n", gold.xauUsd);
         }
     }
     http.end();
