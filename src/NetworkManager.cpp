@@ -46,6 +46,20 @@ static void populateCurrencyHistory7(const char* code, float currentRate, float*
     }
 }
 
+void NetworkManager::setCity(const char* newCity) {
+    if (!newCity || newCity[0] == '\0') return;
+    snprintf(weather.city, sizeof(weather.city), "%s", newCity);
+    
+    // Save to NVS Preferences permanently
+    Preferences prefs;
+    prefs.begin("weather", false);
+    prefs.putString("city", weather.city);
+    prefs.end();
+
+    // Trigger instant weather refresh
+    lastWeatherFetch = 0;
+}
+
 NetworkManager::NetworkManager()
     : server(80),
       lastWeatherFetch(0),
@@ -85,6 +99,19 @@ void NetworkManager::triggerMediaAction(const char* action) {
 
 void NetworkManager::begin() {
     Serial.println("[NetworkManager] Connecting WiFi via WiFiManager...");
+
+    // Restore saved City and Currency pairs from NVS Preferences
+    Preferences prefs;
+    prefs.begin("desk_cfg", true);
+    String savedCity = prefs.getString("city", "Ho Chi Minh");
+    String savedCur1 = prefs.getString("cur1", "USD");
+    String savedCur2 = prefs.getString("cur2", "CAD");
+    prefs.end();
+
+    snprintf(weather.city, sizeof(weather.city), "%s", savedCity.c_str());
+    strncpy(exchange.cur1Code, savedCur1.c_str(), 7);
+    strncpy(exchange.cur2Code, savedCur2.c_str(), 7);
+
     bootStartTime = millis();
     bootState = BOOT_CONNECTING_WIFI;
     bootProgress = 25;
@@ -126,28 +153,28 @@ void NetworkManager::begin() {
     configTime(7 * 3600, 0, "vn.pool.ntp.org", "time.google.com", "pool.ntp.org");
 
     // Load saved Weather City & Exchange Currencies from NVS
-    Preferences prefs;
-    prefs.begin("weather", true);
-    if (prefs.isKey("city")) {
-        String savedCity = prefs.getString("city", DEFAULT_CITY);
+    Preferences prefsCfg;
+    prefsCfg.begin("weather", true);
+    if (prefsCfg.isKey("city")) {
+        String savedCity = prefsCfg.getString("city", DEFAULT_CITY);
         snprintf(weather.city, sizeof(weather.city), "%s", savedCity.c_str());
     }
-    prefs.end();
+    prefsCfg.end();
 
-    prefs.begin("exchange", true);
-    if (prefs.isKey("cur1")) {
-        String c1 = prefs.getString("cur1", "USD");
+    prefsCfg.begin("exchange", true);
+    if (prefsCfg.isKey("cur1")) {
+        String c1 = prefsCfg.getString("cur1", "USD");
         strncpy(exchange.cur1Code, c1.c_str(), 7);
     } else {
         strncpy(exchange.cur1Code, "USD", 7);
     }
-    if (prefs.isKey("cur2")) {
-        String c2 = prefs.getString("cur2", "EUR");
+    if (prefsCfg.isKey("cur2")) {
+        String c2 = prefsCfg.getString("cur2", "EUR");
         strncpy(exchange.cur2Code, c2.c_str(), 7);
     } else {
         strncpy(exchange.cur2Code, "EUR", 7);
     }
-    prefs.end();
+    prefsCfg.end();
 
     setupWebRoutes();
     server.begin();
@@ -171,17 +198,6 @@ void NetworkManager::begin() {
             display.update();
         }
     }
-}
-
-void NetworkManager::setCity(const char* newCity) {
-    if (!newCity || newCity[0] == '\0') return;
-    snprintf(weather.city, sizeof(weather.city), "%s", newCity);
-    Preferences prefs;
-    prefs.begin("weather", false);
-    prefs.putString("city", weather.city);
-    prefs.end();
-    Serial.printf("[NetworkManager] Weather City changed to: %s\n", weather.city);
-    fetchWeather();
 }
 
 static void sendCORSResponse(AsyncWebServerRequest *request, int code, const String& json) {
@@ -316,11 +332,14 @@ void NetworkManager::setupWebRoutes() {
             memcpy(buf, data, len);
             buf[len] = '\0';
             if (pcMonitor.parseJsonData(buf)) {
-                char respBuf[128];
+                char respBuf[256];
                 snprintf(respBuf, sizeof(respBuf),
-                         "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\"}",
+                         "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}",
                          display.getCurrentPage(),
-                         getCurrentThemePresetName());
+                         getCurrentThemePresetName(),
+                         weather.city,
+                         exchange.cur1Code,
+                         exchange.cur2Code);
                 sendCORSResponse(request, 200, respBuf);
             } else {
                 sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");

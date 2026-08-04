@@ -167,24 +167,6 @@ void loop() {
                     display.resetCalendarMonth();
                 }
 
-            } else if (display.getCurrentPage() == 6 && evt.y >= 60 && evt.y <= 84) {
-                // Settings Page (Page 6): Tap "Calibrate Touch" menu item
-                touch.startCalibration();
-                Serial.println("[Touch] Settings -> Calibrate Touch");
-
-            } else if (display.getCurrentPage() == 6 && evt.y >= 88 && evt.y <= 112) {
-                // Settings Page (Page 6): Toggle Auto Brightness
-                hardware.setAutoBrightnessEnabled(!hardware.isAutoBrightnessEnabled());
-                if (!hardware.isAutoBrightnessEnabled()) hardware.setBacklight(85);
-                Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
-                              hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
-
-            } else if (display.getCurrentPage() == 6 && evt.y >= 116 && evt.y <= 140) {
-                // Settings Page (Page 6): Toggle Touch Beep Sound (ON / MUTE)
-                hardware.setTouchSoundEnabled(!hardware.isTouchSoundEnabled());
-                Serial.printf("[Touch] Settings -> Touch Sound: %s\n",
-                              hardware.isTouchSoundEnabled() ? "ON" : "MUTE");
-
             } else if (display.getCurrentPage() == 5) {
                 // Top Alarm Bar (y = 34..76)
                 if (evt.y >= 34 && evt.y <= 76) {
@@ -221,8 +203,8 @@ void loop() {
                     Serial.printf("[Touch] DeskUtils -> Page %d\n", display.getCurrentPage());
                 }
 
-            } else if (display.getCurrentPage() == 7) {
-                // Media Control Page (Page 7)
+            } else if (display.getCurrentPage() == 6) {
+                // Media Control Page (Page 6)
                 // 1. Left Side Nav Strip (<) or Top Header Left: Prev Page
                 if (evt.x < 32 || (evt.y < 35 && evt.x < 160)) {
                     display.previousPage();
@@ -239,6 +221,7 @@ void loop() {
                         network.triggerMediaAction("prev");
                         hardware.playBeep(1200, 40);
                     } else if (evt.x >= 117 && evt.x <= 203) {
+                        display.togglePlayState();
                         network.triggerMediaAction("play_pause");
                         hardware.playBeep(1500, 40);
                     } else if (evt.x >= 210 && evt.x <= 286) {
@@ -257,6 +240,69 @@ void loop() {
                     } else if (evt.x >= 210 && evt.x <= 286) {
                         network.triggerMediaAction("vol_up");
                         hardware.playBeep(1400, 40);
+                    }
+                }
+
+            } else if (display.getCurrentPage() == 7) {
+                // Settings Page (Page 7)
+                // 1. Dedicated Transparent Side Nav Keys (< or >) & Header: Page Switching FIRST
+                if (evt.x < 32 || (evt.y < 33 && evt.x < 160)) {
+                    display.previousPage();
+                    hardware.playBeep(1000, 30);
+                } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {
+                    display.nextPage();
+                    hardware.playBeep(1000, 30);
+                }
+                // 2. Top Sub-Tab Switcher (Shifted down 5px: y = 33..59)
+                else if (evt.y >= 33 && evt.y <= 59) {
+                    if (evt.x >= 34 && evt.x <= 155) {
+                        display.setSettingsTab(0);
+                        hardware.playBeep(1200, 30);
+                    } else if (evt.x >= 165 && evt.x <= 286) {
+                        display.setSettingsTab(1);
+                        hardware.playBeep(1200, 30);
+                    }
+                }
+                // 3. Tab 0 System Settings Item Selector (y = 60..225)
+                else if (display.getSettingsTab() == 0 && evt.y >= 60 && evt.y <= 225) {
+                    if (evt.y >= 60 && evt.y <= 84) {
+                        // Item 1: Calibrate Touch
+                        touch.startCalibration();
+                        Serial.println("[Touch] Settings -> Calibrate Touch");
+                    } else if (evt.y >= 86 && evt.y <= 110) {
+                        // Item 2: Toggle Auto Brightness
+                        hardware.setAutoBrightnessEnabled(!hardware.isAutoBrightnessEnabled());
+                        if (!hardware.isAutoBrightnessEnabled()) hardware.setBacklight(85);
+                        hardware.playBeep(1200, 30);
+                        Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
+                                      hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
+                    } else if (evt.y >= 112 && evt.y <= 136) {
+                        // Item 3: Toggle Touch Sound
+                        hardware.setTouchSoundEnabled(!hardware.isTouchSoundEnabled());
+                        if (hardware.isTouchSoundEnabled()) hardware.playBeep(1400, 40);
+                        Serial.printf("[Touch] Settings -> Touch Sound: %s\n",
+                                      hardware.isTouchSoundEnabled() ? "ON" : "MUTE");
+                    } else {
+                        // Empty region in Tab 0 -> Page Navigation Fallback
+                        if (evt.x < 160) display.previousPage();
+                        else display.nextPage();
+                    }
+                }
+                // 4. Tab 1 Theme Card Selector (y = 60..225)
+                else if (display.getSettingsTab() == 1 && evt.y >= 60 && evt.y <= 225) {
+                    int col = (evt.x >= 160) ? 1 : 0;
+                    int row = (evt.y - 63) / 52;
+                    int idx = row * 2 + col;
+                    if (idx >= 0 && idx < 6) {
+                        switch (idx) {
+                            case 0: applyOceanDarkTheme(); break;
+                            case 1: applyCyberpunkTheme(); break;
+                            case 2: applyForestTheme(); break;
+                            case 3: applyCherryTheme(); break;
+                            case 4: applyLightDayTheme(); break;
+                            case 5: applyRetroGreenTheme(); break;
+                        }
+                        hardware.playBeep(1600, 40);
                     }
                 }
 

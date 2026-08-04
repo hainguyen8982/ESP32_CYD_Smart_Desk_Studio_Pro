@@ -55,7 +55,7 @@ static uint16_t getPageAccent(uint8_t page) {
 //  CONSTRUCTOR / BEGIN / NAVIGATION / UPDATE
 // ─────────────────────────────────────────────────────────────────────
 DisplayManager::DisplayManager()
-    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), lastRenderTime(0), spriteReady(false) {}
+    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), isMediaPlaying(false), settingsTab(0), lastRenderTime(0), spriteReady(false) {}
 
 void DisplayManager::begin() {
     loadTheme(); // Load saved theme from NVS or default Ocean Dark
@@ -128,8 +128,8 @@ void DisplayManager::update() {
         case 3: renderPage3_PcCpuRam();      break;
         case 4: renderPage4_PcNetDisks();    break;
         case 5: renderPage5_DeskUtilities(); break;
-        case 6: renderPage6_Settings();      break;
-        case 7: renderPage7_MediaControl();  break;
+        case 6: renderPage7_MediaControl();  break;
+        case 7: renderPage6_Settings();      break;
         default: renderPage0_WeatherClock(); break;
     }
     spr.pushSprite(0, 0);
@@ -179,15 +179,16 @@ void DisplayManager::renderHeader() {
             spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
             spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
             break;
-        case 6: // Settings gear icon
+        case 6: // Media Control music note icon
+            spr.fillRect(ix-4, iy-4, 8, 8, C_CYAN);
+            spr.fillCircle(ix, iy, 2, C_HDR);
+            break;
+        case 7: // Settings gear icon
             spr.drawCircle(ix, iy, 5, C_PURPLE);
             spr.fillCircle(ix, iy, 2, C_HDR);
             spr.fillRect(ix-1, iy-7, 2, 14, C_PURPLE);
             spr.fillRect(ix-7, iy-1, 14, 2, C_PURPLE);
             break;
-        case 7: // Media Control music note icon
-            spr.fillRect(ix-4, iy-4, 8, 8, C_CYAN);
-            spr.fillCircle(ix, iy, 2, C_HDR);
             break;
     }
 
@@ -1349,164 +1350,200 @@ void DisplayManager::renderCalibrationScreen() {
 //  PAGE 6 — Settings Page
 // ═══════════════════════════════════════════════════════════════════════
 void DisplayManager::renderPage6_Settings() {
-    // Title
-    spr.setTextColor(C_WHITE, C_BG);
-    spr.setTextDatum(TC_DATUM);
-    spr.drawString("SETTINGS", 160, 32, 2);
+    // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("<", 16, 126, 2);
+    spr.drawString(">", 304, 126, 2);
 
-    int y = 60;
-    int itemH = 28;
+    // ── Top Sub-Tab Navigation Header (Shifted down 5px: y = 35..57) ─────
+    // Tab 0: SYSTEM (x = 34..155)
+    uint16_t t0_bg = (settingsTab == 0) ? C_CYAN : C_CARD;
+    uint16_t t0_fg = (settingsTab == 0) ? C_BG : C_DIM;
+    spr.fillRoundRect(34, 35, 121, 22, 5, t0_bg);
+    spr.drawRoundRect(34, 35, 121, 22, 5, C_TRACE);
+    spr.setTextColor(t0_fg, t0_bg);
+    spr.setTextDatum(MC_DATUM);
+    spr.drawString("SYSTEM", 94, 46, 2);
 
-    // Menu Item 1: Calibrate Touch (y = 60..88)
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_YELLOW, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("Calibrate Touch", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(touch.isCalibrated() ? "OK" : "Not Set", 290, y + 12, 2);
-    y += itemH;
+    // Tab 1: THEMES (x = 165..286)
+    uint16_t t1_bg = (settingsTab == 1) ? C_PURPLE : C_CARD;
+    uint16_t t1_fg = (settingsTab == 1) ? C_BG : C_DIM;
+    spr.fillRoundRect(165, 35, 121, 22, 5, t1_bg);
+    spr.drawRoundRect(165, 35, 121, 22, 5, C_TRACE);
+    spr.setTextColor(t1_fg, t1_bg);
+    spr.setTextDatum(MC_DATUM);
+    spr.drawString("THEMES", 225, 46, 2);
 
-    // Menu Item 2: Auto Brightness (y = 88..116)
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_CYAN, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("Auto Brightness", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(hardware.isAutoBrightnessEnabled() ? "ON" : "OFF", 290, y + 12, 2);
-    y += itemH;
+    if (settingsTab == 0) {
+        // ── TAB 0: SYSTEM SETTINGS (Shifted down 5px: start y = 61) ───────
+        int y = 61;
+        int itemH = 26;
 
-    // Menu Item 3: Touch Sound (y = 116..144)
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_GREEN, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("Touch Beep Sound", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(hardware.isTouchSoundEnabled() ? "ON" : "MUTE", 290, y + 12, 2);
-    y += itemH;
+        // 1. Calibrate Touch
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_YELLOW, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("Calibrate Touch", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(touch.isCalibrated() ? "OK" : "Not Set", 278, y + 11, 2);
+        y += itemH;
 
-    // Menu Item 3: WiFi SSID
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_GREEN, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("WiFi", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(WiFi.isConnected() ? WiFi.SSID().c_str() : "N/A", 290, y + 12, 2);
-    y += itemH;
+        // 2. Auto Brightness
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_CYAN, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("Auto Brightness", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(hardware.isAutoBrightnessEnabled() ? "ON" : "OFF", 278, y + 11, 2);
+        y += itemH;
 
-    // Menu Item 4: IP Address
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_GREEN, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("IP Address", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(WiFi.isConnected() ? WiFi.localIP().toString().c_str() : "N/A", 290, y + 12, 2);
-    y += itemH;
+        // 3. Touch Beep Sound
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("Touch Beep Sound", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(hardware.isTouchSoundEnabled() ? "ON" : "MUTE", 278, y + 11, 2);
+        y += itemH;
 
-    // Menu Item 5: Touch Type
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_PURPLE, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("Touch Type", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString(touch.getTouchTypeString(), 290, y + 12, 2);
-    y += itemH;
+        // 4. WiFi SSID
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("WiFi SSID", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(WiFi.isConnected() ? WiFi.SSID().c_str() : "N/A", 278, y + 11, 2);
+        y += itemH;
 
-    // Menu Item 6: Firmware Version
-    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
-    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
-    spr.setTextColor(C_ORANGE, C_CARD);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("Firmware", 30, y + 12, 2);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.setTextDatum(MR_DATUM);
-    spr.drawString("v1.0.0", 290, y + 12, 2);
+        // 5. IP Address
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("IP Address", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(WiFi.isConnected() ? WiFi.localIP().toString().c_str() : "N/A", 278, y + 11, 2);
+        y += itemH;
+
+        // 6. Touch Controller
+        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.setTextColor(C_PURPLE, C_CARD);
+        spr.setTextDatum(ML_DATUM);
+        spr.drawString("Touch Driver", 42, y + 11, 2);
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.setTextDatum(MR_DATUM);
+        spr.drawString(touch.getTouchTypeString(), 278, y + 11, 2);
+
+    } else {
+        // ── TAB 1: THEME PRESET SELECTOR (Shifted down 5px: start by = 63) ──
+        const char* themes[6] = { "Ocean Dark", "Cyberpunk", "Forest", "Cherry", "Light Day", "Retro Green" };
+        const char* currentP = getCurrentThemePresetName();
+
+        for (int i = 0; i < 6; i++) {
+            int row = i / 2;
+            int col = i % 2;
+            int bx = 34 + col * 128;
+            int by = 63 + row * 52;
+
+            bool isSelected = (strcmp(currentP, themes[i]) == 0);
+            uint16_t borderC = isSelected ? C_GREEN : C_TRACE;
+            uint16_t textC = isSelected ? C_GREEN : C_WHITE;
+
+            spr.fillRoundRect(bx, by, 120, 46, 6, C_CARD);
+            spr.drawRoundRect(bx, by, 120, 46, 6, borderC);
+            spr.setTextDatum(MC_DATUM);
+            spr.setTextColor(textC, C_CARD);
+            spr.drawString(themes[i], bx + 60, by + 23, 2);
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  PAGE 7 — MEDIA CONTROL HOTKEYS (With Side Navigation Strips)
+//  PAGE 7 — MEDIA CONTROL HOTKEYS (With Transparent Side Nav Keys)
 // ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderPage7_MediaControl() {
     drawSectionTitle("MEDIA CONTROL", C_CYAN);
 
-    // ── Dedicated Side Navigation Strips ──────────────────────────────
-    // Left Prev Page Strip (x = 4..28, y = 52..214)
-    spr.fillRoundRect(4, 52, 24, 162, 6, C_CARD);
-    spr.drawRoundRect(4, 52, 24, 162, 6, C_TRACE);
+    // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
     spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_CYAN, C_CARD);
+    spr.setTextColor(C_CYAN, C_BG);
     spr.drawString("<", 16, 133, 2);
-
-    // Right Next Page Strip (x = 292..316, y = 52..214)
-    spr.fillRoundRect(292, 52, 24, 162, 6, C_CARD);
-    spr.drawRoundRect(292, 52, 24, 162, 6, C_TRACE);
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_CYAN, C_CARD);
     spr.drawString(">", 304, 133, 2);
 
     // ── Center Media Buttons Grid (x = 34..286) ────────────────────────
     // Row 1: Track Controls (y = 52..128, height 76px)
-    // 1. PREV (x = 34..110, center cx = 72, cy = 82)
+    // 1. PREV (Bar on Left + Triangle pointing Left)
     spr.fillRoundRect(34, 52, 76, 76, 10, C_CARD);
     spr.drawRoundRect(34, 52, 76, 76, 10, C_TRACE);
-    int cx1 = 72, cy1 = 82;
+    int cx1 = 72, cy1 = 80;
     spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, C_CYAN);
-    spr.fillTriangle(cx1 - 6, cy1, cx1 + 2, cy1 - 10, cx1 + 2, cy1 + 10, C_CYAN);
-    spr.fillTriangle(cx1 + 2, cy1, cx1 + 10, cy1 - 10, cx1 + 10, cy1 + 10, C_CYAN);
+    spr.fillTriangle(cx1 + 8, cy1 - 10, cx1 + 8, cy1 + 10, cx1 - 4, cy1, C_CYAN);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
     spr.drawString("PREV", cx1, 122, 2);
 
-    // 2. PLAY / PAUSE (Hero Center Button: x = 117..203, center cx = 160, cy = 82)
+    // 2. PLAY / PAUSE (Dynamic Hero Center Button: x = 117..203, center cx = 160)
     spr.fillRoundRect(117, 52, 86, 76, 10, C_CARD);
     spr.drawRoundRect(117, 52, 86, 76, 10, C_GREEN);
-    int cx2 = 160, cy2 = 82;
-    spr.fillTriangle(cx2 - 12, cy2 - 10, cx2 - 2, cy2, cx2 - 12, cy2 + 10, C_GREEN);
-    spr.fillRect(cx2 + 3, cy2 - 10, 4, 20, C_GREEN);
-    spr.fillRect(cx2 + 10, cy2 - 10, 4, 20, C_GREEN);
-    spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_GREEN, C_CARD);
-    spr.drawString("PLAY/PAUSE", cx2, 122, 1);
+    int cx2 = 160, cy2 = 80;
+    if (!isMediaPlaying) {
+        // Paused state -> Render PLAY Icon (Solid Right Triangle)
+        spr.fillTriangle(cx2 - 8, cy2 - 12, cx2 - 8, cy2 + 12, cx2 + 10, cy2, C_GREEN);
+        spr.setTextDatum(BC_DATUM);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.drawString("PLAY", cx2, 122, 2);
+    } else {
+        // Playing state -> Render PAUSE Icon (Two Vertical Rounded Bars)
+        spr.fillRoundRect(cx2 - 8, cy2 - 11, 6, 22, 2, C_GREEN);
+        spr.fillRoundRect(cx2 + 3, cy2 - 11, 6, 22, 2, C_GREEN);
+        spr.setTextDatum(BC_DATUM);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.drawString("PAUSE", cx2, 122, 2);
+    }
 
-    // 3. NEXT (x = 210..286, center cx = 248, cy = 82)
+    // 3. NEXT (Triangle pointing Right + Bar on Right)
     spr.fillRoundRect(210, 52, 76, 76, 10, C_CARD);
     spr.drawRoundRect(210, 52, 76, 76, 10, C_TRACE);
-    int cx3 = 248, cy3 = 82;
-    spr.fillTriangle(cx3 - 10, cy3 - 10, cx3 - 2, cy3, cx3 - 10, cy3 + 10, C_CYAN);
-    spr.fillTriangle(cx3 - 2, cy3 - 10, cx3 + 6, cy3, cx3 - 2, cy3 + 10, C_CYAN);
-    spr.fillRect(cx3 + 7, cy3 - 10, 4, 20, C_CYAN);
+    int cx3 = 248, cy3 = 80;
+    spr.fillTriangle(cx3 - 8, cy3 - 10, cx3 - 8, cy3 + 10, cx3 + 4, cy3, C_CYAN);
+    spr.fillRect(cx3 + 6, cy3 - 10, 4, 20, C_CYAN);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
     spr.drawString("NEXT", cx3, 122, 2);
 
-    // Row 2: Volume Controls (y = 138..214, height 76px)
-    // 4. VOL - (x = 34..110, center cx = 72, cy = 168)
+    // Row 2: Volume & Ad Controls (y = 138..214, height 76px)
+    // 4. VOL - (Speaker Body + 1 Sound Arc — 100% Crisp Vector, No Missing Lines)
     spr.fillRoundRect(34, 138, 76, 76, 10, C_CARD);
     spr.drawRoundRect(34, 138, 76, 76, 10, C_TRACE);
-    int cx4 = 72, cy4 = 168;
-    spr.fillRect(cx4 - 12, cy4 - 5, 5, 10, C_YELLOW);
-    spr.fillTriangle(cx4 - 7, cy4 - 5, cx4 - 1, cy4 - 10, cx4 - 1, cy4 + 10, C_YELLOW);
-    spr.fillRect(cx4 - 7, cy4 - 10, 7, 21, C_YELLOW);
-    spr.fillRect(cx4 + 6, cy4 - 2, 10, 5, C_YELLOW);
+    int cx4 = 72, cy4 = 165;
+    // Speaker Body (Box + Horn trapezoid ending at x = cx4 - 2)
+    spr.fillRoundRect(cx4 - 18, cy4 - 7, 7, 14, 2, C_YELLOW);
+    spr.fillTriangle(cx4 - 10, cy4 - 7, cx4 - 2, cy4 - 14, cx4 - 10, cy4 + 7, C_YELLOW);
+    spr.fillTriangle(cx4 - 10, cy4 + 7, cx4 - 2, cy4 + 14, cx4 - 2, cy4 - 14, C_YELLOW);
+    // 1 Sound Arc (center arcX = cx4 + 5)
+    int arcX4 = cx4 + 5;
+    spr.drawCircle(arcX4, cy4, 7, C_YELLOW);
+    spr.drawCircle(arcX4, cy4, 8, C_YELLOW);
+    spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, C_CARD); // Trim left half safely without touching horn
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
     spr.drawString("VOL -", cx4, 208, 2);
 
-    // 5. SKIP AD (Center Hero Button: x = 117..203, center cx = 160, cy = 168)
+    // 5. SKIP AD (Double Triangle + Line)
     spr.fillRoundRect(117, 138, 86, 76, 10, C_CARD);
     spr.drawRoundRect(117, 138, 86, 76, 10, C_ORANGE);
-    int cx5 = 160, cy5 = 168;
+    int cx5 = 160, cy5 = 165;
     spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, C_ORANGE);
     spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, C_ORANGE);
     spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, C_ORANGE);
@@ -1514,15 +1551,21 @@ void DisplayManager::renderPage7_MediaControl() {
     spr.setTextColor(C_ORANGE, C_CARD);
     spr.drawString("SKIP AD", cx5, 208, 1);
 
-    // 6. VOL + (x = 210..286, center cx = 248, cy = 168)
+    // 6. VOL + (Speaker Body + 2 Sound Arcs — 100% Crisp Vector, No Missing Lines)
     spr.fillRoundRect(210, 138, 76, 76, 10, C_CARD);
     spr.drawRoundRect(210, 138, 76, 76, 10, C_TRACE);
-    int cx6 = 248, cy6 = 168;
-    spr.fillRect(cx6 - 12, cy6 - 5, 5, 10, C_YELLOW);
-    spr.fillTriangle(cx6 - 7, cy6 - 5, cx6 - 1, cy6 - 10, cx6 - 1, cy6 + 10, C_YELLOW);
-    spr.fillRect(cx6 - 7, cy6 - 10, 7, 21, C_YELLOW);
-    spr.fillRect(cx6 + 5, cy6 - 2, 10, 5, C_YELLOW);
-    spr.fillRect(cx6 + 9, cy6 - 6, 4, 13, C_YELLOW);
+    int cx6 = 248, cy6 = 165;
+    // Speaker Body (Box + Horn trapezoid ending at x = cx6 - 4)
+    spr.fillRoundRect(cx6 - 20, cy6 - 7, 7, 14, 2, C_YELLOW);
+    spr.fillTriangle(cx6 - 12, cy6 - 7, cx6 - 4, cy6 - 14, cx6 - 12, cy6 + 7, C_YELLOW);
+    spr.fillTriangle(cx6 - 12, cy6 + 7, cx6 - 4, cy6 + 14, cx6 - 4, cy6 - 14, C_YELLOW);
+    // 2 Sound Arcs (center arcX = cx6 + 3)
+    int arcX6 = cx6 + 3;
+    spr.drawCircle(arcX6, cy6, 7, C_YELLOW);
+    spr.drawCircle(arcX6, cy6, 8, C_YELLOW);
+    spr.drawCircle(arcX6, cy6, 12, C_YELLOW);
+    spr.drawCircle(arcX6, cy6, 13, C_YELLOW);
+    spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, C_CARD); // Trim left half safely without touching horn
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
     spr.drawString("VOL +", cx6, 208, 2);

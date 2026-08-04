@@ -53,6 +53,15 @@ public:
     void resetCalendarMonth() { calendarMonthOffset = 0; }
     int16_t getCalendarMonthOffset() const { return calendarMonthOffset; }
 
+    // Media Play/Pause State
+    bool getMediaPlaying() const { return isMediaPlaying; }
+    void togglePlayState() { isMediaPlaying = !isMediaPlaying; }
+    void setMediaPlaying(bool p) { isMediaPlaying = p; }
+
+    // Settings Tab State (0 = System, 1 = Themes)
+    uint8_t getSettingsTab() const { return settingsTab; }
+    void setSettingsTab(uint8_t tab) { settingsTab = tab; }
+
 private:
     // ── Page renderers ───────────────────────────────────────
     void renderHeader();
@@ -114,6 +123,8 @@ private:
     uint8_t     tempAlarmHour;
     uint8_t     tempAlarmMin;
     int16_t     calendarMonthOffset;
+    bool        isMediaPlaying;
+    uint8_t     settingsTab;
     unsigned long lastRenderTime;
     bool        spriteReady;
 };

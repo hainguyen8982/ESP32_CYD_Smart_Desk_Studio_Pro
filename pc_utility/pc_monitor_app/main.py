@@ -283,11 +283,11 @@ class CYDMonitorApp(ctk.CTk):
         super().__init__()
 
         self.title("ESP32 CYD Desk Dashboard Studio")
-        self.geometry("560x740")
-        self.resizable(False, False)
+        self.geometry("580x780")
+        self.resizable(True, True)
 
         self.esp32_ip = "192.168.1.13"
-        self.cached_ip = self.esp32_ip  # thread-safe copy — never call ip_entry.get() from bg thread!
+        self.cached_ip = self.esp32_ip
         self.is_streaming = True
         self.tray_icon = None
 
@@ -295,6 +295,10 @@ class CYDMonitorApp(ctk.CTk):
         self.last_net = psutil.net_io_counters()
         self.last_time = time.time()
         self.gpu_mon = GPUMonitor()
+
+        # Main Scrollable Container for 100% Overflow Prevention
+        self.scroll_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
 
         self.create_widgets()
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
@@ -313,9 +317,11 @@ class CYDMonitorApp(ctk.CTk):
         self._sync_ip_loop()
 
     def create_widgets(self):
+        container = self.scroll_container
+
         # ── Header Frame ──────────────────────────────────────────────
-        hdr_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        hdr_frame.pack(fill="x", padx=15, pady=(15, 10))
+        hdr_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        hdr_frame.pack(fill="x", padx=10, pady=(10, 5))
 
         title_lbl = ctk.CTkLabel(
             hdr_frame, text="💻 ESP32 CYD Smart Dashboard Studio",
@@ -324,8 +330,8 @@ class CYDMonitorApp(ctk.CTk):
         title_lbl.pack(pady=10)
 
         # ── Connection Settings ───────────────────────────────────────
-        conn_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        conn_frame.pack(fill="x", padx=15, pady=5)
+        conn_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        conn_frame.pack(fill="x", padx=10, pady=4)
 
         ip_lbl = ctk.CTkLabel(conn_frame, text="ESP32 IP Address:", font=ctk.CTkFont(size=13))
         ip_lbl.pack(side="left", padx=12, pady=10)
@@ -340,14 +346,14 @@ class CYDMonitorApp(ctk.CTk):
         self.status_lbl.pack(side="right", padx=15, pady=10)
 
         # ── Weather Location Section ──────────────────────────────────
-        w_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        w_frame.pack(fill="x", padx=15, pady=5)
+        w_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        w_frame.pack(fill="x", padx=10, pady=4)
 
         w_title = ctk.CTkLabel(w_frame, text="🌤️ Weather Location", font=ctk.CTkFont(size=14, weight="bold"))
-        w_title.pack(anchor="w", padx=12, pady=(10, 5))
+        w_title.pack(anchor="w", padx=12, pady=(8, 4))
 
         w_inner = ctk.CTkFrame(w_frame, fg_color="transparent")
-        w_inner.pack(fill="x", padx=12, pady=(0, 10))
+        w_inner.pack(fill="x", padx=12, pady=(0, 8))
 
         city_names = [c[1] for c in VN_CITIES]
         self.city_combo = ctk.CTkOptionMenu(w_inner, values=city_names, width=280)
@@ -358,14 +364,14 @@ class CYDMonitorApp(ctk.CTk):
         set_city_btn.pack(side="left")
 
         # ── Foreign Exchange Rates Section ─────────────────────────────
-        ex_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        ex_frame.pack(fill="x", padx=15, pady=5)
+        ex_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        ex_frame.pack(fill="x", padx=10, pady=4)
 
         ex_title = ctk.CTkLabel(ex_frame, text="💱 Foreign Exchange Rates (Chọn 2 Tỷ Giá)", font=ctk.CTkFont(size=14, weight="bold"))
-        ex_title.pack(anchor="w", padx=12, pady=(10, 5))
+        ex_title.pack(anchor="w", padx=12, pady=(8, 4))
 
         ex_inner = ctk.CTkFrame(ex_frame, fg_color="transparent")
-        ex_inner.pack(fill="x", padx=12, pady=(0, 10))
+        ex_inner.pack(fill="x", padx=12, pady=(0, 8))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW", "CAD"]
 
@@ -386,39 +392,39 @@ class CYDMonitorApp(ctk.CTk):
         self.active_theme_key = ""
 
         # ── Theme Presets Section ─────────────────────────────────────
-        t_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        t_frame.pack(fill="x", padx=15, pady=5)
+        t_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        t_frame.pack(fill="x", padx=10, pady=4)
 
         t_title = ctk.CTkLabel(t_frame, text="🎨 Theme Presets", font=ctk.CTkFont(size=14, weight="bold"))
-        t_title.pack(anchor="w", padx=12, pady=(10, 5))
+        t_title.pack(anchor="w", padx=12, pady=(8, 4))
 
         t_grid = ctk.CTkFrame(t_frame, fg_color="transparent")
-        t_grid.pack(fill="x", padx=10, pady=(0, 10))
+        t_grid.pack(fill="x", padx=10, pady=(0, 8))
 
         for idx, (name, key) in enumerate(THEMES):
             r, c = divmod(idx, 3)
             btn = ctk.CTkButton(
-                t_grid, text=name, width=155, height=32,
+                t_grid, text=name, width=155, height=30,
                 fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9",
                 command=lambda k=key: self.apply_theme(k)
             )
-            btn.grid(row=r, column=c, padx=5, pady=5)
+            btn.grid(row=r, column=c, padx=5, pady=4)
             self.theme_buttons[key] = btn
 
         # ── Remote Page Switcher ──────────────────────────────────────
-        p_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        p_frame.pack(fill="x", padx=15, pady=5)
+        p_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        p_frame.pack(fill="x", padx=10, pady=4)
 
         p_title = ctk.CTkLabel(p_frame, text="📱 Remote Page Switcher", font=ctk.CTkFont(size=14, weight="bold"))
-        p_title.pack(anchor="w", padx=12, pady=(10, 5))
+        p_title.pack(anchor="w", padx=12, pady=(8, 4))
 
         p_grid = ctk.CTkFrame(p_frame, fg_color="transparent")
-        p_grid.pack(fill="x", padx=10, pady=(0, 10))
+        p_grid.pack(fill="x", padx=10, pady=(0, 8))
 
         pages = [
             ("0: Weather Clock", 0), ("1: Lunar Calendar", 1), ("2: Gold & Finance", 2),
             ("3: PC Monitor", 3), ("4: PC Net & Storage", 4), ("5: Desk Utilities", 5),
-            ("6: Settings", 6)
+            ("6: Media Control", 6), ("7: Settings", 7)
         ]
 
         for idx, (p_name, p_id) in enumerate(pages):
@@ -431,13 +437,41 @@ class CYDMonitorApp(ctk.CTk):
             btn.grid(row=r, column=c, padx=5, pady=4)
             self.page_buttons[p_id] = btn
 
+        # ── Media Control Quick Remote Section ────────────────────────
+        m_remote_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        m_remote_frame.pack(fill="x", padx=10, pady=4)
+
+        m_remote_title = ctk.CTkLabel(m_remote_frame, text="🎵 Media Control Hotkeys (Bấm nhanh trên PC)", font=ctk.CTkFont(size=14, weight="bold"))
+        m_remote_title.pack(anchor="w", padx=12, pady=(8, 4))
+
+        m_remote_grid = ctk.CTkFrame(m_remote_frame, fg_color="transparent")
+        m_remote_grid.pack(fill="x", padx=10, pady=(0, 8))
+
+        media_btns = [
+            ("⏮ PREV", "prev", "#21262d", "#30363d"),
+            ("▶❚❚ PLAY/PAUSE", "play_pause", "#238636", "#2ea043"),
+            ("⏭ NEXT", "next", "#21262d", "#30363d"),
+            ("🔉 VOL -", "vol_down", "#21262d", "#30363d"),
+            ("⏩ SKIP AD", "skip_ad", "#d97706", "#b45309"),
+            ("🔊 VOL +", "vol_up", "#21262d", "#30363d")
+        ]
+
+        for idx, (b_name, b_act, b_fg, b_hov) in enumerate(media_btns):
+            r, c = divmod(idx, 3)
+            btn = ctk.CTkButton(
+                m_remote_grid, text=b_name, width=155, height=30,
+                fg_color=b_fg, hover_color=b_hov, text_color="#ffffff",
+                command=lambda a=b_act: handle_media_action(a)
+            )
+            btn.grid(row=r, column=c, padx=5, pady=4)
+
         # Highlight default active buttons at launch
         self.highlight_active_page(0)
         self.highlight_active_theme("ocean_dark")
 
         # ── Hardware Live Status Preview ──────────────────────────────
-        m_frame = ctk.CTkFrame(self, fg_color="#161b22", corner_radius=10)
-        m_frame.pack(fill="x", padx=15, pady=5)
+        m_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        m_frame.pack(fill="x", padx=10, pady=4)
 
         m_title = ctk.CTkLabel(m_frame, text="📊 Live Hardware Metrics Streamed", font=ctk.CTkFont(size=14, weight="bold"))
         m_title.pack(anchor="w", padx=12, pady=(10, 5))
@@ -483,6 +517,20 @@ class CYDMonitorApp(ctk.CTk):
                 btn.configure(fg_color="#238636", hover_color="#2ea043", text_color="#ffffff")
             else:
                 btn.configure(fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9")
+
+    def update_settings_gui(self, st_data):
+        if not isinstance(st_data, dict):
+            return
+        if "city" in st_data and st_data["city"]:
+            c_val = str(st_data["city"]).strip()
+            for eng, vn in VN_CITIES:
+                if eng.lower() == c_val.lower():
+                    self.city_combo.set(vn)
+                    break
+        if "cur1" in st_data and st_data["cur1"]:
+            self.cur1_combo.set(str(st_data["cur1"]).upper())
+        if "cur2" in st_data and st_data["cur2"]:
+            self.cur2_combo.set(str(st_data["cur2"]).upper())
 
     def apply_city(self):
         sel = self.city_combo.get()
@@ -707,8 +755,7 @@ class CYDMonitorApp(ctk.CTk):
                                 self.after(0, lambda v=page_val: self.highlight_active_page(v))
                             if theme_val:
                                 self.after(0, lambda v=theme_val: self.highlight_active_theme(v))
-                            if media_act:
-                                handle_media_action(media_act)
+                            self.after(0, lambda d=res_data: self.update_settings_gui(d))
                         except Exception:
                             pass
                 except Exception as wifi_ex:
