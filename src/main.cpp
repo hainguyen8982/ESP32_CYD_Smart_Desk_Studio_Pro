@@ -87,7 +87,34 @@ void loop() {
 
     if (!touch.isCalibrating() && evt.gesture != GESTURE_NONE) {
         if (display.isModalOpen()) {
-            if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_SWIPE_LEFT || evt.gesture == GESTURE_SWIPE_RIGHT) {
+            if (display.getModalType() == MODAL_SET_ALARM) {
+                if (evt.y >= 140) {
+                    if (evt.x < 160) {
+                        // CANCEL (Left Button)
+                        display.closeDetailModal();
+                        Serial.println("[Touch] Alarm modal cancelled");
+                    } else {
+                        // SAVE & ENABLE ALARM (Right Button)
+                        deskUtils.setAlarm(display.getTempAlarmHour(), display.getTempAlarmMin(), true);
+                        display.closeDetailModal();
+                        Serial.printf("[Touch] Alarm set to %02d:%02d ON\n", display.getTempAlarmHour(), display.getTempAlarmMin());
+                    }
+                } else if (evt.x < 160) {
+                    // Hour Box
+                    if (evt.y < 95) {
+                        display.adjustTempAlarmHour(1);
+                    } else {
+                        display.adjustTempAlarmHour(-1);
+                    }
+                } else {
+                    // Minute Box
+                    if (evt.y < 95) {
+                        display.adjustTempAlarmMin(5);
+                    } else {
+                        display.adjustTempAlarmMin(-5);
+                    }
+                }
+            } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_SWIPE_LEFT || evt.gesture == GESTURE_SWIPE_RIGHT) {
                 display.closeDetailModal();
                 Serial.println("[Touch] Detail Chart Modal Closed");
             }
@@ -99,8 +126,8 @@ void loop() {
             display.previousPage();
             Serial.printf("[Touch] Swiped Right -> Page %d\n", display.getCurrentPage());
 
-        } else if (evt.gesture == GESTURE_TAP) {
-            Serial.printf("[Touch] Tap at (%d, %d) Page=%d\n", evt.x, evt.y, display.getCurrentPage());
+        } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_DOUBLE_TAP || evt.gesture == GESTURE_HOLD) {
+            Serial.printf("[Touch] Touch at (%d, %d) Page=%d Gesture=%d\n", evt.x, evt.y, display.getCurrentPage(), evt.gesture);
 
             if (deskUtils.isAlarmRinging()) {
                 deskUtils.dismissAlarm();
@@ -140,21 +167,98 @@ void loop() {
                     display.resetCalendarMonth();
                 }
 
-            } else if (display.getCurrentPage() == 7 && evt.y >= 60 && evt.y <= 84) {
-                // Settings Page: Tap "Calibrate Touch" menu item
+            } else if (display.getCurrentPage() == 6 && evt.y >= 60 && evt.y <= 84) {
+                // Settings Page (Page 6): Tap "Calibrate Touch" menu item
                 touch.startCalibration();
                 Serial.println("[Touch] Settings -> Calibrate Touch");
 
-            } else if (display.getCurrentPage() == 7 && evt.y >= 88 && evt.y <= 112) {
-                // Settings Page: Toggle Auto Brightness
+            } else if (display.getCurrentPage() == 6 && evt.y >= 88 && evt.y <= 112) {
+                // Settings Page (Page 6): Toggle Auto Brightness
                 hardware.setAutoBrightnessEnabled(!hardware.isAutoBrightnessEnabled());
                 if (!hardware.isAutoBrightnessEnabled()) hardware.setBacklight(85);
                 Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
                               hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
 
-            } else if (display.getCurrentPage() == 6 && evt.x >= 100 && evt.x <= 220 && evt.y >= 60 && evt.y <= 180) {
-                // Page 6: Toggle Pomodoro (center widget area only)
-                deskUtils.togglePomodoro();
+            } else if (display.getCurrentPage() == 6 && evt.y >= 116 && evt.y <= 140) {
+                // Settings Page (Page 6): Toggle Touch Beep Sound (ON / MUTE)
+                hardware.setTouchSoundEnabled(!hardware.isTouchSoundEnabled());
+                Serial.printf("[Touch] Settings -> Touch Sound: %s\n",
+                              hardware.isTouchSoundEnabled() ? "ON" : "MUTE");
+
+            } else if (display.getCurrentPage() == 5) {
+                // Top Alarm Bar (y = 34..76)
+                if (evt.y >= 34 && evt.y <= 76) {
+                    if (evt.x >= 210) {
+                        // Tap right side pill -> Toggle Alarm ON/OFF
+                        deskUtils.toggleAlarm();
+                        Serial.printf("[Touch] DeskUtils -> Toggle Alarm: %s\n", deskUtils.isAlarmEnabled() ? "ON" : "OFF");
+                    } else {
+                        // Tap Alarm digits / text -> Open Set Alarm Modal
+                        display.initTempAlarm(deskUtils.getAlarmHour(), deskUtils.getAlarmMinute());
+                        display.openDetailModal(MODAL_SET_ALARM);
+                        Serial.println("[Touch] DeskUtils -> Open Set Alarm Modal");
+                    }
+                }
+                // Expanded Center Hero Pomodoro Circle (cx = 160, cy = 155, r = 68)
+                else if ((int32_t)(evt.x - 160)*(evt.x - 160) + (int32_t)(evt.y - 155)*(evt.y - 155) <= 68*68) {
+                    if (evt.gesture == GESTURE_HOLD) {
+                        // Hold inside Pomodoro circle -> Reset Pomodoro to 25:00
+                        deskUtils.resetPomodoro();
+                        Serial.println("[Touch] DeskUtils -> Reset Pomodoro");
+                    } else {
+                        // Single Tap inside Pomodoro circle -> Start / Pause Pomodoro
+                        deskUtils.togglePomodoro();
+                        Serial.println("[Touch] DeskUtils -> Toggle Pomodoro");
+                    }
+                }
+                // Outside Circle -> Page Navigation
+                else {
+                    if (evt.x < 160) {
+                        display.previousPage();
+                    } else {
+                        display.nextPage();
+                    }
+                    Serial.printf("[Touch] DeskUtils -> Page %d\n", display.getCurrentPage());
+                }
+
+            } else if (display.getCurrentPage() == 7) {
+                // Media Control Page (Page 7)
+                // 1. Left Side Nav Strip (<) or Top Header Left: Prev Page
+                if (evt.x < 32 || (evt.y < 35 && evt.x < 160)) {
+                    display.previousPage();
+                    hardware.playBeep(1000, 30);
+                }
+                // 2. Right Side Nav Strip (>) or Top Header Right: Next Page
+                else if (evt.x > 288 || (evt.y < 35 && evt.x >= 160)) {
+                    display.nextPage();
+                    hardware.playBeep(1000, 30);
+                }
+                // 3. Row 1: Track Controls (y = 48..130)
+                else if (evt.y >= 48 && evt.y <= 130) {
+                    if (evt.x >= 34 && evt.x <= 110) {
+                        network.triggerMediaAction("prev");
+                        hardware.playBeep(1200, 40);
+                    } else if (evt.x >= 117 && evt.x <= 203) {
+                        network.triggerMediaAction("play_pause");
+                        hardware.playBeep(1500, 40);
+                    } else if (evt.x >= 210 && evt.x <= 286) {
+                        network.triggerMediaAction("next");
+                        hardware.playBeep(1200, 40);
+                    }
+                }
+                // 4. Row 2: Volume Controls (y = 134..220)
+                else if (evt.y >= 134 && evt.y <= 220) {
+                    if (evt.x >= 34 && evt.x <= 110) {
+                        network.triggerMediaAction("vol_down");
+                        hardware.playBeep(900, 40);
+                    } else if (evt.x >= 117 && evt.x <= 203) {
+                        network.triggerMediaAction("skip_ad");
+                        hardware.playBeep(1800, 50);
+                    } else if (evt.x >= 210 && evt.x <= 286) {
+                        network.triggerMediaAction("vol_up");
+                        hardware.playBeep(1400, 40);
+                    }
+                }
 
             } else {
                 // Default: Left half = prev page, Right half = next page

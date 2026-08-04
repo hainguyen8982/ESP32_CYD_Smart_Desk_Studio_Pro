@@ -13,6 +13,136 @@ import customtkinter as ctk
 from PIL import Image, ImageDraw
 import pystray
 
+import socket
+import ctypes
+
+# Windows Virtual Key Definitions for Media Controls
+VK_MEDIA_NEXT_TRACK = 0xB0
+VK_MEDIA_PREV_TRACK = 0xB1
+VK_MEDIA_STOP       = 0xB2
+VK_MEDIA_PLAY_PAUSE = 0xB3
+VK_VOLUME_MUTE      = 0xAD
+VK_VOLUME_DOWN      = 0xAE
+VK_VOLUME_UP        = 0xAF
+
+active_serial_conn = None
+
+def start_udp_media_listener():
+    def udp_loop():
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(("0.0.0.0", 8080))
+            sock.settimeout(1.0)
+            print("[*] High-Speed UDP Media Listener Started (Port 8080 - 0ms Latency)")
+            while True:
+                try:
+                    data, addr = sock.recvfrom(1024)
+                    if data:
+                        msg = data.decode('utf-8', errors='ignore').strip()
+                        if "MEDIA_CMD:" in msg:
+                            act = msg.split("MEDIA_CMD:")[1].strip()
+                            handle_media_action(act)
+                except socket.timeout:
+                    continue
+                except Exception:
+                    time.sleep(0.1)
+        except Exception as e:
+            print(f"[UDP Listener Notice]: {e}")
+
+    t = threading.Thread(target=udp_loop, daemon=True)
+    t.start()
+
+def start_fast_serial_listener():
+    def serial_loop():
+        global active_serial_conn
+        print("[*] High-Speed USB Serial Listener Started (0ms Latency)")
+        while True:
+            try:
+                if active_serial_conn and active_serial_conn.is_open and active_serial_conn.in_waiting:
+                    line = active_serial_conn.readline().decode('utf-8', errors='ignore').strip()
+                    if "MEDIA_CMD:" in line:
+                        act = line.split("MEDIA_CMD:")[1].strip()
+                        handle_media_action(act)
+                else:
+                    time.sleep(0.005)
+            except Exception:
+                time.sleep(0.05)
+
+    t = threading.Thread(target=serial_loop, daemon=True)
+    t.start()
+
+# Launch high-speed background listeners on module load
+start_udp_media_listener()
+start_fast_serial_listener()
+
+def background_skip_youtube_ad():
+    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
+    if sys.platform != "win32":
+        return
+    try:
+        user32 = ctypes.windll.user32
+        
+        # 1. Global Media Next Track (0xB0)
+        user32.keybd_event(0xB0, 0, 0, 0)
+        user32.keybd_event(0xB0, 0, 2, 0)
+        time.sleep(0.03)
+
+        # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+        user32.keybd_event(0x10, 0, 0, 0) # Shift down
+        user32.keybd_event(0x4E, 0, 0, 0) # N down
+        user32.keybd_event(0x4E, 0, 2, 0) # N up
+        user32.keybd_event(0x10, 0, 2, 0) # Shift up
+        time.sleep(0.03)
+
+        # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+        for _ in range(5):
+            user32.keybd_event(0x27, 0, 0, 0)
+            user32.keybd_event(0x27, 0, 2, 0)
+            time.sleep(0.015)
+            
+        print("[Media Remote]: Executed Multi-phase YouTube Ad Skip Sequence!")
+    except Exception as e:
+        print(f"[Skip Ad Error]: {e}")
+
+last_media_time = 0.0
+
+def handle_media_action(action):
+    global last_media_time
+    if not action:
+        return
+    now = time.time()
+    if now - last_media_time < 0.45:
+        return  # Ignore duplicate trigger within 450ms!
+    
+    act = str(action).lower().strip()
+    vk = None
+    if act in ["play_pause", "play", "pause"]:
+        vk = VK_MEDIA_PLAY_PAUSE
+    elif act in ["next", "next_track"]:
+        vk = VK_MEDIA_NEXT_TRACK
+    elif act in ["prev", "previous", "prev_track"]:
+        vk = VK_MEDIA_PREV_TRACK
+    elif act in ["vol_up", "volume_up"]:
+        vk = VK_VOLUME_UP
+    elif act in ["vol_down", "volume_down"]:
+        vk = VK_VOLUME_DOWN
+    elif act in ["mute"]:
+        vk = VK_VOLUME_MUTE
+    elif act in ["skip_ad", "skipad", "skip"]:
+        last_media_time = now
+        background_skip_youtube_ad()
+        return
+
+    if vk is not None and sys.platform == "win32":
+        try:
+            last_media_time = now
+            ctypes.windll.user32.keybd_event(vk, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(vk, 0, 2, 0)
+            print(f"[Media Hotkey] Windows VK Key 0x{vk:02X} triggered for action '{act}'")
+        except Exception as e:
+            print(f"[Media Hotkey Error] {e}")
+
 # Set CustomTkinter theme
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
@@ -47,6 +177,107 @@ THEMES = [
     ("Retro Green", "retro_green")
 ]
 
+class GPUMonitor:
+    """Utility class to read real GPU and VRAM metrics on Windows using NVML or native PDH counters."""
+    def __init__(self):
+        self.use_nvml = False
+        self.q_gpu = None
+        self.q_vram = None
+        self._init_gpu()
+
+    def _init_gpu(self):
+        # 1. Try NVML (Nvidia GPUs)
+        try:
+            import pynvml
+            pynvml.nvmlInit()
+            self.pynvml = pynvml
+            self.use_nvml = True
+            return
+        except Exception:
+            pass
+
+        # 2. Fallback to Windows PDH (Intel UHD / AMD Radeon / Nvidia / Integrated & Dedicated)
+        try:
+            import ctypes
+            self.ctypes = ctypes
+            self.pdh = ctypes.windll.pdh
+            
+            self.q_gpu = ctypes.c_void_p()
+            self.c_gpu = ctypes.c_void_p()
+            if self.pdh.PdhOpenQueryW(None, 0, ctypes.byref(self.q_gpu)) == 0:
+                self.pdh.PdhAddEnglishCounterW(self.q_gpu, r'\GPU Engine(*engtype_3D)\Utilization Percentage', 0, ctypes.byref(self.c_gpu))
+                self.pdh.PdhCollectQueryData(self.q_gpu)
+                
+            self.q_vram = ctypes.c_void_p()
+            self.c_vram = ctypes.c_void_p()
+            if self.pdh.PdhOpenQueryW(None, 0, ctypes.byref(self.q_vram)) == 0:
+                self.pdh.PdhAddEnglishCounterW(self.q_vram, r'\GPU Process Memory(*)\Local Usage', 0, ctypes.byref(self.c_vram))
+                self.pdh.PdhCollectQueryData(self.q_vram)
+        except Exception:
+            pass
+
+    def get_metrics(self):
+        gpu_pct = 0
+        vram_pct = 0
+
+        if self.use_nvml:
+            try:
+                handle = self.pynvml.nvmlDeviceGetHandleByIndex(0)
+                util = self.pynvml.nvmlDeviceGetUtilizationRates(handle)
+                mem = self.pynvml.nvmlDeviceGetMemoryInfo(handle)
+                gpu_pct = int(util.gpu)
+                vram_pct = int((mem.used / mem.total) * 100)
+                return gpu_pct, vram_pct
+            except Exception:
+                pass
+
+        if self.q_gpu and hasattr(self, 'ctypes'):
+            try:
+                import struct
+                # Collect GPU 3D utilization
+                self.pdh.PdhCollectQueryData(self.q_gpu)
+                buf_size = self.ctypes.c_ulong(0)
+                item_cnt = self.ctypes.c_ulong(0)
+                self.pdh.PdhGetFormattedCounterArrayW(self.c_gpu, 0x00000200, self.ctypes.byref(buf_size), self.ctypes.byref(item_cnt), None)
+                if buf_size.value > 0:
+                    buf = self.ctypes.create_string_buffer(buf_size.value)
+                    self.pdh.PdhGetFormattedCounterArrayW(self.c_gpu, 0x00000200, self.ctypes.byref(buf_size), self.ctypes.byref(item_cnt), buf)
+                    raw_bytes = buf.raw
+                    total_val = 0.0
+                    for i in range(item_cnt.value):
+                        offset = i * 24
+                        status = int.from_bytes(raw_bytes[offset+8:offset+12], 'little')
+                        if status == 0:
+                            val = struct.unpack_from('d', raw_bytes, offset+16)[0]
+                            total_val += val
+                    gpu_pct = int(round(min(100.0, total_val)))
+
+                # Collect VRAM Memory Usage
+                self.pdh.PdhCollectQueryData(self.q_vram)
+                buf_size = self.ctypes.c_ulong(0)
+                item_cnt = self.ctypes.c_ulong(0)
+                self.pdh.PdhGetFormattedCounterArrayW(self.c_vram, 0x00000200, self.ctypes.byref(buf_size), self.ctypes.byref(item_cnt), None)
+                if buf_size.value > 0:
+                    buf = self.ctypes.create_string_buffer(buf_size.value)
+                    self.pdh.PdhGetFormattedCounterArrayW(self.c_vram, 0x00000200, self.ctypes.byref(buf_size), self.ctypes.byref(item_cnt), buf)
+                    raw_bytes = buf.raw
+                    total_vram_bytes = 0.0
+                    for i in range(item_cnt.value):
+                        offset = i * 24
+                        status = int.from_bytes(raw_bytes[offset+8:offset+12], 'little')
+                        if status == 0:
+                            val = struct.unpack_from('d', raw_bytes, offset+16)[0]
+                            total_vram_bytes += val
+                    
+                    sys_ram = psutil.virtual_memory().total
+                    max_vram = sys_ram * 0.5  # Shared VRAM limit is typically half of total RAM
+                    vram_pct = int(round(min(100.0, (total_vram_bytes / max_vram) * 100)))
+            except Exception:
+                pass
+
+        return gpu_pct, vram_pct
+
+
 class CYDMonitorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -60,9 +291,10 @@ class CYDMonitorApp(ctk.CTk):
         self.is_streaming = True
         self.tray_icon = None
 
-        # Network speed tracking
+        # Network speed & GPU tracking
         self.last_net = psutil.net_io_counters()
         self.last_time = time.time()
+        self.gpu_mon = GPUMonitor()
 
         self.create_widgets()
         self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
@@ -185,8 +417,8 @@ class CYDMonitorApp(ctk.CTk):
 
         pages = [
             ("0: Weather Clock", 0), ("1: Lunar Calendar", 1), ("2: Gold & Finance", 2),
-            ("3: PC CPU/RAM", 3),     ("4: PC GPU/VRAM", 4),     ("5: PC Net/Disks", 5),
-            ("6: Desk Utilities", 6)
+            ("3: PC Monitor", 3), ("4: PC Net & Storage", 4), ("5: Desk Utilities", 5),
+            ("6: Settings", 6)
         ]
 
         for idx, (p_name, p_id) in enumerate(pages):
@@ -316,6 +548,7 @@ class CYDMonitorApp(ctk.CTk):
         # Blocking first call so next call(interval=1) gives real data right away
         psutil.cpu_percent(interval=1)
 
+        last_port_scan = 0
         while True:
             if not self.is_streaming:
                 time.sleep(1)
@@ -338,6 +571,9 @@ class CYDMonitorApp(ctk.CTk):
                 self.last_net = curr_net
                 self.last_time = now_time
 
+                # Collect real GPU and VRAM metrics
+                gpu_pct, vram_pct = self.gpu_mon.get_metrics()
+
                 disks = []
                 for letter in string.ascii_uppercase:
                     drive_path = f"{letter}:\\"
@@ -357,12 +593,12 @@ class CYDMonitorApp(ctk.CTk):
                     "cpuTemp": 45,
                     "ram": ram_pct,
                     "ramLoad": ram_pct,
-                    "gpu": cpu_pct,
-                    "gpuLoad": cpu_pct,
+                    "gpu": gpu_pct,
+                    "gpuLoad": gpu_pct,
                     "gputemp": 48,
                     "gpuTemp": 48,
-                    "vram": ram_pct,
-                    "vramLoad": ram_pct,
+                    "vram": vram_pct,
+                    "vramLoad": vram_pct,
                     "net_down": down_speed,
                     "netDown": down_speed,
                     "net_up": up_speed,
@@ -383,8 +619,9 @@ class CYDMonitorApp(ctk.CTk):
             connected_usb = False
             connected_wifi = False
 
-            # 2. USB Serial Auto Connection
-            if ser is None or not ser.is_open:
+            # 2. USB Serial Auto Connection (throttled to once every 4 seconds when disconnected)
+            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 4.0):
+                last_port_scan = now_time
                 try:
                     ports = list(serial.tools.list_ports.comports())
                     for p in ports:
@@ -399,12 +636,13 @@ class CYDMonitorApp(ctk.CTk):
                                 s.open()
                                 time.sleep(0.1)
                                 s.write(b"PING_DASHBOARD\n")
-                                time.sleep(0.5)  # Give ESP32 enough time to respond
+                                time.sleep(0.4)
                                 res = s.read_all().decode('utf-8', errors='ignore')
                                 if "PONG" in res:
                                     ser = s
+                                    global active_serial_conn
+                                    active_serial_conn = ser
                                     ser_port = p.device
-                                    # Parse real-time page/theme state from PONG response
                                     try:
                                         brace_start = res.find("{")
                                         brace_end = res.rfind("}")
@@ -429,10 +667,14 @@ class CYDMonitorApp(ctk.CTk):
                     json_line = json.dumps(payload) + "\n"
                     ser.write(json_line.encode('utf-8'))
                     connected_usb = True
-                    # Read any response for page/theme sync (non-blocking)
+                    # Read any response for page/theme/media sync (non-blocking)
                     if ser.in_waiting:
                         try:
                             resp_line = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
+                            if "MEDIA_CMD:" in resp_line:
+                                for l in resp_line.splitlines():
+                                    if "MEDIA_CMD:" in l:
+                                        handle_media_action(l.split("MEDIA_CMD:")[1].strip())
                             if "{" in resp_line:
                                 j_str = resp_line[resp_line.find("{"):resp_line.rfind("}")+1]
                                 st_data = json.loads(j_str)
@@ -440,6 +682,8 @@ class CYDMonitorApp(ctk.CTk):
                                     self.after(0, lambda v=st_data["page"]: self.highlight_active_page(v))
                                 if "theme" in st_data:
                                     self.after(0, lambda v=st_data["theme"]: self.highlight_active_theme(v))
+                                if "mediaAction" in st_data and st_data["mediaAction"]:
+                                    handle_media_action(st_data["mediaAction"])
                         except Exception:
                             pass
                 except Exception:
@@ -451,17 +695,20 @@ class CYDMonitorApp(ctk.CTk):
             ip = self.cached_ip
             if ip:
                 try:
-                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
+                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=3)
                     if resp.ok:
                         connected_wifi = True
                         try:
                             res_data = resp.json()
                             page_val = res_data.get("page", -1)
                             theme_val = res_data.get("theme", "")
+                            media_act = res_data.get("mediaAction", "")
                             if page_val >= 0:
                                 self.after(0, lambda v=page_val: self.highlight_active_page(v))
                             if theme_val:
                                 self.after(0, lambda v=theme_val: self.highlight_active_theme(v))
+                            if media_act:
+                                handle_media_action(media_act)
                         except Exception:
                             pass
                 except Exception as wifi_ex:

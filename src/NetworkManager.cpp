@@ -58,8 +58,29 @@ NetworkManager::NetworkManager()
     memset(&weather, 0, sizeof(weather));
     memset(&gold, 0, sizeof(gold));
     memset(&exchange, 0, sizeof(exchange));
+    lastMediaAction[0] = '\0';
     snprintf(weather.city, sizeof(weather.city), DEFAULT_CITY);
     snprintf(bootStatusMsg, sizeof(bootStatusMsg), "[1/3] Connecting WiFi...");
+}
+
+static unsigned long lastMediaTriggerTime = 0;
+
+void NetworkManager::triggerMediaAction(const char* action) {
+    if (!action) return;
+    if (millis() - lastMediaTriggerTime < 220) return; // 220ms touch debounce guard for instant feel
+    lastMediaTriggerTime = millis();
+
+    snprintf(lastMediaAction, sizeof(lastMediaAction), "%s", action);
+
+    // 1. Instant USB Serial Output (0ms delay)
+    Serial.printf("MEDIA_CMD:%s\n", lastMediaAction);
+
+    // 2. Instant UDP Fast Packet to PC IP on Port 8080 (0ms delay)
+    if (WiFi.status() == WL_CONNECTED) {
+        udp.beginPacket(IPAddress(255, 255, 255, 255), 8080); // Subnet broadcast
+        udp.printf("MEDIA_CMD:%s", lastMediaAction);
+        udp.endPacket();
+    }
 }
 
 void NetworkManager::begin() {
@@ -290,16 +311,23 @@ void NetworkManager::setupWebRoutes() {
 
     // PC Monitor HTTP POST Receiver (supports both /api/pc and /api/pc_status)
     auto handlePCStatus = [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        String jsonStr = String((char*)data).substring(0, len);
-        if (pcMonitor.parseJsonData(jsonStr.c_str())) {
-            char respBuf[128];
-            snprintf(respBuf, sizeof(respBuf),
-                     "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\"}",
-                     display.getCurrentPage(),
-                     getCurrentThemePresetName());
-            sendCORSResponse(request, 200, respBuf);
+        char* buf = (char*)malloc(len + 1);
+        if (buf) {
+            memcpy(buf, data, len);
+            buf[len] = '\0';
+            if (pcMonitor.parseJsonData(buf)) {
+                char respBuf[128];
+                snprintf(respBuf, sizeof(respBuf),
+                         "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\"}",
+                         display.getCurrentPage(),
+                         getCurrentThemePresetName());
+                sendCORSResponse(request, 200, respBuf);
+            } else {
+                sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+            }
+            free(buf);
         } else {
-            sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+            sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
         }
     };
 
@@ -472,6 +500,34 @@ void NetworkManager::setupWebRoutes() {
 
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
                 return;
+            }
+            sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+        });
+
+    // Media Remote API - GET/POST /api/media
+    server.on("/api/media", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        if (request->hasParam("action")) {
+            String act = request->getParam("action")->value();
+            triggerMediaAction(act.c_str());
+            sendCORSResponse(request, 200, "{\"status\":\"ok\",\"action\":\"" + act + "\"}");
+            return;
+        }
+        JsonDocument doc;
+        doc["lastAction"] = lastMediaAction;
+        String res;
+        serializeJson(doc, res);
+        sendCORSResponse(request, 200, res);
+    });
+
+    server.on("/api/media", HTTP_POST, [this](AsyncWebServerRequest *request) {}, NULL,
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            JsonDocument doc;
+            if (!deserializeJson(doc, data, len)) {
+                if (!doc["action"].isNull()) {
+                    triggerMediaAction(doc["action"]);
+                    sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
+                    return;
+                }
             }
             sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
         });

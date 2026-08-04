@@ -10,7 +10,85 @@ import urllib.request
 import urllib.parse
 import socket
 
+import ctypes
+
 BAUD_RATE = 115200
+
+# Windows Virtual Key Definitions for Media Controls
+VK_MEDIA_NEXT_TRACK = 0xB0
+VK_MEDIA_PREV_TRACK = 0xB1
+VK_MEDIA_STOP       = 0xB2
+VK_MEDIA_PLAY_PAUSE = 0xB3
+VK_VOLUME_MUTE      = 0xAD
+VK_VOLUME_DOWN      = 0xAE
+VK_VOLUME_UP        = 0xAF
+
+def background_skip_youtube_ad():
+    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
+    if sys.platform != "win32":
+        return
+    try:
+        user32 = ctypes.windll.user32
+        
+        # 1. Global Media Next Track (0xB0)
+        user32.keybd_event(0xB0, 0, 0, 0)
+        user32.keybd_event(0xB0, 0, 2, 0)
+        time.sleep(0.03)
+
+        # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+        user32.keybd_event(0x10, 0, 0, 0) # Shift down
+        user32.keybd_event(0x4E, 0, 0, 0) # N down
+        user32.keybd_event(0x4E, 0, 2, 0) # N up
+        user32.keybd_event(0x10, 0, 2, 0) # Shift up
+        time.sleep(0.03)
+
+        # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+        for _ in range(5):
+            user32.keybd_event(0x27, 0, 0, 0)
+            user32.keybd_event(0x27, 0, 2, 0)
+            time.sleep(0.015)
+            
+        print("[Media Remote]: Executed Multi-phase YouTube Ad Skip Sequence!")
+    except Exception as e:
+        print(f"[Skip Ad Error]: {e}")
+
+last_media_time = 0.0
+
+def handle_media_action(action):
+    global last_media_time
+    if not action:
+        return
+    now = time.time()
+    if now - last_media_time < 0.45:
+        return
+    
+    act = str(action).lower().strip()
+    vk = None
+    if act in ["play_pause", "play", "pause"]:
+        vk = VK_MEDIA_PLAY_PAUSE
+    elif act in ["next", "next_track"]:
+        vk = VK_MEDIA_NEXT_TRACK
+    elif act in ["prev", "previous", "prev_track"]:
+        vk = VK_MEDIA_PREV_TRACK
+    elif act in ["vol_up", "volume_up"]:
+        vk = VK_VOLUME_UP
+    elif act in ["vol_down", "volume_down"]:
+        vk = VK_VOLUME_DOWN
+    elif act in ["mute"]:
+        vk = VK_VOLUME_MUTE
+    elif act in ["skip_ad", "skipad", "skip"]:
+        last_media_time = now
+        background_skip_youtube_ad()
+        return
+
+    if vk is not None and sys.platform == "win32":
+        try:
+            last_media_time = now
+            ctypes.windll.user32.keybd_event(vk, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(vk, 0, 2, 0)
+            print(f"[Media Hotkey] Windows VK Key 0x{vk:02X} triggered for action '{act}'")
+        except Exception as e:
+            print(f"[Media Hotkey Error] {e}")
 
 # Common USB Serial Chip VID/PID for ESP32 boards
 ESP32_VID_PIDS = [
@@ -224,6 +302,15 @@ def main():
                 json_payload = json.dumps(payload) + "\n"
                 ser.write(json_payload.encode('utf-8'))
                 print(f"[USB Serial]: Sent -> CPU={cpu_load:.0f}% GPU={gpu['load']:.0f}% RAM={ram.percent}%")
+                if ser.in_waiting:
+                    try:
+                        resp_line = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
+                        if "MEDIA_CMD:" in resp_line:
+                            for l in resp_line.splitlines():
+                                if "MEDIA_CMD:" in l:
+                                    handle_media_action(l.split("MEDIA_CMD:")[1].strip())
+                    except Exception:
+                        pass
             
             time.sleep(2.0)
 

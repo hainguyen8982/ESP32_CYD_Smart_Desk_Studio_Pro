@@ -40,14 +40,13 @@ DisplayManager display;
 // Helper to get page accent color dynamically from current theme
 static uint16_t getPageAccent(uint8_t page) {
     switch (page) {
-        case 0: return theme.cyan;
-        case 1: return theme.yellow;
-        case 2: return theme.yellow;
-        case 3: return theme.cyan;
-        case 4: return theme.orange;
-        case 5: return theme.green;
-        case 6: return theme.orange;
-        case 7: return theme.purple;
+        case 0: return theme.cyan;    // Weather
+        case 1: return theme.yellow;  // Calendar
+        case 2: return theme.yellow;  // Finance
+        case 3: return theme.cyan;    // PC Monitor
+        case 4: return theme.green;   // Net & Storage
+        case 5: return theme.orange;  // Desk Utilities
+        case 6: return theme.purple;  // Settings
         default: return theme.cyan;
     }
 }
@@ -56,7 +55,7 @@ static uint16_t getPageAccent(uint8_t page) {
 //  CONSTRUCTOR / BEGIN / NAVIGATION / UPDATE
 // ─────────────────────────────────────────────────────────────────────
 DisplayManager::DisplayManager()
-    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), calendarMonthOffset(0), lastRenderTime(0), spriteReady(false) {}
+    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), lastRenderTime(0), spriteReady(false) {}
 
 void DisplayManager::begin() {
     loadTheme(); // Load saved theme from NVS or default Ocean Dark
@@ -75,7 +74,7 @@ void DisplayManager::begin() {
     spr.setColorDepth(16);
     void* p = spr.createSprite(SCREEN_WIDTH, SCREEN_HEIGHT);
     if (!p) {
-        Serial.println("[DisplayManager] 16-bit sprite failed → trying 8-bit...");
+        Serial.println("[DisplayManager] 16-bit sprite failed -> trying 8-bit...");
         spr.setColorDepth(8);
         p = spr.createSprite(SCREEN_WIDTH, SCREEN_HEIGHT);
     }
@@ -127,10 +126,10 @@ void DisplayManager::update() {
         case 1: renderPage1_LunarCalendar(); break;
         case 2: renderPage2_FinanceGold();   break;
         case 3: renderPage3_PcCpuRam();      break;
-        case 4: renderPage4_PcGpuVram();     break;
-        case 5: renderPage5_PcNetDisks();    break;
-        case 6: renderPage6_DeskUtilities(); break;
-        case 7: renderPage7_Settings();      break;
+        case 4: renderPage4_PcNetDisks();    break;
+        case 5: renderPage5_DeskUtilities(); break;
+        case 6: renderPage6_Settings();      break;
+        case 7: renderPage7_MediaControl();  break;
         default: renderPage0_WeatherClock(); break;
     }
     spr.pushSprite(0, 0);
@@ -145,7 +144,7 @@ void DisplayManager::renderHeader() {
     // ── Tiny page icon (top-left, ~14px) ─────────────────────────────
     int ix = 12, iy = 13;
     switch (currentPage) {
-        case 0: // Sun
+        case 0: // Weather - Sun
             spr.fillCircle(ix, iy, 4, C_YELLOW);
             spr.drawLine(ix, iy-6, ix, iy-8,   C_YELLOW);
             spr.drawLine(ix, iy+6, ix, iy+8,   C_YELLOW);
@@ -158,14 +157,12 @@ void DisplayManager::renderHeader() {
             spr.fillRect(ix-4, iy-9, 3, 5, C_YELLOW);
             spr.fillRect(ix+1, iy-9, 3, 5, C_YELLOW);
             break;
-        case 2: // Gold bar
+        case 2: // Finance - Gold bar
             spr.fillRoundRect(ix-7, iy-3, 14, 7, 1, C_YELLOW);
             spr.fillRect(ix-5, iy-6, 10, 3, C_YELLOW);
             spr.drawFastVLine(ix-3, iy-5, 8, 0xFFFE);  // shine
             break;
-        case 3: // CPU chip
-            spr.fillRoundRect(ix-6, ix-6-iy+iy, 12, 12, 1, C_CYAN);
-            // offset correction - just draw directly:
+        case 3: // PC Monitor - CPU chip
             spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_CYAN);
             spr.fillRect(ix-3, iy-3, 6, 6, C_HDR);
             for (int p2 = -3; p2 <= 3; p2 += 3) {
@@ -173,37 +170,37 @@ void DisplayManager::renderHeader() {
                 spr.fillRect(ix+p2-1, iy+6, 2, 3, C_CYAN);
             }
             break;
-        case 4: // GPU rect
-            spr.fillRoundRect(ix-8, iy-4, 16, 8, 1, C_ORANGE);
-            spr.drawCircle(ix-2, iy, 3, C_HDR);
-            break;
-        case 5: // Network up/down arrows
+        case 4: // PC Net & Storage - Network up/down arrows
             spr.fillTriangle(ix-6, iy+2, ix-2, iy-6, ix+2, iy+2, C_GREEN);
             spr.fillTriangle(ix+4, iy-2, ix+8, iy+6, ix+12, iy-2, C_GREEN);
             break;
-        case 6: // Pomodoro tomato
+        case 5: // Desk Utilities - Pomodoro tomato
             spr.fillCircle(ix, iy+2, 6, C_RED);
             spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
             spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
             break;
-        case 7: // Settings gear icon
+        case 6: // Settings gear icon
             spr.drawCircle(ix, iy, 5, C_PURPLE);
             spr.fillCircle(ix, iy, 2, C_HDR);
             spr.fillRect(ix-1, iy-7, 2, 14, C_PURPLE);
             spr.fillRect(ix-7, iy-1, 14, 2, C_PURPLE);
+            break;
+        case 7: // Media Control music note icon
+            spr.fillRect(ix-4, iy-4, 8, 8, C_CYAN);
+            spr.fillCircle(ix, iy, 2, C_HDR);
             break;
     }
 
     // ── Page title ────────────────────────────────────────────────────
     static const char* titles[] = {
         "Weather", "Calendar", "Finance",
-        "CPU & RAM", "GPU & VRAM", "Network", "Pomodoro", "Settings"
+        "PC Monitor", "Net & Disk", "Pomodoro", "Settings", "Media"
     };
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(C_DIM, C_HDR);
     spr.drawString(titles[currentPage], 26, 13, 2);
 
-    // ── Time HH:MM:SS (center-aligned with exact 1-2px padding around colons) ──
+    // ── Time HH:MM:SS (center at y=13 matching page title and icons) ──
     if (currentPage != 0) {
         time_t now = time(NULL);
         struct tm ti;
@@ -221,7 +218,7 @@ void DisplayManager::renderHeader() {
 
             int totalW = wH + wC + (pad * 2) + wM + wC + (pad * 2) + wS;
             int x = 160 - totalW / 2;
-            int y = 6;
+            int y = 6;  // adjust to align vertically with title and icons
 
             spr.setTextDatum(TL_DATUM);
             spr.setTextColor(C_WHITE, C_HDR);
@@ -234,8 +231,8 @@ void DisplayManager::renderHeader() {
     }
 
     // ── Status Bar Header (Tight & Balanced Spacing) ─────────────────
-    drawWifiSignalIcon(246, 13, WiFi.RSSI(), network.isConnected());
-    iconLink(268, 13, pcMonitor.isConnected() ? C_CYAN : C_VDIM);
+    drawWifiSignalIcon(246, 12, WiFi.RSSI(), network.isConnected());
+    iconLink(268, 12, pcMonitor.isConnected() ? C_CYAN : C_VDIM);
 
     uint16_t acc = getPageAccent(currentPage);
     char pageBuf[8];
@@ -410,7 +407,7 @@ void DisplayManager::renderPage0_WeatherClock() {
     struct tm ti;
     bool valid = (now >= 1600000000 && localtime_r(&now, &ti));
 
-    // ── Giant HH:MM clock ─────────────────────────────────────────────
+    // ── Giant HH:MM clock (drawn clean & transparent on C_BG) ─────────
     char clockStr[8];
     if (valid) {
         snprintf(clockStr, sizeof(clockStr), "%02d:%02d", ti.tm_hour, ti.tm_min);
@@ -742,175 +739,252 @@ void DisplayManager::renderPage2_FinanceGold() {
 // ─────────────────────────────────────────────────────────────────────
 //  PAGE 3 — PC MONITOR: CPU & RAM
 // ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────
+//  PAGE 3 — PC MONITOR: CPU + GPU arcs + RAM + VRAM bars + History
+//  Phương Án C: 2 arc lớn (CPU,GPU) + 2 bar nhỏ (RAM,VRAM) + sparkline
+// ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderPage3_PcCpuRam() {
-    drawSectionTitle("PC MONITOR  CPU & RAM", C_CYAN);
+    drawSectionTitle("PC MONITOR", C_CYAN);
 
     if (!pcMonitor.isConnected()) {
         spr.setTextDatum(MC_DATUM);
         spr.setTextColor(C_DIM, C_BG);
-        spr.drawString("Waiting for PC connection...", 160, 130, 2);
-        spr.drawString("Run pc_monitor.py on Windows", 160, 150, 2);
-        iconPC(160, 100, C_VDIM);
+        spr.drawString("Waiting for PC connection...", 160, 120, 2);
+        spr.drawString("Run pc_monitor.py on Windows",  160, 140, 2);
+        iconPC(160, 92, C_VDIM);
         return;
     }
 
-    // Two large arc gauges side-by-side
-    drawArcGauge( 80, 138, 52, 9, pcMonitor.getCpuLoad(), C_CYAN,   C_TRACE, "CPU");
-    drawArcGauge(240, 138, 52, 9, pcMonitor.getRamLoad(), C_ORANGE, C_TRACE, "RAM");
+    // ── Two arc gauges: CPU (left) + GPU (right), r=42 ───────────────
+    drawArcGauge( 80, 106, 42, 8, pcMonitor.getCpuLoad(), C_CYAN,   C_TRACE, "CPU");
+    drawArcGauge(240, 106, 42, 8, pcMonitor.getGpuLoad(), C_ORANGE, C_TRACE, "GPU");
 
-    // Numeric values below gauge label
-    char cpuBuf[16], ramBuf[16];
-    snprintf(cpuBuf, sizeof(cpuBuf), "%.0f%%", pcMonitor.getCpuLoad());
-    snprintf(ramBuf, sizeof(ramBuf), "%.0f%%", pcMonitor.getRamLoad());
+    // ── RAM bar ───────────────────────────────────────────────────────
+    int bar1Y = 158;
+    spr.fillRoundRect(10, bar1Y, 300, 20, 4, C_CARD);
+    spr.setTextDatum(ML_DATUM);
+    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.drawString("RAM", 14, bar1Y + 10, 1);
+    drawHorizBar(38, bar1Y + 4, 218, 12, pcMonitor.getRamLoad(), C_ORANGE);
+    char ramBuf[8]; snprintf(ramBuf, sizeof(ramBuf), "%d%%", (int)pcMonitor.getRamLoad());
+    spr.setTextDatum(MR_DATUM);
+    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.drawString(ramBuf, 304, bar1Y + 10, 1);
 
-    // Sparkline (CPU history)
-    spr.setTextDatum(TL_DATUM);
-    spr.setTextColor(C_DIM, C_BG);
-    spr.drawString("CPU history", 14, 200, 1);
-    drawSparkline(14, 210, 292, 26, pcMonitor.getCpuHistory(), PCMonitor::HISTORY_SIZE, C_CYAN);
-}
-
-// ─────────────────────────────────────────────────────────────────────
-//  PAGE 4 — PC MONITOR: GPU & VRAM
-// ─────────────────────────────────────────────────────────────────────
-void DisplayManager::renderPage4_PcGpuVram() {
-    drawSectionTitle("PC MONITOR  GPU & VRAM", C_ORANGE);
-
-    if (!pcMonitor.isConnected()) {
-        spr.setTextDatum(MC_DATUM);
-        spr.setTextColor(C_DIM, C_BG);
-        spr.drawString("Waiting for PC connection...", 160, 130, 2);
-        return;
-    }
-
-    drawArcGauge( 80, 138, 52, 9, pcMonitor.getGpuLoad(),  C_ORANGE, C_TRACE, "GPU");
-    drawArcGauge(240, 138, 52, 9, pcMonitor.getVramLoad(), C_GREEN,  C_TRACE, "VRAM");
-
-    spr.setTextDatum(TL_DATUM);
-    spr.setTextColor(C_DIM, C_BG);
-    spr.drawString("GPU history", 14, 200, 1);
-    drawSparkline(14, 210, 292, 26, pcMonitor.getGpuHistory(), PCMonitor::HISTORY_SIZE, C_ORANGE);
-}
-
-// ─────────────────────────────────────────────────────────────────────
-//  PAGE 5 — PC NETWORK & DISKS
-// ─────────────────────────────────────────────────────────────────────
-void DisplayManager::renderPage5_PcNetDisks() {
-    drawSectionTitle("NETWORK & DISK", C_GREEN);
-
-    if (!pcMonitor.isConnected()) {
-        spr.setTextDatum(MC_DATUM);
-        spr.setTextColor(C_DIM, C_BG);
-        spr.drawString("Waiting for PC connection...", 160, 130, 2);
-        return;
-    }
-
-    // ── Network speeds card ───────────────────────────────────────────
-    spr.fillRoundRect(10, 52, 300, 42, 5, C_CARD);
-
-    iconNet(35, 73, C_GREEN);
-
-    char netBuf[64];
-    snprintf(netBuf, sizeof(netBuf), "DL: %u KB/s    UL: %u KB/s",
-             pcMonitor.getNetDownSpeed(), pcMonitor.getNetUpSpeed());
+    // ── VRAM bar ──────────────────────────────────────────────────────
+    int bar2Y = 182;
+    spr.fillRoundRect(10, bar2Y, 300, 20, 4, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(C_GREEN, C_CARD);
-    spr.drawString(netBuf, 60, 73, 2);
+    spr.drawString("VRAM", 14, bar2Y + 10, 1);
+    drawHorizBar(42, bar2Y + 4, 214, 12, pcMonitor.getVramLoad(), C_GREEN);
+    char vramBuf[8]; snprintf(vramBuf, sizeof(vramBuf), "%d%%", (int)pcMonitor.getVramLoad());
+    spr.setTextDatum(MR_DATUM);
+    spr.setTextColor(C_GREEN, C_CARD);
+    spr.drawString(vramBuf, 304, bar2Y + 10, 1);
 
-    // ── Disk bars ─────────────────────────────────────────────────────
-    uint8_t cnt  = pcMonitor.getDiskCount();
+    // ── CPU history sparkline ─────────────────────────────────────────
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_VDIM, C_BG);
+    spr.drawString("CPU history", 14, 205, 1);
+    drawSparkline(14, 214, 292, 24, pcMonitor.getCpuHistory(), PCMonitor::HISTORY_SIZE, C_CYAN);
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  PAGE 4 — PC NETWORK & DISKS  (was page 5)
+// ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────
+//  PAGE 4 — PC NETWORK & STORAGE
+// ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderPage4_PcNetDisks() {
+    drawSectionTitle("NETWORK & STORAGE", C_GREEN);
+
+    if (!pcMonitor.isConnected()) {
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_DIM, C_BG);
+        spr.drawString("Waiting for PC connection...", 160, 130, 2);
+        return;
+    }
+
+    // ── 1. NETWORK CARD (y = 34 to 94, h = 60px) ──────────────────────
+    spr.fillRoundRect(10, 34, 300, 60, 6, C_CARD);
+    spr.drawRoundRect(10, 34, 300, 60, 6, C_TRACE);
+    
+    // Header label for Network
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_DIM, C_CARD);
+    spr.drawString("NETWORK SPEEDS", 20, 38, 1);
+
+    // DOWNLOAD block (left side)
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_GREEN, C_CARD);
+    spr.drawString("\x19 DOWN", 20, 52, 1);
+    char dnBuf[20];
+    uint32_t dnSpeed = pcMonitor.getNetDownSpeed();
+    if (dnSpeed >= 1024) {
+        snprintf(dnBuf, sizeof(dnBuf), "%.1f MB/s", dnSpeed / 1024.0f);
+    } else {
+        snprintf(dnBuf, sizeof(dnBuf), "%u KB/s", dnSpeed);
+    }
+    spr.setTextColor(C_WHITE, C_CARD);
+    spr.drawString(dnBuf, 20, 66, 2);
+
+    // Symmetric Vertical divider line at exact center of card (x = 160)
+    spr.drawFastVLine(160, 46, 42, C_TRACE);
+
+    // UPLOAD block (right side)
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString("\x18 UP", 175, 52, 1);
+    char upBuf[20];
+    uint32_t upSpeed = pcMonitor.getNetUpSpeed();
+    if (upSpeed >= 1024) {
+        snprintf(upBuf, sizeof(upBuf), "%.1f MB/s", upSpeed / 1024.0f);
+    } else {
+        snprintf(upBuf, sizeof(upBuf), "%u KB/s", upSpeed);
+    }
+    spr.setTextColor(C_WHITE, C_CARD);
+    spr.drawString(upBuf, 175, 66, 2);
+
+    // ── 2. STORAGE DISKS PANEL (y = 100 to 234, h = 134px) ────────────
+    spr.fillRoundRect(10, 100, 300, 134, 6, C_CARD);
+    spr.drawRoundRect(10, 100, 300, 134, 6, C_TRACE);
+
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_DIM, C_CARD);
+    spr.drawString("STORAGE DRIVES", 20, 105, 1);
+
+    uint8_t cnt = pcMonitor.getDiskCount();
+    if (cnt == 0) {
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_VDIM, C_CARD);
+        spr.drawString("No drives detected", 160, 165, 2);
+        return;
+    }
+
     const DiskInfo* disks = pcMonitor.getDisks();
+    uint8_t show = (cnt > 4) ? 4 : cnt; // Max 4 drives for crisp spacing
 
-    for (int i = 0; i < (int)cnt && i < 3; i++) {
-        int cardY = 104 + i * 40;
-        spr.fillRoundRect(10, cardY, 300, 34, 5, C_CARD);
+    int startY = 120;
+    int availH = 228 - startY;
+    int rowH   = availH / show;
 
-        char label[16];
-        snprintf(label, sizeof(label), "O %s:", disks[i].name);
-        spr.setTextDatum(ML_DATUM);
-        spr.setTextColor(C_YELLOW, C_CARD);
-        spr.drawString(label, 14, cardY + 17, 2);
+    for (uint8_t i = 0; i < show; i++) {
+        int ry = startY + i * rowH;
+        int my = ry + rowH / 2;
 
-        // Dynamic color for Disk Usage: Green (<65%), Orange (65-85%), Red (>85%)
+        // Drive badge box [ C: ]
+        spr.fillRoundRect(18, my - 9, 30, 18, 3, C_BG);
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_YELLOW, C_BG);
+        char dName[8];
+        snprintf(dName, sizeof(dName), "%s:", disks[i].name);
+        spr.drawString(dName, 33, my, 2);
+
+        // Progress bar with dynamic coloring
+        uint8_t pct = disks[i].usedPercent;
         uint16_t barColor = C_GREEN;
-        if (disks[i].usedPercent >= 85) barColor = C_RED;
-        else if (disks[i].usedPercent >= 65) barColor = C_ORANGE;
+        if      (pct >= 85) barColor = C_RED;
+        else if (pct >= 65) barColor = C_ORANGE;
 
-        // Progress bar
-        drawHorizBar(85, cardY + 10, 160, 14, disks[i].usedPercent, barColor);
+        int barX = 56;
+        int barW = 198;
+        int barH = 12;
+        drawHorizBar(barX, my - barH / 2, barW, barH, pct, barColor);
 
-        // Percent text
-        char pStr[12];
-        snprintf(pStr, sizeof(pStr), "%d%%", disks[i].usedPercent);
+        // Usage percentage
+        char pctStr[8];
+        snprintf(pctStr, sizeof(pctStr), "%d%%", pct);
         spr.setTextDatum(MR_DATUM);
         spr.setTextColor(barColor, C_CARD);
-        spr.drawString(pStr, 300, cardY + 17, 2);
+        spr.drawString(pctStr, 298, my, 2);
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  PAGE 6 — POMODORO & DESK UTILITIES
+//  PAGE 5 — POMODORO & DESK UTILITIES
 // ─────────────────────────────────────────────────────────────────────
-void DisplayManager::renderPage6_DeskUtilities() {
+void DisplayManager::renderPage5_DeskUtilities() {
+    drawSectionTitle("DESK UTILITIES", C_ORANGE);
 
-    // ── Large Pomodoro ring ───────────────────────────────────────────
+    // ── 1. TOP CARD: ALARM CLOCK BAR (x = 10..310, y = 34..72, h = 38) ──
+    uint16_t alarmCardBg     = hexToRGB565("#94A3B8"); // Rich metallic slate grey card background
+    uint16_t alarmCardBorder = hexToRGB565("#64748B"); // Smooth rounded border
+
+    spr.fillRoundRect(10, 34, 300, 38, 9, alarmCardBg);
+    spr.drawRoundRect(10, 34, 300, 38, 9, alarmCardBorder);
+
+    iconBell(22, 53, hexToRGB565("#EA580C"));
+    spr.setTextDatum(ML_DATUM);
+    spr.setTextColor(hexToRGB565("#0F172A"), alarmCardBg);
+    spr.drawString("ALARM CLOCK:", 36, 53, 2); // Larger Font 2 title text!
+
+    // Bold Alarm Time Digits using Font 4 (26px bold font)
+    char alarmTimeStr[12];
+    snprintf(alarmTimeStr, sizeof(alarmTimeStr), "%02d:%02d",
+             deskUtils.getAlarmHour(), deskUtils.getAlarmMinute());
+    spr.setTextDatum(ML_DATUM);
+    spr.setTextColor(hexToRGB565("#0F172A"), alarmCardBg);
+    spr.drawString(alarmTimeStr, 142, 55, 4); // Heavy bold 26px font shifted down 2px!
+
+    // Clean Toggle Pill Switch Button
+    bool aOn = deskUtils.isAlarmEnabled();
+    uint16_t pillBg = aOn ? C_GREEN : hexToRGB565("#334155");
+    uint16_t pillFg = aOn ? C_BG    : C_WHITE;
+    spr.fillRoundRect(220, 41, 82, 24, 12, pillBg);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(pillFg, pillBg);
+    spr.drawString(aOn ? "ALARM ON" : "ALARM OFF", 261, 53, 1);
+
+    // ── 2. CENTER HERO: EXPANDED POMODORO CARD (x = 10..310, y = 78..232, h = 154) ──
+    spr.fillRoundRect(10, 78, 300, 154, 8, C_CARD);
+
     uint16_t remSec   = deskUtils.getPomodoroRemainingSeconds();
     uint16_t totalSec = 25 * 60;  // default 25 min session
     float    pct      = (float)remSec / totalSec * 100.0f;
     pct = constrain(pct, 0.0f, 100.0f);
 
-    // Outer glow ring (slightly larger, dim)
-    spr.drawArc(160, 128, 75, 71, 0, 359, C_TRACE, C_BG, false);
-    // Track ring
-    spr.drawArc(160, 128, 72, 63, 0, 359, C_TRACE, C_BG, false);
-    // Progress arc (orange → green when low)
-    uint16_t ringColor = (remSec < 300) ? C_GREEN : C_ORANGE;
+    int cx = 160, cy = 155;
+
+    // Track background ring
+    spr.drawArc(cx, cy, 62, 49, 0, 359, C_TRACE, C_CARD, false);
+
+    // 🌟 SEAMLESS TRIPLE NEON ARC GAUGE (Outer Yellow 2px + Middle Orange 9px + Inner Yellow 2px) 🌟
+    uint16_t darkRingColor = (remSec < 300) ? C_GREEN : C_ORANGE;
+    uint16_t paleYellow    = hexToRGB565("#FFE880"); // Pale bright yellow
     uint32_t endDeg = (uint32_t)(pct * 3.6f);
-    if (endDeg > 0)
-        spr.drawArc(160, 128, 72, 63, 0, min(endDeg, (uint32_t)359), ringColor, C_BG, false);
+    if (endDeg > 0) {
+        uint32_t deg = min(endDeg, (uint32_t)359);
+        // 1. Thin Outer Yellow Ring (r = 62..60, 2px)
+        spr.drawArc(cx, cy, 62, 60, 0, deg, paleYellow, C_CARD, false);
+        // 2. Middle Orange Ring (r = 60..51, 9px)
+        spr.drawArc(cx, cy, 60, 51, 0, deg, darkRingColor, C_CARD, false);
+        // 3. Thin Inner Yellow Ring (r = 51..49, 2px)
+        spr.drawArc(cx, cy, 51, 49, 0, deg, paleYellow, C_CARD, false);
+    }
 
-    // Pomodoro icon at top of ring
-    iconPomodoro(160, 62);
+    // Tomato Icon inside ring above digits
+    iconPomodoro(cx, cy - 28);
 
-    // Timer text inside ring
+    // Digital Timer Digits inside ring (Font 4: 26px bold font)
     uint16_t mins = remSec / 60;
     uint16_t secs = remSec % 60;
     char timeStr[8];
     snprintf(timeStr, sizeof(timeStr), "%02d:%02d", mins, secs);
     spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(ringColor, C_BG);
-    spr.drawString(timeStr, 160, 130, 7);  // Giant font 7
+    spr.setTextColor(paleYellow, C_CARD);
+    spr.drawString(timeStr, cx, cy - 2, 4);
 
-    // State label
-    spr.setTextColor(C_DIM, C_BG);
-    spr.drawString(deskUtils.getPomodoroStateString(), 160, 165, 2);
+    // Clean Status Pill Badge inside ring
+    spr.fillRoundRect(cx - 30, cy + 18, 60, 16, 8, C_BG);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_YELLOW, C_BG);
+    spr.drawString(deskUtils.getPomodoroStateString(), cx, cy + 26, 1);
 
-    // ── Tap hint ──────────────────────────────────────────────────────
-    spr.setTextColor(C_VDIM, C_BG);
-    spr.drawString("Tap screen to Start / Pause", 160, 196, 1);
-
-    // ── Alarm status bar ──────────────────────────────────────────────
-    spr.fillRoundRect(10, 208, 300, 26, 5, C_CARD);
-    iconBell(30, 221, deskUtils.isAlarmEnabled() ? C_ORANGE : C_VDIM);
-
-    char alarmBuf[40];
-    if (deskUtils.isAlarmEnabled()) {
-        snprintf(alarmBuf, sizeof(alarmBuf), "Alarm ON: %02d:%02d",
-                 deskUtils.getAlarmHour(), deskUtils.getAlarmMinute());
-    } else {
-        strcpy(alarmBuf, "Alarm: OFF");
-    }
-    spr.setTextDatum(ML_DATUM);
-    spr.setTextColor(deskUtils.isAlarmEnabled() ? C_ORANGE : C_DIM, C_CARD);
-    spr.drawString(alarmBuf, 50, 221, 2);
-
-    // Alarm ringing flash effect
+    // Alarm ringing overlay flash
     if (deskUtils.isAlarmRinging()) {
         uint16_t flash = (millis() / 300) % 2 ? C_RED : C_BG;
-        spr.drawRoundRect(10, 208, 300, 26, 5, flash);
-        spr.setTextDatum(MR_DATUM);
-        spr.setTextColor(C_RED, C_CARD);
-        spr.drawString("TAP TO DISMISS!", 300, 221, 1);
+        spr.drawRoundRect(10, 34, 300, 38, 9, flash);
     }
 }
 
@@ -922,7 +996,7 @@ void DisplayManager::drawSectionTitle(const char* title, uint16_t color) {
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(color, C_BG);
     spr.drawString(title, 160, 34, 2);
-    spr.drawFastHLine(20, 48, 280, color);
+    // underline removed — header color already distinguishes each page
 }
 
 void DisplayManager::drawArcGauge(int16_t cx, int16_t cy, int16_t r, int16_t thick,
@@ -970,7 +1044,6 @@ void DisplayManager::drawSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
 
 void DisplayManager::drawFloatSparkline(int16_t x, int16_t y, int16_t w, int16_t h,
                                          const float* data, uint8_t cnt, uint16_t color) {
-    spr.drawRoundRect(x, y, w, h, 2, C_TRACE);
     if (cnt < 2) return;
 
     float minVal = data[0];
@@ -1084,10 +1157,11 @@ void DisplayManager::iconGPU(int16_t cx, int16_t cy, uint16_t color) {
 }
 
 void DisplayManager::iconBell(int16_t cx, int16_t cy, uint16_t color) {
-    spr.fillCircle(cx, cy-6, 3, color);
-    spr.fillRoundRect(cx-8, cy-5, 16, 12, 3, color);
-    spr.fillTriangle(cx-9, cy+7, cx+9, cy+7, cx, cy+4, color);
-    spr.fillCircle(cx, cy+9, 2, color);
+    // Smooth rounded vector bell icon (no sharp corner artifacts)
+    spr.fillCircle(cx, cy - 5, 2, color);                // Top loop ring
+    spr.fillRoundRect(cx - 6, cy - 4, 12, 10, 3, color);   // Bell body dome
+    spr.fillRoundRect(cx - 8, cy + 3, 16, 3, 1, color);    // Bell rim lip
+    spr.fillCircle(cx, cy + 7, 2, color);                // Clapper
 }
 
 void DisplayManager::iconGold(int16_t cx, int16_t cy, uint16_t color) {
@@ -1272,9 +1346,9 @@ void DisplayManager::renderCalibrationScreen() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PAGE 7 — Settings Page
+//  PAGE 6 — Settings Page
 // ═══════════════════════════════════════════════════════════════════════
-void DisplayManager::renderPage7_Settings() {
+void DisplayManager::renderPage6_Settings() {
     // Title
     spr.setTextColor(C_WHITE, C_BG);
     spr.setTextDatum(TC_DATUM);
@@ -1285,6 +1359,7 @@ void DisplayManager::renderPage7_Settings() {
 
     // Menu Item 1: Calibrate Touch (y = 60..88)
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_YELLOW, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("Calibrate Touch", 30, y + 12, 2);
@@ -1295,6 +1370,7 @@ void DisplayManager::renderPage7_Settings() {
 
     // Menu Item 2: Auto Brightness (y = 88..116)
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_CYAN, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("Auto Brightness", 30, y + 12, 2);
@@ -1303,8 +1379,20 @@ void DisplayManager::renderPage7_Settings() {
     spr.drawString(hardware.isAutoBrightnessEnabled() ? "ON" : "OFF", 290, y + 12, 2);
     y += itemH;
 
+    // Menu Item 3: Touch Sound (y = 116..144)
+    spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
+    spr.setTextColor(C_GREEN, C_CARD);
+    spr.setTextDatum(ML_DATUM);
+    spr.drawString("Touch Beep Sound", 30, y + 12, 2);
+    spr.setTextColor(C_DIM, C_CARD);
+    spr.setTextDatum(MR_DATUM);
+    spr.drawString(hardware.isTouchSoundEnabled() ? "ON" : "MUTE", 290, y + 12, 2);
+    y += itemH;
+
     // Menu Item 3: WiFi SSID
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_GREEN, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("WiFi", 30, y + 12, 2);
@@ -1315,6 +1403,7 @@ void DisplayManager::renderPage7_Settings() {
 
     // Menu Item 4: IP Address
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_GREEN, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("IP Address", 30, y + 12, 2);
@@ -1325,6 +1414,7 @@ void DisplayManager::renderPage7_Settings() {
 
     // Menu Item 5: Touch Type
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_PURPLE, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("Touch Type", 30, y + 12, 2);
@@ -1335,6 +1425,7 @@ void DisplayManager::renderPage7_Settings() {
 
     // Menu Item 6: Firmware Version
     spr.fillRoundRect(20, y, 280, 24, 4, C_CARD);
+    spr.drawRoundRect(20, y, 280, 24, 4, C_TRACE);
     spr.setTextColor(C_ORANGE, C_CARD);
     spr.setTextDatum(ML_DATUM);
     spr.drawString("Firmware", 30, y + 12, 2);
@@ -1344,9 +1435,178 @@ void DisplayManager::renderPage7_Settings() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+//  PAGE 7 — MEDIA CONTROL HOTKEYS (With Side Navigation Strips)
+// ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderPage7_MediaControl() {
+    drawSectionTitle("MEDIA CONTROL", C_CYAN);
+
+    // ── Dedicated Side Navigation Strips ──────────────────────────────
+    // Left Prev Page Strip (x = 4..28, y = 52..214)
+    spr.fillRoundRect(4, 52, 24, 162, 6, C_CARD);
+    spr.drawRoundRect(4, 52, 24, 162, 6, C_TRACE);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString("<", 16, 133, 2);
+
+    // Right Next Page Strip (x = 292..316, y = 52..214)
+    spr.fillRoundRect(292, 52, 24, 162, 6, C_CARD);
+    spr.drawRoundRect(292, 52, 24, 162, 6, C_TRACE);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString(">", 304, 133, 2);
+
+    // ── Center Media Buttons Grid (x = 34..286) ────────────────────────
+    // Row 1: Track Controls (y = 52..128, height 76px)
+    // 1. PREV (x = 34..110, center cx = 72, cy = 82)
+    spr.fillRoundRect(34, 52, 76, 76, 10, C_CARD);
+    spr.drawRoundRect(34, 52, 76, 76, 10, C_TRACE);
+    int cx1 = 72, cy1 = 82;
+    spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, C_CYAN);
+    spr.fillTriangle(cx1 - 6, cy1, cx1 + 2, cy1 - 10, cx1 + 2, cy1 + 10, C_CYAN);
+    spr.fillTriangle(cx1 + 2, cy1, cx1 + 10, cy1 - 10, cx1 + 10, cy1 + 10, C_CYAN);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString("PREV", cx1, 122, 2);
+
+    // 2. PLAY / PAUSE (Hero Center Button: x = 117..203, center cx = 160, cy = 82)
+    spr.fillRoundRect(117, 52, 86, 76, 10, C_CARD);
+    spr.drawRoundRect(117, 52, 86, 76, 10, C_GREEN);
+    int cx2 = 160, cy2 = 82;
+    spr.fillTriangle(cx2 - 12, cy2 - 10, cx2 - 2, cy2, cx2 - 12, cy2 + 10, C_GREEN);
+    spr.fillRect(cx2 + 3, cy2 - 10, 4, 20, C_GREEN);
+    spr.fillRect(cx2 + 10, cy2 - 10, 4, 20, C_GREEN);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_GREEN, C_CARD);
+    spr.drawString("PLAY/PAUSE", cx2, 122, 1);
+
+    // 3. NEXT (x = 210..286, center cx = 248, cy = 82)
+    spr.fillRoundRect(210, 52, 76, 76, 10, C_CARD);
+    spr.drawRoundRect(210, 52, 76, 76, 10, C_TRACE);
+    int cx3 = 248, cy3 = 82;
+    spr.fillTriangle(cx3 - 10, cy3 - 10, cx3 - 2, cy3, cx3 - 10, cy3 + 10, C_CYAN);
+    spr.fillTriangle(cx3 - 2, cy3 - 10, cx3 + 6, cy3, cx3 - 2, cy3 + 10, C_CYAN);
+    spr.fillRect(cx3 + 7, cy3 - 10, 4, 20, C_CYAN);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_CYAN, C_CARD);
+    spr.drawString("NEXT", cx3, 122, 2);
+
+    // Row 2: Volume Controls (y = 138..214, height 76px)
+    // 4. VOL - (x = 34..110, center cx = 72, cy = 168)
+    spr.fillRoundRect(34, 138, 76, 76, 10, C_CARD);
+    spr.drawRoundRect(34, 138, 76, 76, 10, C_TRACE);
+    int cx4 = 72, cy4 = 168;
+    spr.fillRect(cx4 - 12, cy4 - 5, 5, 10, C_YELLOW);
+    spr.fillTriangle(cx4 - 7, cy4 - 5, cx4 - 1, cy4 - 10, cx4 - 1, cy4 + 10, C_YELLOW);
+    spr.fillRect(cx4 - 7, cy4 - 10, 7, 21, C_YELLOW);
+    spr.fillRect(cx4 + 6, cy4 - 2, 10, 5, C_YELLOW);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.drawString("VOL -", cx4, 208, 2);
+
+    // 5. SKIP AD (Center Hero Button: x = 117..203, center cx = 160, cy = 168)
+    spr.fillRoundRect(117, 138, 86, 76, 10, C_CARD);
+    spr.drawRoundRect(117, 138, 86, 76, 10, C_ORANGE);
+    int cx5 = 160, cy5 = 168;
+    spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, C_ORANGE);
+    spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, C_ORANGE);
+    spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, C_ORANGE);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.drawString("SKIP AD", cx5, 208, 1);
+
+    // 6. VOL + (x = 210..286, center cx = 248, cy = 168)
+    spr.fillRoundRect(210, 138, 76, 76, 10, C_CARD);
+    spr.drawRoundRect(210, 138, 76, 76, 10, C_TRACE);
+    int cx6 = 248, cy6 = 168;
+    spr.fillRect(cx6 - 12, cy6 - 5, 5, 10, C_YELLOW);
+    spr.fillTriangle(cx6 - 7, cy6 - 5, cx6 - 1, cy6 - 10, cx6 - 1, cy6 + 10, C_YELLOW);
+    spr.fillRect(cx6 - 7, cy6 - 10, 7, 21, C_YELLOW);
+    spr.fillRect(cx6 + 5, cy6 - 2, 10, 5, C_YELLOW);
+    spr.fillRect(cx6 + 9, cy6 - 6, 4, 13, C_YELLOW);
+    spr.setTextDatum(BC_DATUM);
+    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.drawString("VOL +", cx6, 208, 2);
+}
+
+// ─────────────────────────────────────────────────────────────────────
 //  FULLSCREEN CHART DETAIL MODAL OVERLAY
 // ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderModalSetAlarm() {
+    // Dim background overlay
+    spr.fillSprite(C_BG);
+
+    // Centered Modal Window Card (x = 15, y = 25, w = 290, h = 185)
+    spr.fillRoundRect(15, 25, 290, 185, 8, C_CARD);
+    spr.drawRoundRect(15, 25, 290, 185, 8, C_ORANGE);
+
+    // Header inside modal
+    iconBell(32, 42, C_ORANGE);
+    spr.setTextDatum(ML_DATUM);
+    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.drawString("SET ALARM TIME", 45, 42, 2);
+
+    // 1px Horizontal Line under header
+    spr.drawFastHLine(25, 56, 270, C_TRACE);
+
+    // Hour Adjustment Box (x = 35..135, y = 64..134)
+    spr.fillRoundRect(35, 64, 100, 70, 6, C_BG);
+    spr.drawRoundRect(35, 64, 100, 70, 6, C_TRACE);
+
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("[ + ]", 85, 75, 1);
+
+    char hStr[4];
+    snprintf(hStr, sizeof(hStr), "%02d", tempAlarmHour);
+    spr.setTextColor(C_WHITE, C_BG);
+    spr.drawString(hStr, 85, 99, 4);
+
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("[ - ]", 85, 123, 1);
+
+    // Colon Separator
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.drawString(":", 160, 99, 4);
+
+    // Minute Adjustment Box (x = 185..285, y = 64..134)
+    spr.fillRoundRect(185, 64, 100, 70, 6, C_BG);
+    spr.drawRoundRect(185, 64, 100, 70, 6, C_TRACE);
+
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("[ + ]", 235, 75, 1);
+
+    char mStr[4];
+    snprintf(mStr, sizeof(mStr), "%02d", tempAlarmMin);
+    spr.setTextColor(C_WHITE, C_BG);
+    spr.drawString(mStr, 235, 99, 4);
+
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("[ - ]", 235, 123, 1);
+
+    // Bottom Action Buttons (y = 146..196, height 50px - SUPER EASY TO SEE & TOUCH!)
+    // Cancel Pill Button (Left: x = 28..145, y = 146..196)
+    spr.fillRoundRect(28, 146, 117, 50, 8, C_BG);
+    spr.drawRoundRect(28, 146, 117, 50, 8, C_RED);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_RED, C_BG);
+    spr.drawString("CANCEL", 86, 171, 2);
+
+    // Save & Enable Pill Button (Right: x = 175..292, y = 146..196)
+    spr.fillRoundRect(175, 146, 117, 50, 8, C_GREEN);
+    spr.drawRoundRect(175, 146, 117, 50, 8, C_WHITE);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_BG, C_GREEN);
+    spr.drawString("SAVE", 233, 171, 2);
+}
+
 void DisplayManager::renderDetailModal() {
+    if (currentModal == MODAL_SET_ALARM) {
+        renderModalSetAlarm();
+        return;
+    }
+
     spr.fillSprite(C_BG);
 
     const GoldData& g = network.getGold();
@@ -1424,9 +1684,10 @@ void DisplayManager::renderDetailModal() {
     if (dataPtr) {
         float minVal = dataPtr[0];
         float maxVal = dataPtr[0];
+        int minIdx = 0, maxIdx = 0;
         for (int i = 1; i < 7; i++) {
-            if (dataPtr[i] < minVal) minVal = dataPtr[i];
-            if (dataPtr[i] > maxVal) maxVal = dataPtr[i];
+            if (dataPtr[i] < minVal) { minVal = dataPtr[i]; minIdx = i; }
+            if (dataPtr[i] > maxVal) { maxVal = dataPtr[i]; maxIdx = i; }
         }
         float range = maxVal - minVal;
         if (range < 0.05f) range = 0.5f;
@@ -1436,32 +1697,43 @@ void DisplayManager::renderDetailModal() {
             int y1 = cy + ch - 24 - (int)(((dataPtr[i] - minVal) / range) * (ch - 46));
             int x2 = cx + 14 + (int)((i + 1) * stepX);
             int y2 = cy + ch - 24 - (int)(((dataPtr[i + 1] - minVal) / range) * (ch - 46));
-            y1 = constrain(y1, cy + 16, cy + ch - 24);
-            y2 = constrain(y2, cy + 16, cy + ch - 24);
+            y1 = constrain(y1, cy + 18, cy + ch - 24);
+            y2 = constrain(y2, cy + 18, cy + ch - 24);
 
             spr.drawLine(x1, y1, x2, y2, themeColor);
             spr.drawLine(x1, y1 + 1, x2, y2 + 1, themeColor); // Bold 2px line
         }
 
-        // Draw Dot points & Price text badges
+        // Draw Dot points & Key Price badges (MIN, MAX, and TODAY)
         for (int i = 0; i < 7; i++) {
             int px = cx + 14 + (int)(i * stepX);
             int py = cy + ch - 24 - (int)(((dataPtr[i] - minVal) / range) * (ch - 46));
-            py = constrain(py, cy + 16, cy + ch - 24);
+            py = constrain(py, cy + 18, cy + ch - 24);
 
+            uint16_t dotColor = (i == maxIdx) ? C_GREEN : ((i == minIdx) ? C_RED : themeColor);
             spr.fillCircle(px, py, 3, C_WHITE);
-            spr.drawCircle(px, py, 4, themeColor);
+            spr.drawCircle(px, py, 4, dotColor);
 
-            // Print price text above dot
+            // Display price value for ALL 7 DAYS!
             char pBuf[16];
             if (isMoneyFormat) {
-                snprintf(pBuf, sizeof(pBuf), "%.0f", dataPtr[i]);
+                if (dataPtr[i] >= 1000.0f) {
+                    snprintf(pBuf, sizeof(pBuf), "%.0f", dataPtr[i]);
+                } else {
+                    snprintf(pBuf, sizeof(pBuf), "%.1f", dataPtr[i]);
+                }
             } else {
-                snprintf(pBuf, sizeof(pBuf), "%.1f", dataPtr[i]);
+                snprintf(pBuf, sizeof(pBuf), "%.2fM", dataPtr[i]);
             }
             spr.setTextDatum(BC_DATUM);
-            spr.setTextColor(C_WHITE, C_CARD);
-            spr.drawString(pBuf, px, py - 5, 1);
+            spr.setTextColor((i == maxIdx) ? C_GREEN : ((i == minIdx) ? C_RED : C_WHITE), C_CARD);
+
+            // Stagger tag Y positions (alternate odd/even dots) to prevent text collision
+            int tagY = (i % 2 == 0) ? (py - 5) : (py + 15);
+            if (tagY < cy + 15) tagY = py + 15;
+            if (tagY > cy + ch - 20) tagY = py - 5;
+
+            spr.drawString(pBuf, px, tagY, 1);
         }
     }
 

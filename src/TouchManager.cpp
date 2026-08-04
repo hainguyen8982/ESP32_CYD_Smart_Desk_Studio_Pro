@@ -14,6 +14,8 @@ TouchManager::TouchManager()
       touchStartTime(0),
       startX(0), startY(0),
       lastX(0), lastY(0),
+      lastTapTime(0),
+      lastTapX(0), lastTapY(0),
       calibState(CALIB_NONE),
       calibValid(false),
       calibWaitRelease(false),
@@ -384,8 +386,8 @@ TouchEvent TouchManager::update() {
             int dx = lastX - startX;
             int dy = lastY - startY;
 
-            // Swipe detection: min 30px horizontal, max 800ms, horizontal > vertical
-            if (duration < 800 && abs(dx) > 30 && abs(dx) > abs(dy)) {
+            // 1. Swipe detection: min 40px horizontal, max 800ms, horizontal > vertical
+            if (duration < 800 && abs(dx) > 40 && abs(dx) > abs(dy)) {
                 if (dx > 0) {
                     event.gesture = GESTURE_SWIPE_RIGHT;
                 } else {
@@ -393,12 +395,31 @@ TouchEvent TouchManager::update() {
                 }
                 hardware.playBeep(2800, 25);
             }
-            // Tap detection: small movement, short duration
-            else if (duration < 500 && abs(dx) < 30 && abs(dy) < 30) {
-                event.gesture = GESTURE_TAP;
-                event.x = startX;  // Use start position (more stable than last)
-                event.y = startY;
-                hardware.playBeep(2400, 30);
+            // 2. Long Press / Hold detection: held >= 500ms, movement < 60px (handles resistive touch noise)
+            else if (duration >= 500 && abs(dx) < 60 && abs(dy) < 60) {
+                event.gesture = GESTURE_HOLD;
+                event.x = lastX;
+                event.y = lastY;
+                hardware.playBeep(1800, 80);
+            }
+            // 3. Tap & Double-Tap detection: short duration < 500ms, movement < 40px
+            else if (duration < 500 && abs(dx) < 40 && abs(dy) < 40) {
+                unsigned long now = millis();
+                if (now - lastTapTime < 450 && abs((int)lastX - (int)lastTapX) < 60 && abs((int)lastY - (int)lastTapY) < 60) {
+                    event.gesture = GESTURE_DOUBLE_TAP;
+                    event.x = lastX;
+                    event.y = lastY;
+                    lastTapTime = 0;
+                    hardware.playBeep(2800, 50);
+                } else {
+                    event.gesture = GESTURE_TAP;
+                    event.x = lastX;
+                    event.y = lastY;
+                    lastTapTime = now;
+                    lastTapX = lastX;
+                    lastTapY = lastY;
+                    hardware.playBeep(2400, 30);
+                }
             }
         }
     }

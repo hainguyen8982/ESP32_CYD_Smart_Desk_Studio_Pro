@@ -23,10 +23,10 @@
 #define SCREEN_HEIGHT       240
 
 // Number of Dashboard Pages
-#define TOTAL_PAGES         8       // Pages 0-6 = Dashboard, Page 7 = Settings
+#define TOTAL_PAGES         8       // Pages 0-7 = Dashboard, Settings, Media Controller
 
 // System Constants
-#define PC_MONITOR_TIMEOUT_MS 6000   // Switch from PC Monitor mode if no data for 6s
+#define PC_MONITOR_TIMEOUT_MS 12000   // Extended timeout to reduce "wait connecting" flaps
 #define LDR_CHECK_INTERVAL_MS 500    // LDR Auto-brightness interval
 
 // Default Settings

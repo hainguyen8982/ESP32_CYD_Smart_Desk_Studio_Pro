@@ -10,7 +10,8 @@ enum DetailModalType {
     MODAL_NONE = 0,
     MODAL_GOLD_SJC,
     MODAL_CURRENCY_1,
-    MODAL_CURRENCY_2
+    MODAL_CURRENCY_2,
+    MODAL_SET_ALARM
 };
 
 class DisplayManager {
@@ -23,11 +24,28 @@ public:
     void nextPage();
     void previousPage();
 
-    // Fullscreen Chart Detail Modal
+    // Fullscreen Chart / Setting Detail Modal
     void openDetailModal(DetailModalType type) { currentModal = type; }
     void closeDetailModal() { currentModal = MODAL_NONE; }
     bool isModalOpen() const { return currentModal != MODAL_NONE; }
     DetailModalType getModalType() const { return currentModal; }
+
+    // Alarm Setting Modal state
+    uint8_t getTempAlarmHour() const { return tempAlarmHour; }
+    uint8_t getTempAlarmMin() const { return tempAlarmMin; }
+    void initTempAlarm(uint8_t h, uint8_t m) { tempAlarmHour = h; tempAlarmMin = m; }
+    void adjustTempAlarmHour(int8_t delta) {
+        int16_t h = (int16_t)tempAlarmHour + delta;
+        if (h < 0) h = 23;
+        if (h > 23) h = 0;
+        tempAlarmHour = (uint8_t)h;
+    }
+    void adjustTempAlarmMin(int8_t delta) {
+        int16_t m = (int16_t)tempAlarmMin + delta;
+        if (m < 0) m = 55;
+        if (m > 55) m = 0;
+        tempAlarmMin = (uint8_t)m;
+    }
 
     // Month browsing helpers
     void nextCalendarMonth() { calendarMonthOffset++; }
@@ -42,10 +60,10 @@ private:
     void renderPage1_LunarCalendar();
     void renderPage2_FinanceGold();
     void renderPage3_PcCpuRam();
-    void renderPage4_PcGpuVram();
-    void renderPage5_PcNetDisks();
-    void renderPage6_DeskUtilities();
-    void renderPage7_Settings();
+    void renderPage4_PcNetDisks();
+    void renderPage5_DeskUtilities();
+    void renderPage6_Settings();
+    void renderPage7_MediaControl();
     void renderCalibrationScreen();
     void renderDetailModal();
     void renderSplashScreen();
@@ -86,11 +104,15 @@ private:
     void drawVietnameseAmLich(int16_t cx, int16_t cy, int day, int month, int year);
     void drawVietnameseDuBao3Ngay(int16_t cx, int16_t cy);
 
+    void renderModalSetAlarm();
+
     // ── State ────────────────────────────────────────────────
     TFT_eSPI    tft;
     TFT_eSprite spr;       // Off-screen sprite double-buffer
     uint8_t     currentPage;
     DetailModalType currentModal;
+    uint8_t     tempAlarmHour;
+    uint8_t     tempAlarmMin;
     int16_t     calendarMonthOffset;
     unsigned long lastRenderTime;
     bool        spriteReady;

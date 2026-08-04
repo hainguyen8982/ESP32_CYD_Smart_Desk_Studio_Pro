@@ -31,6 +31,8 @@ public:
     void playBeep(uint16_t freqHz = 2000, uint16_t durationMs = 80);
     void playAlarmTune();
     void stopSound();
+    bool isTouchSoundEnabled() const { return touchSoundEnabled; }
+    void setTouchSoundEnabled(bool enable);
 
     // RGB LED
     void setRGBColor(RGBColor color);
@@ -39,6 +41,7 @@ public:
 private:
     uint8_t currentBrightness;
     bool autoBrightnessEnabled;
+    bool touchSoundEnabled;
     unsigned long lastLdrCheck;
     int smoothedLdr;
 };

@@ -93,6 +93,14 @@ void DeskUtilities::setAlarm(uint8_t hour, uint8_t minute, bool enable) {
     alarmRinging = false;
 }
 
+void DeskUtilities::toggleAlarm() {
+    if (alarmRinging) {
+        dismissAlarm();
+    } else {
+        setAlarm(alarmHour, alarmMinute, !alarmEnabled);
+    }
+}
+
 void DeskUtilities::checkAlarm(uint8_t currentHour, uint8_t currentMinute, uint8_t currentSecond) {
     if (!alarmEnabled) return;
     if (currentHour == alarmHour && currentMinute == alarmMinute && currentSecond == 0) {

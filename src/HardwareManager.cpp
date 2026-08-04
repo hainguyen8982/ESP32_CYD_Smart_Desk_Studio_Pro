@@ -5,6 +5,7 @@ HardwareManager hardware;
 HardwareManager::HardwareManager()
     : currentBrightness(85),
       autoBrightnessEnabled(false),
+      touchSoundEnabled(true),
       lastLdrCheck(0),
       smoothedLdr(-1) {}
 
@@ -37,14 +38,20 @@ void HardwareManager::setBacklight(uint8_t percentage) {
     ledcWrite(7, duty);
 }
 
+void HardwareManager::setTouchSoundEnabled(bool enable) {
+    touchSoundEnabled = enable;
+}
+
 void HardwareManager::updateAutoBrightness() {
     if (!autoBrightnessEnabled) return;
     if (millis() - lastLdrCheck < LDR_CHECK_INTERVAL_MS) return;
     lastLdrCheck = millis();
 
     int rawLdr = analogRead(PIN_LDR);
-    // Map LDR analog values (typically ~300 in bright room to ~3500 in dark)
-    int targetBrightness = map(rawLdr, 300, 3200, 15, 100);
+    // Corrected Mapping for CYD LDR Sensor (Active Low photoresistor):
+    // Bright room (rawLdr ~300) -> 90% Backlight
+    // Dark room (rawLdr ~3200) -> 20% Backlight
+    int targetBrightness = map(rawLdr, 300, 3200, 90, 20);
     targetBrightness = constrain(targetBrightness, 15, 100);
 
     if (smoothedLdr == -1) {
@@ -57,6 +64,7 @@ void HardwareManager::updateAutoBrightness() {
 }
 
 void HardwareManager::playBeep(uint16_t freqHz, uint16_t durationMs) {
+    if (!touchSoundEnabled) return;
     tone(PIN_SPEAKER, freqHz, durationMs);
 }
 

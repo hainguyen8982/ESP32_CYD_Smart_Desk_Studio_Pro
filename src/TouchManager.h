@@ -9,6 +9,8 @@
 enum GestureType {
     GESTURE_NONE,
     GESTURE_TAP,
+    GESTURE_DOUBLE_TAP,
+    GESTURE_HOLD,
     GESTURE_SWIPE_LEFT,
     GESTURE_SWIPE_RIGHT
 };
@@ -65,6 +67,8 @@ private:
     unsigned long touchStartTime;
     uint16_t startX, startY;
     uint16_t lastX, lastY;
+    unsigned long lastTapTime;
+    uint16_t lastTapX, lastTapY;
 
     // Calibration state
     CalibState calibState;

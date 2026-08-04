@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <WiFiManager.h>
 #include <ESPAsyncWebServer.h>
 #include <HTTPClient.h>
@@ -80,6 +81,11 @@ public:
     int getRemoteRequestedPage() const { return remotePage; }
     void clearRemoteRequestedPage() { remotePage = -1; }
 
+    // Media Control Action Dispatcher
+    void triggerMediaAction(const char* action);
+    const char* getLastMediaAction() const { return lastMediaAction; }
+    void clearLastMediaAction() { lastMediaAction[0] = '\0'; }
+
 private:
     void setupWebRoutes();
     
@@ -88,9 +94,11 @@ private:
     ExchangeData exchange;
 
     AsyncWebServer server;
+    WiFiUDP udp;
     unsigned long lastWeatherFetch;
     unsigned long lastGoldFetch;
     int remotePage;
+    char lastMediaAction[32];
 
     BootState bootState;
     char bootStatusMsg[64];

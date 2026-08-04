@@ -25,6 +25,7 @@ public:
 
     // Alarm Clock API
     void setAlarm(uint8_t hour, uint8_t minute, bool enable);
+    void toggleAlarm();
     bool isAlarmEnabled() const { return alarmEnabled; }
     uint8_t getAlarmHour() const { return alarmHour; }
     uint8_t getAlarmMinute() const { return alarmMinute; }
