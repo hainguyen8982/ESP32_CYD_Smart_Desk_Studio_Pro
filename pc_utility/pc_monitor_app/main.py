@@ -704,7 +704,7 @@ class CYDMonitorApp(ctk.CTk):
 
             # 1. Collect Hardware Metrics (GUI label always updates)
             try:
-                cpu_pct = int(psutil.cpu_percent(interval=1))  # blocking 1s for accurate reading
+                cpu_pct = int(psutil.cpu_percent(interval=None))  # Non-blocking instant 0.0ms reading
                 ram_pct = int(psutil.virtual_memory().percent)
 
                 now_time = time.time()
@@ -771,6 +771,7 @@ class CYDMonitorApp(ctk.CTk):
             # Reset connection flags each loop iteration
             connected_usb = False
             connected_wifi = False
+            active_wifi_ip = ""
 
             # 2. USB Serial Auto Connection (instant non-resetting connection)
             if (ser is None or not ser.is_open) and (now_time - last_port_scan > 2.0):
@@ -834,9 +835,10 @@ class CYDMonitorApp(ctk.CTk):
                 if not target_ip:
                     continue
                 try:
-                    resp = requests.post(f"http://{target_ip}/api/pc", json=payload, timeout=1.2)
+                    resp = requests.post(f"http://{target_ip}/api/pc", json=payload, timeout=0.4)
                     if resp.ok:
                         connected_wifi = True
+                        active_wifi_ip = target_ip
                         if target_ip != self.cached_ip:
                             self.cached_ip = target_ip
                         try:
@@ -859,11 +861,11 @@ class CYDMonitorApp(ctk.CTk):
             if connected_usb:
                 self.after(0, lambda p=ser_port: self._set_status(f"\u25cf Connected (USB {p})", "#2ea043"))
             elif connected_wifi:
-                self.after(0, lambda i=ip: self._set_status(f"\u25cf Connected (WiFi {i})", "#2ea043"))
+                self.after(0, lambda i=active_wifi_ip: self._set_status(f"\u25cf Connected (WiFi {i})", "#2ea043"))
             else:
                 self.after(0, lambda: self._set_status("\u25cf Searching for CYD...", "#d29922"))
 
-            # no extra sleep — cpu_percent(interval=1) already blocked 1s
+            time.sleep(1.0)
 
     def create_tray_icon(self):
         """Runs in its own non-daemon thread. Blocking call."""
