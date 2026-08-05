@@ -333,24 +333,30 @@ void NetworkManager::setupWebRoutes() {
 
     // PC Monitor HTTP POST Receiver (supports both /api/pc and /api/pc_status)
     auto handlePCStatus = [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-        char* buf = (char*)malloc(len + 1);
-        if (buf) {
-            memcpy(buf, data, len);
-            buf[len] = '\0';
-            if (pcMonitor.parseJsonData(buf)) {
-                char respBuf[256];
-                snprintf(respBuf, sizeof(respBuf),
-                         "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}",
-                         display.getCurrentPage(),
-                         getCurrentThemePresetName(),
-                         weather.city,
-                         exchange.cur1Code,
-                         exchange.cur2Code);
-                sendCORSResponse(request, 200, respBuf);
-            } else {
-                sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+        if (index == 0) {
+            request->_tempObject = malloc(total + 1);
+        }
+        if (request->_tempObject) {
+            uint8_t* fullBuf = (uint8_t*)request->_tempObject;
+            memcpy(fullBuf + index, data, len);
+            if (index + len == total) {
+                fullBuf[total] = '\0';
+                if (pcMonitor.parseJsonData((const char*)fullBuf)) {
+                    char respBuf[256];
+                    snprintf(respBuf, sizeof(respBuf),
+                             "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}",
+                             display.getCurrentPage(),
+                             getCurrentThemePresetName(),
+                             weather.city,
+                             exchange.cur1Code,
+                             exchange.cur2Code);
+                    sendCORSResponse(request, 200, respBuf);
+                } else {
+                    sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
+                }
+                free(request->_tempObject);
+                request->_tempObject = NULL;
             }
-            free(buf);
         } else {
             sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
         }
