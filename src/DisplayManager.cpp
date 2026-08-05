@@ -244,23 +244,6 @@ void DisplayManager::renderHeader() {
 
     // ── Bottom accent line ────────────────────────────────────────────
     spr.drawFastHLine(0, 27, SCREEN_WIDTH, acc);
-
-    // ── Toast Notification Popup Overlay (4s duration) ────────────────
-    if (notifyEndTime > 0 && millis() < notifyEndTime) {
-        spr.fillRoundRect(20, 2, 280, 24, 6, C_PURPLE);
-        spr.drawRoundRect(20, 2, 280, 24, 6, C_WHITE);
-        spr.setTextDatum(MC_DATUM);
-        spr.setTextColor(C_WHITE, C_PURPLE);
-        spr.drawString(notifyMessage, 160, 14, 2);
-    }
-}
-
-void DisplayManager::triggerNotification(const char* msg) {
-    if (msg && strlen(msg) > 0) {
-        snprintf(notifyMessage, sizeof(notifyMessage), "%s", msg);
-        notifyEndTime = millis() + 4000;
-        hardware.playBeep(2800, 30);
-    }
 }
 
 void DisplayManager::iconLink(int16_t cx, int16_t cy, uint16_t color) {

@@ -66,9 +66,6 @@ public:
     uint8_t getSettingsTab() const { return settingsTab; }
     void setSettingsTab(uint8_t tab) { settingsTab = tab; }
 
-    // Notification Toast Popup
-    void triggerNotification(const char* msg);
-
 private:
     // ── Page renderers ───────────────────────────────────────
     void renderHeader();
@@ -134,8 +131,6 @@ private:
     char        mediaTitle[64];
     char        mediaArtist[64];
     int         marqueeOffset;
-    char        notifyMessage[64];
-    unsigned long notifyEndTime;
     uint8_t     settingsTab;
     unsigned long lastRenderTime;
     bool        spriteReady;

@@ -413,20 +413,6 @@ void NetworkManager::setupWebRoutes() {
             sendCORSResponse(request, 400, "{\"status\":\"invalid request\"}");
         });
 
-    // PC Toast Notification API
-    server.on("/api/notify", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            JsonDocument doc;
-            DeserializationError err = deserializeJson(doc, data, len);
-            if (!err && !doc["msg"].isNull()) {
-                const char* msg = doc["msg"];
-                display.triggerNotification(msg);
-                sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
-                return;
-            }
-            sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
-        });
-
     // Theme API - GET current theme JSON
     server.on("/api/theme", HTTP_GET, [](AsyncWebServerRequest *request) {
         char bg[8], card[8], hdr[8], cyan[8], orange[8], green[8], yellow[8], red[8], purple[8], white[8], dim[8];
