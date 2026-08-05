@@ -133,6 +133,7 @@ private:
     bool        isMediaPlaying;
     char        mediaTitle[64];
     char        mediaArtist[64];
+    int         marqueeOffset;
     char        notifyMessage[64];
     unsigned long notifyEndTime;
     uint8_t     settingsTab;

@@ -1512,117 +1512,129 @@ void DisplayManager::renderPage6_Settings() {
 //  PAGE 7 — MEDIA CONTROL HOTKEYS (With Transparent Side Nav Keys)
 // ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderPage7_MediaControl() {
-    drawSectionTitle("MEDIA CONTROL", C_CYAN);
+    // ── 1. Top Live Song Title & Artist Marquee Banner (y = 32..56, h = 24px) ──
+    spr.fillRoundRect(16, 32, 288, 25, 6, C_CARD);
+    spr.drawRoundRect(16, 32, 288, 25, 6, C_CYAN);
 
-    // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
+    char fullStr[160];
+    if (strlen(mediaTitle) > 0) {
+        if (strlen(mediaArtist) > 0) {
+            snprintf(fullStr, sizeof(fullStr), "%s - %s", mediaTitle, mediaArtist);
+        } else {
+            snprintf(fullStr, sizeof(fullStr), "%s", mediaTitle);
+        }
+    } else {
+        snprintf(fullStr, sizeof(fullStr), "Windows Media Transport - Ready");
+    }
+
+    int textW = spr.textWidth(fullStr, 2);
+    if (textW <= 265) {
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_WHITE, C_CARD);
+        spr.drawString(fullStr, 160, 44, 2);
+    } else {
+        // Smooth Marquee Scrolling for long track titles
+        marqueeOffset = (marqueeOffset + 2) % (textW + 80);
+        int drawX = 290 - marqueeOffset;
+        
+        // Draw inside card bounds safely
+        spr.setTextDatum(ML_DATUM);
+        spr.setTextColor(C_WHITE, C_CARD);
+        spr.drawString(fullStr, drawX, 44, 2);
+
+        // Draw side mask panels to keep marquee text strictly contained in banner box
+        spr.fillRect(0, 32, 18, 25, C_BG);
+        spr.fillRect(302, 32, 18, 25, C_BG);
+        spr.drawRoundRect(16, 32, 288, 25, 6, C_CYAN);
+    }
+
+    // ── Dedicated Transparent Side Navigation Keys ───────────────────
     spr.setTextDatum(MC_DATUM);
     spr.setTextColor(C_CYAN, C_BG);
-    spr.drawString("<", 16, 133, 2);
-    spr.drawString(">", 304, 133, 2);
+    spr.drawString("<", 16, 140, 2);
+    spr.drawString(">", 304, 140, 2);
 
-    // ── Center Media Buttons Grid (x = 34..286) ────────────────────────
-    // Row 1: Track Controls (y = 52..128, height 76px)
-    // 1. PREV (Bar on Left + Triangle pointing Left)
-    spr.fillRoundRect(34, 52, 76, 76, 10, C_CARD);
-    spr.drawRoundRect(34, 52, 76, 76, 10, C_TRACE);
-    int cx1 = 72, cy1 = 80;
+    // ── Row 1: Track Controls (y = 65..137, height 72px) ───────────────
+    // 1. PREV
+    spr.fillRoundRect(34, 65, 76, 72, 8, C_CARD);
+    spr.drawRoundRect(34, 65, 76, 72, 8, C_TRACE);
+    int cx1 = 72, cy1 = 93;
     spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, C_CYAN);
     spr.fillTriangle(cx1 + 8, cy1 - 10, cx1 + 8, cy1 + 10, cx1 - 4, cy1, C_CYAN);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString("PREV", cx1, 122, 2);
+    spr.drawString("PREV", cx1, 131, 2);
 
-    // 2. PLAY / PAUSE (Dynamic Hero Center Button: x = 117..203, center cx = 160)
-    spr.fillRoundRect(117, 52, 86, 76, 10, C_CARD);
-    spr.drawRoundRect(117, 52, 86, 76, 10, C_GREEN);
-    int cx2 = 160, cy2 = 80;
+    // 2. PLAY / PAUSE (Dynamic Hero Center Button: x = 117..203)
+    spr.fillRoundRect(117, 65, 86, 72, 8, C_CARD);
+    spr.drawRoundRect(117, 65, 86, 72, 8, C_GREEN);
+    int cx2 = 160, cy2 = 93;
     if (!isMediaPlaying) {
-        // Paused state -> Render PLAY Icon (Solid Right Triangle)
         spr.fillTriangle(cx2 - 8, cy2 - 12, cx2 - 8, cy2 + 12, cx2 + 10, cy2, C_GREEN);
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(C_GREEN, C_CARD);
-        spr.drawString("PLAY", cx2, 122, 2);
+        spr.drawString("PLAY", cx2, 131, 2);
     } else {
-        // Playing state -> Render PAUSE Icon (Two Vertical Rounded Bars)
         spr.fillRoundRect(cx2 - 8, cy2 - 11, 6, 22, 2, C_GREEN);
         spr.fillRoundRect(cx2 + 3, cy2 - 11, 6, 22, 2, C_GREEN);
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(C_GREEN, C_CARD);
-        spr.drawString("PAUSE", cx2, 122, 2);
+        spr.drawString("PAUSE", cx2, 131, 2);
     }
 
-    // 3. NEXT (Triangle pointing Right + Bar on Right)
-    spr.fillRoundRect(210, 52, 76, 76, 10, C_CARD);
-    spr.drawRoundRect(210, 52, 76, 76, 10, C_TRACE);
-    int cx3 = 248, cy3 = 80;
+    // 3. NEXT
+    spr.fillRoundRect(210, 65, 76, 72, 8, C_CARD);
+    spr.drawRoundRect(210, 65, 76, 72, 8, C_TRACE);
+    int cx3 = 248, cy3 = 93;
     spr.fillTriangle(cx3 - 8, cy3 - 10, cx3 - 8, cy3 + 10, cx3 + 4, cy3, C_CYAN);
     spr.fillRect(cx3 + 6, cy3 - 10, 4, 20, C_CYAN);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString("NEXT", cx3, 122, 2);
+    spr.drawString("NEXT", cx3, 131, 2);
 
-    // Row 2: Volume & Ad Controls (y = 138..214, height 76px)
-    // 4. VOL - (Speaker Body + 1 Sound Arc — 100% Crisp Vector, No Missing Lines)
-    spr.fillRoundRect(34, 138, 76, 76, 10, C_CARD);
-    spr.drawRoundRect(34, 138, 76, 76, 10, C_TRACE);
-    int cx4 = 72, cy4 = 165;
-    // Speaker Body (Box + Horn trapezoid ending at x = cx4 - 2)
+    // ── Row 2: Volume & Ad Controls (y = 145..217, height 72px) ────────
+    // 4. VOL -
+    spr.fillRoundRect(34, 145, 76, 72, 8, C_CARD);
+    spr.drawRoundRect(34, 145, 76, 72, 8, C_TRACE);
+    int cx4 = 72, cy4 = 171;
     spr.fillRoundRect(cx4 - 18, cy4 - 7, 7, 14, 2, C_YELLOW);
     spr.fillTriangle(cx4 - 10, cy4 - 7, cx4 - 2, cy4 - 14, cx4 - 10, cy4 + 7, C_YELLOW);
     spr.fillTriangle(cx4 - 10, cy4 + 7, cx4 - 2, cy4 + 14, cx4 - 2, cy4 - 14, C_YELLOW);
-    // 1 Sound Arc (center arcX = cx4 + 5)
     int arcX4 = cx4 + 5;
     spr.drawCircle(arcX4, cy4, 7, C_YELLOW);
     spr.drawCircle(arcX4, cy4, 8, C_YELLOW);
-    spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, C_CARD); // Trim left half safely without touching horn
+    spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, C_CARD);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("VOL -", cx4, 208, 2);
+    spr.drawString("VOL -", cx4, 211, 2);
 
-    // 5. SKIP AD (Double Triangle + Line)
-    spr.fillRoundRect(117, 138, 86, 76, 10, C_CARD);
-    spr.drawRoundRect(117, 138, 86, 76, 10, C_ORANGE);
-    int cx5 = 160, cy5 = 165;
+    // 5. SKIP AD
+    spr.fillRoundRect(117, 145, 86, 72, 8, C_CARD);
+    spr.drawRoundRect(117, 145, 86, 72, 8, C_ORANGE);
+    int cx5 = 160, cy5 = 171;
     spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, C_ORANGE);
     spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, C_ORANGE);
     spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, C_ORANGE);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_ORANGE, C_CARD);
-    spr.drawString("SKIP AD", cx5, 208, 1);
+    spr.drawString("SKIP AD", cx5, 211, 1);
 
-    // 6. VOL + (Speaker Body + 2 Sound Arcs — 100% Crisp Vector, No Missing Lines)
-    spr.fillRoundRect(210, 138, 76, 76, 10, C_CARD);
-    spr.drawRoundRect(210, 138, 76, 76, 10, C_TRACE);
-    int cx6 = 248, cy6 = 165;
-    // Speaker Body (Box + Horn trapezoid ending at x = cx6 - 4)
+    // 6. VOL +
+    spr.fillRoundRect(210, 145, 76, 72, 8, C_CARD);
+    spr.drawRoundRect(210, 145, 76, 72, 8, C_TRACE);
+    int cx6 = 248, cy6 = 171;
     spr.fillRoundRect(cx6 - 20, cy6 - 7, 7, 14, 2, C_YELLOW);
     spr.fillTriangle(cx6 - 12, cy6 - 7, cx6 - 4, cy6 - 14, cx6 - 12, cy6 + 7, C_YELLOW);
     spr.fillTriangle(cx6 - 12, cy6 + 7, cx6 - 4, cy6 + 14, cx6 - 4, cy6 - 14, C_YELLOW);
-    // 2 Sound Arcs (center arcX = cx6 + 3)
     int arcX6 = cx6 + 3;
     spr.drawCircle(arcX6, cy6, 7, C_YELLOW);
     spr.drawCircle(arcX6, cy6, 8, C_YELLOW);
     spr.drawCircle(arcX6, cy6, 12, C_YELLOW);
     spr.drawCircle(arcX6, cy6, 13, C_YELLOW);
-    spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, C_CARD); // Trim left half safely without touching horn
+    spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, C_CARD);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("VOL +", cx6, 208, 2);
-
-    // ── Live Song Title & Artist Banner (y = 218..238) ────────────────
-    if (strlen(mediaTitle) > 0) {
-        char fullStr[128];
-        if (strlen(mediaArtist) > 0) {
-            snprintf(fullStr, sizeof(fullStr), "🎵 %s — %s", mediaTitle, mediaArtist);
-        } else {
-            snprintf(fullStr, sizeof(fullStr), "🎵 %s", mediaTitle);
-        }
-        spr.fillRoundRect(16, 218, 288, 20, 4, C_CARD);
-        spr.drawRoundRect(16, 218, 288, 20, 4, C_CYAN);
-        spr.setTextDatum(MC_DATUM);
-        spr.setTextColor(C_WHITE, C_CARD);
-        spr.drawString(fullStr, 160, 227, 1);
-    }
+    spr.drawString("VOL +", cx6, 211, 2);
 }
 
 // ─────────────────────────────────────────────────────────────────────
