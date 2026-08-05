@@ -106,22 +106,30 @@ def background_skip_youtube_ad():
         print(f"[Skip Ad Error]: {e}")
 
 last_media_time = 0.0
+app_instance = None
+
+def trigger_instant_media_push():
+    def _push():
+        time.sleep(0.35)
+        if app_instance:
+            app_instance.send_instant_telemetry()
+    threading.Thread(target=_push, daemon=True).start()
 
 def handle_media_action(action):
     global last_media_time
     if not action:
         return
     now = time.time()
-    if now - last_media_time < 0.45:
-        return  # Ignore duplicate trigger within 450ms!
+    if now - last_media_time < 0.35:
+        return  # Ignore duplicate trigger within 350ms!
     
     act = str(action).lower().strip()
     vk = None
     if act in ["play_pause", "play", "pause"]:
         vk = VK_MEDIA_PLAY_PAUSE
-    elif act in ["next", "next_track"]:
+    elif act == "next":
         vk = VK_MEDIA_NEXT_TRACK
-    elif act in ["prev", "previous", "prev_track"]:
+    elif act == "prev":
         vk = VK_MEDIA_PREV_TRACK
     elif act in ["vol_up", "volume_up"]:
         vk = VK_VOLUME_UP
@@ -129,19 +137,22 @@ def handle_media_action(action):
         vk = VK_VOLUME_DOWN
     elif act in ["mute"]:
         vk = VK_VOLUME_MUTE
-    elif act in ["skip_ad", "skipad", "skip"]:
+    elif act == "skip_ad":
+        threading.Thread(target=background_skip_youtube_ad, daemon=True).start()
         last_media_time = now
-        background_skip_youtube_ad()
+        trigger_instant_media_push()
         return
 
-    if vk is not None and sys.platform == "win32":
+    if vk and sys.platform == "win32":
         try:
-            last_media_time = now
-            ctypes.windll.user32.keybd_event(vk, 0, 0, 0)
-            ctypes.windll.user32.keybd_event(vk, 0, 2, 0)
-            print(f"[Media Hotkey] Windows VK Key 0x{vk:02X} triggered for action '{act}'")
+            user32 = ctypes.windll.user32
+            user32.keybd_event(vk, 0, 0, 0)
+            user32.keybd_event(vk, 0, 2, 0)
+            print(f"[Media Remote]: Executed VK Action (0x{vk:02X}) for '{act}'")
         except Exception as e:
-            print(f"[Media Hotkey Error] {e}")
+            print(f"[Media Remote Error]: {e}")
+    last_media_time = now
+    trigger_instant_media_push()
 
 # Set CustomTkinter theme
 ctk.set_appearance_mode("Dark")
@@ -304,6 +315,8 @@ def check_windows_media_playing():
 class CYDMonitorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+        global app_instance
+        app_instance = self
 
         self.title("ESP32 CYD Desk Dashboard Studio")
         self.geometry("580x780")
@@ -318,6 +331,27 @@ class CYDMonitorApp(ctk.CTk):
         self.last_net = psutil.net_io_counters()
         self.last_time = time.time()
         self.gpu_mon = GPUMonitor()
+
+    def send_instant_telemetry(self):
+        try:
+            ip = self.cached_ip
+            if not ip:
+                return
+            is_playing, media_title, media_artist = check_windows_media_playing()
+            cpu_pct = int(psutil.cpu_percent(interval=None))
+            ram_pct = int(psutil.virtual_memory().percent)
+            gpu_pct, vram_pct = self.gpu_mon.get_metrics()
+            
+            payload = {
+                "cpu": cpu_pct, "ram": ram_pct, "gpu": gpu_pct, "vram": vram_pct,
+                "net_down": 0, "net_up": 0,
+                "isMediaPlaying": is_playing,
+                "mediaTitle": media_title,
+                "mediaArtist": media_artist
+            }
+            requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
+        except Exception:
+            pass
 
         # Main Scrollable Container for 100% Overflow Prevention
         self.scroll_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
