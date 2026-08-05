@@ -53,14 +53,21 @@ public:
     void resetCalendarMonth() { calendarMonthOffset = 0; }
     int16_t getCalendarMonthOffset() const { return calendarMonthOffset; }
 
-    // Media Play/Pause State
+    // Media Play/Pause State & Track Info
     bool getMediaPlaying() const { return isMediaPlaying; }
     void togglePlayState() { isMediaPlaying = !isMediaPlaying; }
     void setMediaPlaying(bool p) { isMediaPlaying = p; }
+    void setMediaInfo(const char* title, const char* artist) {
+        if (title && strlen(title) > 0) snprintf(mediaTitle, sizeof(mediaTitle), "%s", title);
+        if (artist && strlen(artist) > 0) snprintf(mediaArtist, sizeof(mediaArtist), "%s", artist);
+    }
 
     // Settings Tab State (0 = System, 1 = Themes)
     uint8_t getSettingsTab() const { return settingsTab; }
     void setSettingsTab(uint8_t tab) { settingsTab = tab; }
+
+    // Notification Toast Popup
+    void triggerNotification(const char* msg);
 
 private:
     // ── Page renderers ───────────────────────────────────────
@@ -124,6 +131,10 @@ private:
     uint8_t     tempAlarmMin;
     int16_t     calendarMonthOffset;
     bool        isMediaPlaying;
+    char        mediaTitle[64];
+    char        mediaArtist[64];
+    char        notifyMessage[64];
+    unsigned long notifyEndTime;
     uint8_t     settingsTab;
     unsigned long lastRenderTime;
     bool        spriteReady;

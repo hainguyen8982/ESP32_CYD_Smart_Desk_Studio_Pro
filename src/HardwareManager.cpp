@@ -54,6 +54,15 @@ void HardwareManager::updateAutoBrightness() {
     int targetBrightness = map(rawLdr, 0, 800, 95, 15);
     targetBrightness = constrain(targetBrightness, 15, 100);
 
+    // Night Sleep Schedule (23:00 - 06:00): Auto-dim backlight to 5%
+    time_t now = time(NULL);
+    struct tm ti;
+    if (now >= 1600000000 && localtime_r(&now, &ti)) {
+        if (ti.tm_hour >= 23 || ti.tm_hour < 6) {
+            targetBrightness = 5;
+        }
+    }
+
     if (smoothedLdr == -1) {
         smoothedLdr = targetBrightness;
     } else {

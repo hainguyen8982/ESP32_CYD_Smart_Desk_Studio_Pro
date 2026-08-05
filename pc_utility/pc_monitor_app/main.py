@@ -289,12 +289,16 @@ def check_windows_media_playing():
             sess = mgr.get_current_session()
             if sess:
                 info = sess.get_playback_info()
-                return info.playback_status == Status.PLAYING
-            return False
+                is_playing = (info.playback_status == Status.PLAYING)
+                props = await sess.try_get_media_properties_async()
+                title = props.title if props else ""
+                artist = props.artist if props else ""
+                return is_playing, title, artist
+            return False, "", ""
         
         return asyncio.run(_get())
     except Exception:
-        return False
+        return False, "", ""
 
 
 class CYDMonitorApp(ctk.CTk):
@@ -488,6 +492,26 @@ class CYDMonitorApp(ctk.CTk):
         self.highlight_active_page(0)
         self.highlight_active_theme("ocean_dark")
 
+        # ── Notification Card ──────────────────────────────────────────────
+        n_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        n_frame.pack(fill="x", padx=10, pady=4)
+
+        n_title = ctk.CTkLabel(n_frame, text="📢 Send PC Notification to CYD", font=ctk.CTkFont(size=14, weight="bold"))
+        n_title.pack(anchor="w", padx=12, pady=(10, 5))
+
+        n_sub_frame = ctk.CTkFrame(n_frame, fg_color="transparent")
+        n_sub_frame.pack(fill="x", padx=12, pady=(0, 10))
+
+        self.notify_entry = ctk.CTkEntry(n_sub_frame, placeholder_text="Nhập thông báo... (vd: Họp lúc 14:00!)", width=360)
+        self.notify_entry.pack(side="left", padx=(0, 10))
+
+        send_n_btn = ctk.CTkButton(
+            n_sub_frame, text="Gửi Thông Báo", width=120,
+            fg_color="#8957e5", hover_color="#a371f7", text_color="#ffffff",
+            command=self.send_notification
+        )
+        send_n_btn.pack(side="left")
+
         # ── Hardware Live Status Preview ──────────────────────────────
         m_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
         m_frame.pack(fill="x", padx=10, pady=4)
@@ -500,6 +524,18 @@ class CYDMonitorApp(ctk.CTk):
             font=ctk.CTkFont(size=12), text_color="#8b949e"
         )
         self.metrics_lbl.pack(anchor="w", padx=12, pady=(0, 10))
+
+    def send_notification(self):
+        msg = self.notify_entry.get().strip()
+        if not msg:
+            return
+        ip = self.ip_entry.get().strip()
+        try:
+            resp = requests.post(f"http://{ip}/api/notify", json={"msg": msg}, timeout=2)
+            if resp.ok:
+                self.status_lbl.configure(text=f"✅ Notification Sent: {msg}", text_color="#2ea043")
+        except Exception:
+            self.status_lbl.configure(text="❌ Notify error", text_color="#f85149")
 
     def _sync_ip_loop(self):
         """Runs on main thread every 2s — copies IP entry to cached_ip for background thread."""
@@ -653,7 +689,7 @@ class CYDMonitorApp(ctk.CTk):
                         except Exception:
                             pass
 
-                is_playing = check_windows_media_playing()
+                is_playing, media_title, media_artist = check_windows_media_playing()
 
                 payload = {
                     "cpu": cpu_pct,
@@ -673,7 +709,9 @@ class CYDMonitorApp(ctk.CTk):
                     "net_up": up_speed,
                     "netUp": up_speed,
                     "disks": disks,
-                    "isMediaPlaying": is_playing
+                    "isMediaPlaying": is_playing,
+                    "mediaTitle": media_title,
+                    "mediaArtist": media_artist
                 }
 
                 # Update live GUI label IMMEDIATELY (thread-safe)

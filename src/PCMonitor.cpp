@@ -79,13 +79,21 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
         display.setMediaPlaying(doc["isMediaPlaying"].as<bool>());
     }
 
+    if (!doc["mediaTitle"].isNull()) {
+        display.setMediaInfo(doc["mediaTitle"].as<const char*>(), doc["mediaArtist"] | "");
+    }
+
     // Shift history for line charts
     for (int i = 0; i < HISTORY_SIZE - 1; i++) {
         cpuHistory[i] = cpuHistory[i + 1];
         gpuHistory[i] = gpuHistory[i + 1];
+        netDownHistory[i] = netDownHistory[i + 1];
+        netUpHistory[i] = netUpHistory[i + 1];
     }
     cpuHistory[HISTORY_SIZE - 1] = cpuLoad;
     gpuHistory[HISTORY_SIZE - 1] = gpuLoad;
+    netDownHistory[HISTORY_SIZE - 1] = (uint8_t)constrain(netDown / 100, 0, 100);
+    netUpHistory[HISTORY_SIZE - 1] = (uint8_t)constrain(netUp / 50, 0, 100);
 
     // Parse Disks Array or disk1Load/disk2Load fallback
     if (!doc["disks"].isNull() && doc["disks"].is<JsonArray>()) {

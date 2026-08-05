@@ -244,6 +244,23 @@ void DisplayManager::renderHeader() {
 
     // ── Bottom accent line ────────────────────────────────────────────
     spr.drawFastHLine(0, 27, SCREEN_WIDTH, acc);
+
+    // ── Toast Notification Popup Overlay (4s duration) ────────────────
+    if (notifyEndTime > 0 && millis() < notifyEndTime) {
+        spr.fillRoundRect(20, 2, 280, 24, 6, C_PURPLE);
+        spr.drawRoundRect(20, 2, 280, 24, 6, C_WHITE);
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_WHITE, C_PURPLE);
+        spr.drawString(notifyMessage, 160, 14, 2);
+    }
+}
+
+void DisplayManager::triggerNotification(const char* msg) {
+    if (msg && strlen(msg) > 0) {
+        snprintf(notifyMessage, sizeof(notifyMessage), "%s", msg);
+        notifyEndTime = millis() + 4000;
+        hardware.playBeep(2800, 30);
+    }
 }
 
 void DisplayManager::iconLink(int16_t cx, int16_t cy, uint16_t color) {
@@ -846,6 +863,9 @@ void DisplayManager::renderPage4_PcNetDisks() {
     spr.setTextColor(C_WHITE, C_CARD);
     spr.drawString(dnBuf, 20, 66, 2);
 
+    // Download Live Traffic Line Chart
+    drawSparkline(95, 52, 55, 30, pcMonitor.getNetDownHistory(), PCMonitor::HISTORY_SIZE, C_GREEN);
+
     // Symmetric Vertical divider line at exact center of card (x = 160)
     spr.drawFastVLine(160, 46, 42, C_TRACE);
 
@@ -862,6 +882,9 @@ void DisplayManager::renderPage4_PcNetDisks() {
     }
     spr.setTextColor(C_WHITE, C_CARD);
     spr.drawString(upBuf, 175, 66, 2);
+
+    // Upload Live Traffic Line Chart
+    drawSparkline(245, 52, 55, 30, pcMonitor.getNetUpHistory(), PCMonitor::HISTORY_SIZE, C_CYAN);
 
     // ── 2. STORAGE DISKS PANEL (y = 100 to 234, h = 134px) ────────────
     spr.fillRoundRect(10, 100, 300, 134, 6, C_CARD);
@@ -1585,6 +1608,21 @@ void DisplayManager::renderPage7_MediaControl() {
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
     spr.drawString("VOL +", cx6, 208, 2);
+
+    // ── Live Song Title & Artist Banner (y = 218..238) ────────────────
+    if (strlen(mediaTitle) > 0) {
+        char fullStr[128];
+        if (strlen(mediaArtist) > 0) {
+            snprintf(fullStr, sizeof(fullStr), "🎵 %s — %s", mediaTitle, mediaArtist);
+        } else {
+            snprintf(fullStr, sizeof(fullStr), "🎵 %s", mediaTitle);
+        }
+        spr.fillRoundRect(16, 218, 288, 20, 4, C_CARD);
+        spr.drawRoundRect(16, 218, 288, 20, 4, C_CYAN);
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(C_WHITE, C_CARD);
+        spr.drawString(fullStr, 160, 227, 1);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────

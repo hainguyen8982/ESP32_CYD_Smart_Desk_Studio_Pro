@@ -34,6 +34,8 @@ public:
     static const int HISTORY_SIZE = 24;
     const uint8_t* getCpuHistory() const { return cpuHistory; }
     const uint8_t* getGpuHistory() const { return gpuHistory; }
+    const uint8_t* getNetDownHistory() const { return netDownHistory; }
+    const uint8_t* getNetUpHistory() const { return netUpHistory; }
 
     uint8_t getDiskCount() const { return diskCount; }
     const DiskInfo* getDisks() const { return disks; }
@@ -53,6 +55,8 @@ private:
 
     uint8_t cpuHistory[HISTORY_SIZE];
     uint8_t gpuHistory[HISTORY_SIZE];
+    uint8_t netDownHistory[HISTORY_SIZE];
+    uint8_t netUpHistory[HISTORY_SIZE];
 
     unsigned long lastDataTime;
 };
