@@ -684,6 +684,7 @@ class CYDMonitorApp(ctk.CTk):
 
             # 1. Page-Aware Smart Hardware Metrics Collection (ultra-low PC CPU/GPU load)
             try:
+                now_time = time.time()
                 active_p = self.active_cyd_page
 
                 # Base lightweight metrics
@@ -701,7 +702,6 @@ class CYDMonitorApp(ctk.CTk):
 
                 # Query Net Speeds & Disk Usage only when CYD is on Page 4 (Net & Storage)
                 if active_p == 4:
-                    now_time = time.time()
                     curr_net = psutil.net_io_counters()
                     dt = now_time - self.last_time
                     if dt > 0:
