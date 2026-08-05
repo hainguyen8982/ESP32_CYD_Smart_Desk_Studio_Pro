@@ -347,9 +347,6 @@ class CYDMonitorApp(ctk.CTk):
 
     def send_instant_telemetry(self):
         try:
-            ip = self.cached_ip
-            if not ip:
-                return
             is_playing, media_title, media_artist = check_windows_media_playing()
             cpu_pct = int(psutil.cpu_percent(interval=None))
             ram_pct = int(psutil.virtual_memory().percent)
@@ -362,7 +359,21 @@ class CYDMonitorApp(ctk.CTk):
                 "mediaTitle": media_title,
                 "mediaArtist": media_artist
             }
-            requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
+            # 1. Instant Push over USB Serial if connected
+            global active_serial_conn
+            if active_serial_conn and active_serial_conn.is_open:
+                try:
+                    active_serial_conn.write((json.dumps(payload) + "\n").encode('utf-8'))
+                except Exception:
+                    pass
+
+            # 2. Instant Push over WiFi HTTP
+            ip = self.cached_ip
+            if ip:
+                try:
+                    requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.0)
+                except Exception:
+                    pass
         except Exception:
             pass
 
@@ -761,14 +772,13 @@ class CYDMonitorApp(ctk.CTk):
             connected_usb = False
             connected_wifi = False
 
-            # 2. USB Serial Auto Connection (throttled, fast USB UART filter)
-            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 3.0):
+            # 2. USB Serial Auto Connection (instant non-resetting connection)
+            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 2.0):
                 last_port_scan = now_time
                 try:
                     ports = list(serial.tools.list_ports.comports())
                     for p in ports:
                         desc = str(p.description).upper()
-                        # Only probe real USB-Serial UART devices (CP2102, CH340, USB Serial)
                         if p.vid is not None and ("CH340" in desc or "CP210" in desc or "USB" in desc or "UART" in desc or "COM4" in str(p.device).upper()):
                             try:
                                 s = serial.Serial()
@@ -776,19 +786,14 @@ class CYDMonitorApp(ctk.CTk):
                                 s.baudrate = 115200
                                 s.dtr = False
                                 s.rts = False
-                                s.timeout = 0.15
+                                s.timeout = 0.1
                                 s.open()
-                                time.sleep(0.05)
-                                s.write(b"PING_DASHBOARD\n")
-                                time.sleep(0.15)
-                                res = s.read_all().decode('utf-8', errors='ignore')
-                                if "PONG" in res:
-                                    ser = s
-                                    global active_serial_conn
-                                    active_serial_conn = ser
-                                    ser_port = p.device
-                                    break
-                                s.close()
+                                ser = s
+                                global active_serial_conn
+                                active_serial_conn = ser
+                                ser_port = p.device
+                                print(f"[USB Serial]: Connected on {p.device}")
+                                break
                             except Exception:
                                 pass
                 except Exception:
