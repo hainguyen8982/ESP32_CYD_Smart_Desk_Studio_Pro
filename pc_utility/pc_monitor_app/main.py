@@ -345,6 +345,13 @@ class CYDMonitorApp(ctk.CTk):
         except Exception:
             pass
 
+        # Start background hardware metrics streaming thread
+        self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
+        self.stream_thread.start()
+
+        # Poll & sync IP from entry box every 2s on main thread
+        self._sync_ip_loop()
+
     def send_instant_telemetry(self):
         try:
             is_playing, media_title, media_artist = check_windows_media_playing()
@@ -376,13 +383,6 @@ class CYDMonitorApp(ctk.CTk):
                     pass
         except Exception:
             pass
-
-        # Start background hardware metrics streaming thread
-        self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
-        self.stream_thread.start()
-
-        # Poll & sync IP from entry box every 2s on main thread
-        self._sync_ip_loop()
 
     def create_widgets(self):
         container = self.scroll_container
