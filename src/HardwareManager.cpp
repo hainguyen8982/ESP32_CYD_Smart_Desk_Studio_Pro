@@ -4,20 +4,19 @@ HardwareManager hardware;
 
 HardwareManager::HardwareManager()
     : currentBrightness(85),
-      autoBrightnessEnabled(false),
+      autoBrightnessEnabled(true), // Enable Auto-Brightness by default
       touchSoundEnabled(true),
       lastLdrCheck(0),
       smoothedLdr(-1) {}
 
 void HardwareManager::begin() {
-    // Backlight PWM initialization on dedicated LEDC Channel 7 (prevents tone() conflicts)
+    // Backlight initialization
     pinMode(PIN_TFT_BL, OUTPUT);
-    ledcSetup(7, 5000, 8); // Channel 7, 5kHz, 8-bit resolution
-    ledcAttachPin(PIN_TFT_BL, 7);
-    setBacklight(85);
+    setBacklight(90);
 
-    // LDR pin
+    // LDR pin configuration (GPIO 34 ADC1)
     pinMode(PIN_LDR, INPUT);
+    analogSetPinAttenuation(PIN_LDR, ADC_11db);
 
     // Speaker pin
     pinMode(PIN_SPEAKER, OUTPUT);
@@ -35,7 +34,7 @@ void HardwareManager::setBacklight(uint8_t percentage) {
     currentBrightness = percentage;
 
     uint32_t duty = (percentage * 255) / 100;
-    ledcWrite(7, duty);
+    analogWrite(PIN_TFT_BL, duty);
 }
 
 void HardwareManager::setTouchSoundEnabled(bool enable) {
@@ -48,19 +47,22 @@ void HardwareManager::updateAutoBrightness() {
     lastLdrCheck = millis();
 
     int rawLdr = analogRead(PIN_LDR);
-    // Corrected Mapping for CYD LDR Sensor (Active Low photoresistor):
-    // Bright room (rawLdr ~300) -> 90% Backlight
-    // Dark room (rawLdr ~3200) -> 20% Backlight
-    int targetBrightness = map(rawLdr, 300, 3200, 90, 20);
+    
+    // Correct Hardware Behavior for CYD ESP32 LDR (Active-Low Voltage Divider on GPIO 34):
+    // - Light / Normal Room / Torch: rawLdr near 0 -> 95% High Brightness
+    // - Hand Covering / Dark Room: rawLdr increases (200..900+) -> Dim down to 15%
+    int targetBrightness = map(rawLdr, 0, 800, 95, 15);
     targetBrightness = constrain(targetBrightness, 15, 100);
 
     if (smoothedLdr == -1) {
         smoothedLdr = targetBrightness;
     } else {
-        smoothedLdr = (smoothedLdr * 3 + targetBrightness) / 4;
+        // Smooth transition
+        smoothedLdr = (smoothedLdr * 2 + targetBrightness) / 3;
     }
 
     setBacklight(smoothedLdr);
+    Serial.printf("[LDR Diagnostic] Pin 34 Raw: %d | Target BL: %d%% | Active BL: %d%%\n", rawLdr, targetBrightness, smoothedLdr);
 }
 
 void HardwareManager::playBeep(uint16_t freqHz, uint16_t durationMs) {
