@@ -332,6 +332,19 @@ class CYDMonitorApp(ctk.CTk):
         self.last_time = time.time()
         self.gpu_mon = GPUMonitor()
 
+        # Main Scrollable Container for 100% Overflow Prevention
+        self.scroll_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
+        self.scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
+
+        self.create_widgets()
+        self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
+
+        # Clear debug log on each startup
+        try:
+            open("debug.log", "w").close()
+        except Exception:
+            pass
+
     def send_instant_telemetry(self):
         try:
             ip = self.cached_ip
@@ -350,19 +363,6 @@ class CYDMonitorApp(ctk.CTk):
                 "mediaArtist": media_artist
             }
             requests.post(f"http://{ip}/api/pc", json=payload, timeout=1.5)
-        except Exception:
-            pass
-
-        # Main Scrollable Container for 100% Overflow Prevention
-        self.scroll_container = ctk.CTkScrollableFrame(self, fg_color="transparent")
-        self.scroll_container.pack(fill="both", expand=True, padx=5, pady=5)
-
-        self.create_widgets()
-        self.protocol("WM_DELETE_WINDOW", self.minimize_to_tray)
-
-        # Clear debug log on each startup
-        try:
-            open("debug.log", "w").close()
         except Exception:
             pass
 
