@@ -208,12 +208,10 @@ void loop() {
                 // 1. Left Side Nav Strip (<) or Top Header Left: Prev Page
                 if (evt.x < 32 || (evt.y < 35 && evt.x < 160)) {
                     display.previousPage();
-                    hardware.playBeep(1000, 30);
                 }
                 // 2. Right Side Nav Strip (>) or Top Header Right: Next Page
                 else if (evt.x > 288 || (evt.y < 35 && evt.x >= 160)) {
                     display.nextPage();
-                    hardware.playBeep(1000, 30);
                 }
                 // 3. Row 1: Track Controls (y = 48..130)
                 else if (evt.y >= 48 && evt.y <= 130) {
@@ -248,10 +246,8 @@ void loop() {
                 // 1. Dedicated Transparent Side Nav Keys (< or >) & Header: Page Switching FIRST
                 if (evt.x < 32 || (evt.y < 33 && evt.x < 160)) {
                     display.previousPage();
-                    hardware.playBeep(1000, 30);
                 } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {
                     display.nextPage();
-                    hardware.playBeep(1000, 30);
                 }
                 // 2. Top Sub-Tab Switcher (Shifted down 5px: y = 33..59)
                 else if (evt.y >= 33 && evt.y <= 59) {

@@ -75,6 +75,10 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
     if (!doc["net_up"].isNull())      netUp    = doc["net_up"].as<uint32_t>();
     else if (!doc["netUp"].isNull())   netUp    = doc["netUp"].as<uint32_t>();
 
+    if (!doc["isMediaPlaying"].isNull()) {
+        display.setMediaPlaying(doc["isMediaPlaying"].as<bool>());
+    }
+
     // Shift history for line charts
     for (int i = 0; i < HISTORY_SIZE - 1; i++) {
         cpuHistory[i] = cpuHistory[i + 1];

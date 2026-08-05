@@ -392,7 +392,7 @@ void NetworkManager::setupWebRoutes() {
         [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
             JsonDocument doc;
             DeserializationError err = deserializeJson(doc, data, len);
-            if (!err && doc.containsKey("city")) {
+            if (!err && !doc["city"].isNull()) {
                 const char* c = doc["city"];
                 setCity(c);
                 sendCORSResponse(request, 200, "{\"status\":\"ok\",\"city\":\"" + String(c) + "\"}");
@@ -584,13 +584,64 @@ void NetworkManager::update() {
     }
 }
 
+static bool getCityCoordinates(const char* city, float &lat, float &lon) {
+    String c = String(city);
+    if (c.equalsIgnoreCase("Ho Chi Minh") || c.equalsIgnoreCase("Saigon") || c.equalsIgnoreCase("TP. Hồ Chí Minh") || c.equalsIgnoreCase("Chanh Hung")) {
+        lat = 10.8231f; lon = 106.6297f; return true;
+    } else if (c.equalsIgnoreCase("Hanoi") || c.equalsIgnoreCase("Ha Noi") || c.equalsIgnoreCase("Hà Nội")) {
+        lat = 21.0285f; lon = 105.8542f; return true;
+    } else if (c.equalsIgnoreCase("Da Nang") || c.equalsIgnoreCase("Danang") || c.equalsIgnoreCase("Đà Nẵng")) {
+        lat = 16.0544f; lon = 108.2022f; return true;
+    } else if (c.equalsIgnoreCase("Can Tho") || c.equalsIgnoreCase("Cần Thơ")) {
+        lat = 10.0452f; lon = 105.7469f; return true;
+    } else if (c.equalsIgnoreCase("Hai Phong") || c.equalsIgnoreCase("Hải Phòng")) {
+        lat = 20.8449f; lon = 106.6881f; return true;
+    } else if (c.equalsIgnoreCase("Da Lat") || c.equalsIgnoreCase("Dalat") || c.equalsIgnoreCase("Đà Lạt")) {
+        lat = 11.9404f; lon = 108.4583f; return true;
+    } else if (c.equalsIgnoreCase("Nha Trang")) {
+        lat = 12.2388f; lon = 109.1967f; return true;
+    } else if (c.equalsIgnoreCase("Hue") || c.equalsIgnoreCase("Huế")) {
+        lat = 16.4637f; lon = 107.5905f; return true;
+    } else if (c.equalsIgnoreCase("Vung Tau") || c.equalsIgnoreCase("Vũng Tàu")) {
+        lat = 10.3460f; lon = 107.0843f; return true;
+    } else if (c.equalsIgnoreCase("Phu Quoc") || c.equalsIgnoreCase("Phú Quốc")) {
+        lat = 10.2899f; lon = 103.9840f; return true;
+    }
+    lat = 10.8231f; lon = 106.6297f;
+    return true;
+}
+
+static const char* wmoCodeToMain(int wmoCode) {
+    if (wmoCode == 0) return "Clear";
+    if (wmoCode >= 1 && wmoCode <= 3) return "Clouds";
+    if (wmoCode == 45 || wmoCode == 48) return "Fog";
+    if (wmoCode >= 51 && wmoCode <= 57) return "Drizzle";
+    if ((wmoCode >= 61 && wmoCode <= 67) || (wmoCode >= 80 && wmoCode <= 82)) return "Rain";
+    if ((wmoCode >= 71 && wmoCode <= 77) || (wmoCode >= 85 && wmoCode <= 86)) return "Snow";
+    if (wmoCode >= 95) return "Thunderstorm";
+    return "Clouds";
+}
+
+static uint8_t wmoCodeToIconType(int wmoCode) {
+    if (wmoCode == 0) return 0; // Sun
+    if (wmoCode >= 1 && wmoCode <= 3) return 1; // Sun + Cloud
+    if ((wmoCode >= 51 && wmoCode <= 82) || wmoCode == 45 || wmoCode == 48) return 2; // Rain Cloud
+    if (wmoCode >= 95) return 3; // Thunderstorm
+    return 1;
+}
+
 void NetworkManager::fetchWeather() {
     if (!isConnected()) return;
     lastWeatherFetch = millis();
 
+    float lat = 10.8231f, lon = 106.6297f;
+    getCityCoordinates(weather.city, lat, lon);
+
     HTTPClient http;
-    String url = "http://api.openweathermap.org/data/2.5/weather?q=" + String(weather.city) +
-                 "&units=metric&appid=" + String(DEFAULT_OPENWEATHER_KEY);
+    String url = "http://api.open-meteo.com/v1/forecast?latitude=" + String(lat, 4) +
+                 "&longitude=" + String(lon, 4) +
+                 "&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m" +
+                 "&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FBangkok";
 
     http.begin(url);
     int httpCode = http.GET();
@@ -598,90 +649,30 @@ void NetworkManager::fetchWeather() {
         String payload = http.getString();
         JsonDocument doc;
         if (!deserializeJson(doc, payload)) {
-            weather.temp = doc["main"]["temp"] | 28.5f;
-            weather.humidity = doc["main"]["humidity"] | 75;
-            weather.windSpeed = (doc["wind"]["speed"] | 3.5f) * 3.6f; // m/s to km/h
-            snprintf(weather.main, sizeof(weather.main), "%s", doc["weather"][0]["main"] | "Clear");
-            snprintf(weather.icon, sizeof(weather.icon), "%s", doc["weather"][0]["icon"] | "01d");
-            weather.valid = true;
-            Serial.printf("[NetworkManager] Weather Updated for %s: %.1f C, %s, Wind: %.1f km/h\n", weather.city, weather.temp, weather.main, weather.windSpeed);
-        }
-    } else {
-        // Fallback city-specific weather lookup if offline or using dummy API key
-        String c = String(weather.city);
-        if (c.equalsIgnoreCase("Da Lat") || c.equalsIgnoreCase("Dalat")) {
-            weather.temp = 18.5f; weather.humidity = 85; weather.windSpeed = 8.5f;
-            snprintf(weather.main, sizeof(weather.main), "Drizzle");
-            weather.forecastTempMin[0] = 14.0f; weather.forecastTempMax[0] = 22.0f;
-            weather.forecastTempMin[1] = 13.0f; weather.forecastTempMax[1] = 21.0f;
-            weather.forecastTempMin[2] = 15.0f; weather.forecastTempMax[2] = 23.0f;
-        } else if (c.equalsIgnoreCase("Ho Chi Minh") || c.equalsIgnoreCase("Saigon")) {
-            weather.temp = 33.5f; weather.humidity = 78; weather.windSpeed = 14.2f;
-            snprintf(weather.main, sizeof(weather.main), "Rain");
-            weather.forecastTempMin[0] = 26.0f; weather.forecastTempMax[0] = 34.0f;
-            weather.forecastTempMin[1] = 25.0f; weather.forecastTempMax[1] = 33.0f;
-            weather.forecastTempMin[2] = 25.0f; weather.forecastTempMax[2] = 32.0f;
-        } else if (c.equalsIgnoreCase("Da Nang") || c.equalsIgnoreCase("Danang")) {
-            weather.temp = 31.2f; weather.humidity = 72; weather.windSpeed = 16.0f;
-            snprintf(weather.main, sizeof(weather.main), "Clouds");
-            weather.forecastTempMin[0] = 25.0f; weather.forecastTempMax[0] = 33.0f;
-            weather.forecastTempMin[1] = 26.0f; weather.forecastTempMax[1] = 34.0f;
-            weather.forecastTempMin[2] = 24.0f; weather.forecastTempMax[2] = 32.0f;
-        } else if (c.equalsIgnoreCase("Nha Trang")) {
-            weather.temp = 30.0f; weather.humidity = 75; weather.windSpeed = 15.0f;
-            snprintf(weather.main, sizeof(weather.main), "Sunny");
-            weather.forecastTempMin[0] = 25.0f; weather.forecastTempMax[0] = 32.0f;
-            weather.forecastTempMin[1] = 26.0f; weather.forecastTempMax[1] = 33.0f;
-            weather.forecastTempMin[2] = 24.0f; weather.forecastTempMax[2] = 31.0f;
-        } else if (c.equalsIgnoreCase("Sapa") || c.equalsIgnoreCase("Sa Pa")) {
-            weather.temp = 16.0f; weather.humidity = 88; weather.windSpeed = 6.0f;
-            snprintf(weather.main, sizeof(weather.main), "Mist");
-            weather.forecastTempMin[0] = 12.0f; weather.forecastTempMax[0] = 19.0f;
-            weather.forecastTempMin[1] = 11.0f; weather.forecastTempMax[1] = 18.0f;
-            weather.forecastTempMin[2] = 13.0f; weather.forecastTempMax[2] = 20.0f;
-        } else if (c.equalsIgnoreCase("Hue")) {
-            weather.temp = 27.5f; weather.humidity = 82; weather.windSpeed = 11.0f;
-            snprintf(weather.main, sizeof(weather.main), "Rain");
-            weather.forecastTempMin[0] = 22.0f; weather.forecastTempMax[0] = 29.0f;
-            weather.forecastTempMin[1] = 23.0f; weather.forecastTempMax[1] = 30.0f;
-            weather.forecastTempMin[2] = 21.0f; weather.forecastTempMax[2] = 28.0f;
-        } else {
-            weather.temp = 29.0f; weather.humidity = 70; weather.windSpeed = 12.5f;
-            snprintf(weather.main, sizeof(weather.main), "Sunny");
-            weather.forecastTempMin[0] = 25.0f; weather.forecastTempMax[0] = 33.0f;
-            weather.forecastTempMin[1] = 24.0f; weather.forecastTempMax[1] = 32.0f;
-            weather.forecastTempMin[2] = 26.0f; weather.forecastTempMax[2] = 34.0f;
-        }
-        snprintf(weather.icon, sizeof(weather.icon), "01d");
-        weather.valid = true;
-    }
-    http.end();
+            weather.temp = doc["current"]["temperature_2m"] | 28.0f;
+            weather.humidity = doc["current"]["relative_humidity_2m"] | 80;
+            weather.windSpeed = doc["current"]["wind_speed_10m"] | 5.0f;
+            int wCode = doc["current"]["weather_code"] | 1;
+            snprintf(weather.main, sizeof(weather.main), "%s", wmoCodeToMain(wCode));
+            snprintf(weather.icon, sizeof(weather.icon), "01d");
 
-    // ── 3-Day Forecast Fetch / Populating ─────────────────────────────
-    String forecastUrl = "http://api.openweathermap.org/data/2.5/forecast?q=" + String(weather.city) +
-                         "&units=metric&cnt=24&appid=" + String(DEFAULT_OPENWEATHER_KEY);
-    http.begin(forecastUrl);
-    int fcCode = http.GET();
-    if (fcCode == 200) {
-        String fcPayload = http.getString();
-        JsonDocument fcDoc;
-        if (!deserializeJson(fcDoc, fcPayload)) {
-            JsonArray list = fcDoc["list"];
-            int idx = 0;
-            for (size_t i = 0; i < list.size() && idx < 3; i += 8) {
-                weather.forecastTempMin[idx] = list[i]["main"]["temp_min"] | (weather.temp - 3.0f + idx);
-                weather.forecastTempMax[idx] = list[i]["main"]["temp_max"] | (weather.temp + 4.0f + idx);
-                idx++;
+            // Daily 3-day forecast Min/Max & Weather Icons
+            JsonArray minArr = doc["daily"]["temperature_2m_min"].as<JsonArray>();
+            JsonArray maxArr = doc["daily"]["temperature_2m_max"].as<JsonArray>();
+            JsonArray codeArr = doc["daily"]["weather_code"].as<JsonArray>();
+            for (int i = 0; i < 3 && i < (int)minArr.size(); i++) {
+                weather.forecastTempMin[i] = minArr[i] | (weather.temp - 4.0f);
+                weather.forecastTempMax[i] = maxArr[i] | (weather.temp + 4.0f);
+                int c = codeArr[i] | 1;
+                weather.forecastCode[i] = wmoCodeToIconType(c);
             }
+            weather.valid = true;
+            Serial.printf("[NetworkManager] Open-Meteo Weather Updated for %s: %.1f C, %s, Hum: %d%%, Wind: %.1f km/h (Forecast Icons: %d,%d,%d)\n",
+                          weather.city, weather.temp, weather.main, weather.humidity, weather.windSpeed,
+                          weather.forecastCode[0], weather.forecastCode[1], weather.forecastCode[2]);
         }
     } else {
-        // Fallback 3-day forecast temperatures relative to current temp
-        weather.forecastTempMin[0] = weather.temp - 4.0f;
-        weather.forecastTempMax[0] = weather.temp + 4.0f;
-        weather.forecastTempMin[1] = weather.temp - 5.0f;
-        weather.forecastTempMax[1] = weather.temp + 3.0f;
-        weather.forecastTempMin[2] = weather.temp - 3.0f;
-        weather.forecastTempMax[2] = weather.temp + 5.0f;
+        Serial.printf("[NetworkManager] Weather Fetch Failed (HTTP %d)\n", httpCode);
     }
     http.end();
 }

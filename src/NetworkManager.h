@@ -21,6 +21,7 @@ struct WeatherData {
     float forecastTempMin[3];
     float forecastTempMax[3];
     char forecastIcons[3][8];
+    uint8_t forecastCode[3];
     bool valid;
 };
 

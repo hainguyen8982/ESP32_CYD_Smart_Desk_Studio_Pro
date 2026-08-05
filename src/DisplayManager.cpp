@@ -359,8 +359,24 @@ void DisplayManager::drawWeatherIconVector(int16_t cx, int16_t cy, uint8_t size,
                 spr.drawLine(cx + 5, cy + 4, cx + 2, cy + 10, C_CYAN);
                 break;
 
-            default:
-                spr.fillCircle(cx, cy, 6, C_YELLOW);
+            case 3: // 32px Thunderstorm Cloud
+                spr.fillCircle(cx - 5, cy - 2, 5, C_CYAN);
+                spr.fillCircle(cx + 5, cy - 2, 5, C_CYAN);
+                spr.fillCircle(cx,     cy - 5, 5, C_WHITE);
+                spr.fillRect(cx - 10, cy - 2, 20, 5, C_CYAN);
+                // Yellow Lightning Bolt
+                spr.drawLine(cx - 1, cy + 3, cx - 4, cy + 7, C_YELLOW);
+                spr.drawLine(cx - 4, cy + 7, cx + 1, cy + 7, C_YELLOW);
+                spr.drawLine(cx + 1, cy + 7, cx - 2, cy + 12, C_YELLOW);
+                break;
+
+            default: // Fallback to 32px Sun + Cloud
+                spr.fillCircle(cx + 6, cy - 4, 5, C_YELLOW);
+                spr.drawCircle(cx + 6, cy - 4, 7, C_ORANGE);
+                spr.fillCircle(cx - 5, cy + 2, 5, C_CYAN);
+                spr.fillCircle(cx + 5, cy + 2, 5, C_CYAN);
+                spr.fillCircle(cx,     cy - 2, 5, C_WHITE);
+                spr.fillRect(cx - 10, cy + 2, 20, 5, C_CYAN);
                 break;
         }
     }
@@ -496,7 +512,7 @@ void DisplayManager::renderPage0_WeatherClock() {
             spr.drawString(dStr, cx, 158, 1);
 
             // 32px Multi-tone Weather Icon
-            uint8_t iconType = i % 3; // 0=Sun, 1=Cloud, 2=Rain
+            uint8_t iconType = w.forecastCode[i];
             drawMiniWeatherIcon(cx, 186, iconType);
 
             // Temperature range

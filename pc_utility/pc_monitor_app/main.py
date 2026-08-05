@@ -278,6 +278,25 @@ class GPUMonitor:
         return gpu_pct, vram_pct
 
 
+def check_windows_media_playing():
+    try:
+        import asyncio
+        from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as Manager
+        from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionPlaybackStatus as Status
+        
+        async def _get():
+            mgr = await Manager.request_async()
+            sess = mgr.get_current_session()
+            if sess:
+                info = sess.get_playback_info()
+                return info.playback_status == Status.PLAYING
+            return False
+        
+        return asyncio.run(_get())
+    except Exception:
+        return False
+
+
 class CYDMonitorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -634,6 +653,8 @@ class CYDMonitorApp(ctk.CTk):
                         except Exception:
                             pass
 
+                is_playing = check_windows_media_playing()
+
                 payload = {
                     "cpu": cpu_pct,
                     "cpuLoad": cpu_pct,
@@ -651,7 +672,8 @@ class CYDMonitorApp(ctk.CTk):
                     "netDown": down_speed,
                     "net_up": up_speed,
                     "netUp": up_speed,
-                    "disks": disks
+                    "disks": disks,
+                    "isMediaPlaying": is_playing
                 }
 
                 # Update live GUI label IMMEDIATELY (thread-safe)
