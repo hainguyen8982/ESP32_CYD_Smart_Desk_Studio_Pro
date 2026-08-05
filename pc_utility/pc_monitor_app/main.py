@@ -761,42 +761,32 @@ class CYDMonitorApp(ctk.CTk):
             connected_usb = False
             connected_wifi = False
 
-            # 2. USB Serial Auto Connection (throttled to once every 4 seconds when disconnected)
-            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 4.0):
+            # 2. USB Serial Auto Connection (throttled, fast USB UART filter)
+            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 3.0):
                 last_port_scan = now_time
                 try:
                     ports = list(serial.tools.list_ports.comports())
                     for p in ports:
-                        if p.vid is not None and p.pid is not None:
+                        desc = str(p.description).upper()
+                        # Only probe real USB-Serial UART devices (CP2102, CH340, USB Serial)
+                        if p.vid is not None and ("CH340" in desc or "CP210" in desc or "USB" in desc or "UART" in desc or "COM4" in str(p.device).upper()):
                             try:
                                 s = serial.Serial()
                                 s.port = p.device
                                 s.baudrate = 115200
                                 s.dtr = False
                                 s.rts = False
-                                s.timeout = 0.2
+                                s.timeout = 0.15
                                 s.open()
-                                time.sleep(0.1)
+                                time.sleep(0.05)
                                 s.write(b"PING_DASHBOARD\n")
-                                time.sleep(0.4)
+                                time.sleep(0.15)
                                 res = s.read_all().decode('utf-8', errors='ignore')
                                 if "PONG" in res:
                                     ser = s
                                     global active_serial_conn
                                     active_serial_conn = ser
                                     ser_port = p.device
-                                    try:
-                                        brace_start = res.find("{")
-                                        brace_end = res.rfind("}")
-                                        if brace_start != -1 and brace_end > brace_start:
-                                            j_str = res[brace_start:brace_end+1]
-                                            st_data = json.loads(j_str)
-                                            if "page" in st_data:
-                                                self.after(0, lambda v=st_data["page"]: self.highlight_active_page(v))
-                                            if "theme" in st_data:
-                                                self.after(0, lambda v=st_data["theme"]: self.highlight_active_theme(v))
-                                    except Exception:
-                                        pass
                                     break
                                 s.close()
                             except Exception:
@@ -833,13 +823,17 @@ class CYDMonitorApp(ctk.CTk):
                     except Exception: pass
                     ser = None
 
-            # 3. WiFi HTTP Streaming — use cached_ip (thread-safe, no Tkinter call)
-            ip = self.cached_ip
-            if ip:
+            # 3. WiFi HTTP Streaming — try IP first, fallback to mDNS cyd-dashboard.local
+            ip_list = [self.cached_ip, "cyd-dashboard.local"] if self.cached_ip else ["cyd-dashboard.local"]
+            for target_ip in ip_list:
+                if not target_ip:
+                    continue
                 try:
-                    resp = requests.post(f"http://{ip}/api/pc", json=payload, timeout=3)
+                    resp = requests.post(f"http://{target_ip}/api/pc", json=payload, timeout=1.2)
                     if resp.ok:
                         connected_wifi = True
+                        if target_ip != self.cached_ip:
+                            self.cached_ip = target_ip
                         try:
                             res_data = resp.json()
                             page_val = res_data.get("page", -1)
@@ -852,9 +846,9 @@ class CYDMonitorApp(ctk.CTk):
                             self.after(0, lambda d=res_data: self.update_settings_gui(d))
                         except Exception:
                             pass
-                except Exception as wifi_ex:
-                    with open("debug.log", "a") as _f:
-                        _f.write(f"[WIFI ERR] {time.time():.0f} ip={ip}: {wifi_ex}\n")
+                        break # Connected successfully!
+                except Exception:
+                    pass
 
             # 4. Status Indicator Update (thread-safe via after)
             if connected_usb:

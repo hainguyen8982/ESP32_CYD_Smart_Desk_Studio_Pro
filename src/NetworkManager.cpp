@@ -5,6 +5,7 @@
 #include "Theme.h"
 #include "DisplayManager.h"
 #include "TouchManager.h"
+#include <ESPmDNS.h>
 
 extern DisplayManager display;
 
@@ -179,6 +180,11 @@ void NetworkManager::begin() {
     setupWebRoutes();
     server.begin();
     Serial.println("[NetworkManager] AsyncWebServer Started on Port 80");
+
+    if (MDNS.begin("cyd-dashboard")) {
+        MDNS.addService("http", "tcp", 80);
+        Serial.println("[NetworkManager] mDNS Responder Started (http://cyd-dashboard.local)");
+    }
 
     if (isConnected()) {
         fetchWeather();
