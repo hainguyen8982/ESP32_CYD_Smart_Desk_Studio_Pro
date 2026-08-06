@@ -1399,16 +1399,16 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
     for (int i = 0; i < 8; i++) {
         int col = i % 3;
         int row = i / 3;
-        int bx = 26 + col * 90;
-        int by = 34 + row * 64;
+        int bx = 11 + col * 102;  // Perfectly centered (11px left & right margins)
+        int by = 34 + row * 66;
 
         uint16_t cardBg = C_CARD;
-        spr.fillRoundRect(bx, by, 82, 56, 8, cardBg);
-        spr.drawRoundRect(bx, by, 82, 56, 8, apps[i].color);
+        spr.fillRoundRect(bx, by, 94, 60, 8, cardBg);
+        spr.drawRoundRect(bx, by, 94, 60, 8, apps[i].color);
 
         // Draw Mini Icon inside app tile
-        int cx = bx + 41;
-        int cy = by + 22;
+        int cx = bx + 47;
+        int cy = by + 24;
         switch (apps[i].targetPage) {
             case 0: iconSun(cx, cy, C_YELLOW); break;
             case 1: iconCal(cx, cy, C_YELLOW); break;
@@ -1416,20 +1416,24 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
             case 3: iconCPU(cx, cy, C_CYAN); break;
             case 4: iconNet(cx, cy, C_GREEN); break;
             case 5: iconPomodoro(cx, cy); break; // Red Pomodoro Tomato Icon
-            case 6: // Media Controller Icon
-                spr.fillRect(cx - 4, cy - 4, 8, 8, C_CYAN);
-                spr.fillCircle(cx, cy, 2, C_CARD);
+            case 6: // Media Controller Icon (Play button in Cyan Frame)
+                spr.fillRoundRect(cx - 11, cy - 8, 22, 16, 4, C_CYAN);
+                spr.fillTriangle(cx - 3, cy - 5, cx - 3, cy + 5, cx + 5, cy, C_CARD);
                 break;
-            case 8: // Settings Gear Icon
-                spr.drawCircle(cx, cy, 5, C_PURPLE);
-                spr.fillCircle(cx, cy, 2, C_CARD);
+            case 8: // Settings Gear Icon (Bold 16px gear with teeth)
+                spr.fillRect(cx - 2, cy - 9, 4, 18, C_PURPLE);
+                spr.fillRect(cx - 9, cy - 2, 18, 4, C_PURPLE);
+                spr.fillTriangle(cx - 6, cy - 6, cx + 6, cy + 6, cx - 6, cy + 6, C_PURPLE);
+                spr.fillTriangle(cx + 6, cy - 6, cx - 6, cy + 6, cx + 6, cy - 6, C_PURPLE);
+                spr.fillCircle(cx, cy, 7, C_PURPLE);
+                spr.fillCircle(cx, cy, 3, C_CARD);
                 break;
         }
 
         // App Label
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(C_WHITE, C_CARD);
-        spr.drawString(apps[i].name, cx, by + 50, 1);
+        spr.drawString(apps[i].name, cx, by + 54, 1);
     }
 }
 

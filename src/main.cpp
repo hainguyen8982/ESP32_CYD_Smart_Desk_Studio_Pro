@@ -256,13 +256,13 @@ void loop() {
 
             } else if (display.getCurrentPage() == 7) {
                 // App Launcher Grid Page (Page 7) -> Tap App Tile jumps to target page
-                if (evt.y >= 34 && evt.y <= 220) {
+                if (evt.y >= 30 && evt.y <= 230) {
                     for (int i = 0; i < 8; i++) {
                         int col = i % 3;
                         int row = i / 3;
-                        int bx = 26 + col * 90;
-                        int by = 34 + row * 64;
-                        if (evt.x >= bx && evt.x <= bx + 82 && evt.y >= by && evt.y <= by + 56) {
+                        int bx = 11 + col * 102;
+                        int by = 34 + row * 66;
+                        if (evt.x >= bx && evt.x <= bx + 94 && evt.y >= by && evt.y <= by + 60) {
                             uint8_t targetPages[8] = { 0, 1, 2, 3, 4, 5, 6, 8 };
                             display.setCurrentPage(targetPages[i]);
                             hardware.playBeep(2200, 40);
