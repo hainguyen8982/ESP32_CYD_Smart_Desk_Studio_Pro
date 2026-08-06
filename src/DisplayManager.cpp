@@ -123,17 +123,20 @@ void DisplayManager::update() {
     spr.fillSprite(C_BG);
     renderHeader();
 
-    switch (currentPage) {
-        case 0: renderPage0_WeatherClock();     break;
-        case 1: renderPage1_LunarCalendar();    break;
-        case 2: renderPage2_FinanceGold();      break;
-        case 3: renderPage3_PcCpuRam();         break;
-        case 4: renderPage4_PcNetDisks();       break;
-        case 5: renderPage5_DeskUtilities();    break;
-        case 6: renderPage6_MediaControl();     break;
-        case 7: renderPage7_AppLauncherGrid();  break;
-        case 8: renderPage8_Settings();         break;
-        default: renderPage0_WeatherClock();    break;
+    if (isAppLauncherOpen) {
+        renderAppLauncherOverlay();
+    } else {
+        switch (currentPage) {
+            case 0: renderPage0_WeatherClock();     break;
+            case 1: renderPage1_LunarCalendar();    break;
+            case 2: renderPage2_FinanceGold();      break;
+            case 3: renderPage3_PcCpuRam();         break;
+            case 4: renderPage4_PcNetDisks();       break;
+            case 5: renderPage5_DeskUtilities();    break;
+            case 6: renderPage6_MediaControl();     break;
+            case 7: renderPage7_Settings();         break;
+            default: renderPage0_WeatherClock();    break;
+        }
     }
     spr.pushSprite(0, 0);
 }
@@ -1377,7 +1380,7 @@ void DisplayManager::renderCalibrationScreen() {
 // ═══════════════════════════════════════════════════════════════════════
 //  PAGE 7 — APP LAUNCHER GRID (Quick Access App Launcher 3x3 Grid)
 // ═══════════════════════════════════════════════════════════════════════
-void DisplayManager::renderPage7_AppLauncherGrid() {
+void DisplayManager::renderAppLauncherOverlay() {
     struct AppItem {
         const char* name;
         uint16_t color;
@@ -1392,7 +1395,7 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
         { "Net & Disk", C_GREEN,  4 }, // Page 4: PC Net & Disks
         { "Utilities",  C_ORANGE, 5 }, // Page 5: Desk Utilities (Pomodoro & Alarm)
         { "Media Ctrl", C_CYAN,   6 }, // Page 6: Media Control
-        { "Settings",   C_PURPLE, 8 }  // Page 8: Settings (ALWAYS LAST PAGE)
+        { "Settings",   C_PURPLE, 7 }  // Page 7: Settings (ALWAYS LAST FEATURE PAGE)
     };
 
     for (int i = 0; i < 8; i++) {
@@ -1425,7 +1428,7 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
                 spr.fillRoundRect(cx - 11, cy - 8, 22, 16, 4, C_CYAN);
                 spr.fillTriangle(cx - 3, cy - 5, cx - 3, cy + 5, cx + 5, cy, C_CARD);
                 break;
-            case 8: // Settings Tuning Sliders Icon (Modern Control Switches)
+            case 7: // Settings Tuning Sliders Icon (Modern Control Switches)
                 spr.fillRoundRect(cx - 10, cy - 6, 20, 3, 1, C_PURPLE);
                 spr.fillCircle(cx - 3, cy - 5, 4, C_PURPLE);
                 spr.fillCircle(cx - 3, cy - 5, 2, C_CARD);
@@ -1444,9 +1447,9 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PAGE 8 — Settings Page (ALWAYS LAST PAGE)
+//  PAGE 7 — Settings Page (ALWAYS LAST FEATURE PAGE)
 // ═══════════════════════════════════════════════════════════════════════
-void DisplayManager::renderPage8_Settings() {
+void DisplayManager::renderPage7_Settings() {
     // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
     spr.setTextDatum(MC_DATUM);
     spr.setTextColor(C_CYAN, C_BG);

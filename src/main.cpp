@@ -65,7 +65,7 @@ void loop() {
         network.clearRemoteRequestedPage();
     }
 
-    // 6. BOOT Button (GPIO 0) — Short press (<1s) = Open App Launcher Grid (Page 7), Long press (3s) = Recalibrate Touch
+    // 6. BOOT Button (GPIO 0) — Short press (<1s) = Toggle App Launcher Overlay, Long press (3s) = Recalibrate Touch
     if (!touch.isCalibrating()) {
         if (digitalRead(PIN_BOOT_BTN) == LOW) {
             if (!bootBtnWasPressed) {
@@ -80,9 +80,9 @@ void loop() {
             if (bootBtnWasPressed) {
                 unsigned long dur = millis() - bootBtnPressStart;
                 if (dur >= 40 && dur < 1000) {
-                    display.setCurrentPage(7); // Jump straight to App Launcher Grid Page 7!
+                    display.toggleAppLauncher(); // Toggle System Overlay Menu!
                     hardware.playBeep(2400, 40);
-                    Serial.println("[System] BOOT button pressed -> Jumped to App Launcher Grid (Page 7)");
+                    Serial.println("[System] BOOT button pressed -> Toggled App Launcher Overlay");
                 }
                 bootBtnWasPressed = false;
             }
@@ -124,8 +124,30 @@ void loop() {
                 }
             } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_SWIPE_LEFT || evt.gesture == GESTURE_SWIPE_RIGHT) {
                 display.closeDetailModal();
-                Serial.println("[Touch] Detail Chart Modal Closed");
+                Serial.println("[Touch] Detail modal closed");
             }
+
+        } else if (display.isAppLauncherActive()) {
+            // App Launcher System Overlay Mode -> Tap App Tile jumps to feature page 0..7 & closes overlay
+            if (evt.gesture == GESTURE_HOLD || (evt.y < 28 && evt.x >= 25 && evt.x <= 240)) {
+                display.closeAppLauncher();
+                hardware.playBeep(1800, 30);
+            } else if (evt.y >= 30 && evt.y <= 230) {
+                for (int i = 0; i < 8; i++) {
+                    int col = i % 3;
+                    int row = i / 3;
+                    int bx = 11 + col * 102;
+                    int by = 34 + row * 66;
+                    if (evt.x >= bx && evt.x <= bx + 94 && evt.y >= by && evt.y <= by + 60) {
+                        display.setCurrentPage(i); // Jump to feature page 0..7
+                        display.closeAppLauncher(); // Close overlay!
+                        hardware.playBeep(2200, 40);
+                        Serial.printf("[Touch] App Launcher -> Opened Page %d\n", i);
+                        break;
+                    }
+                }
+            }
+
         } else if (evt.gesture == GESTURE_SWIPE_LEFT) {
             display.nextPage();
             Serial.printf("[Touch] Swiped Left -> Page %d\n", display.getCurrentPage());
@@ -135,10 +157,10 @@ void loop() {
             Serial.printf("[Touch] Swiped Right -> Page %d\n", display.getCurrentPage());
 
         } else if (evt.gesture == GESTURE_HOLD) {
-            // Quick Action 1: Long-press screen anywhere -> Jump straight to App Launcher Grid (Page 7)!
-            display.setCurrentPage(7);
+            // Quick Action 1: Long-press screen anywhere -> Open App Launcher Overlay!
+            display.toggleAppLauncher();
             hardware.playBeep(2200, 60);
-            Serial.println("[Touch] Long press detected -> Jumped to App Launcher Grid (Page 7)");
+            Serial.println("[Touch] Long press detected -> Toggled App Launcher Overlay");
 
         } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_DOUBLE_TAP) {
             Serial.printf("[Touch] Touch at (%d, %d) Page=%d Gesture=%d\n", evt.x, evt.y, display.getCurrentPage(), evt.gesture);
@@ -147,10 +169,10 @@ void loop() {
                 deskUtils.dismissAlarm();
 
             } else if (evt.y < 28 && evt.x >= 25 && evt.x <= 240) {
-                // Quick Action 2: Tap Header Title Bar -> Jump straight to App Launcher Grid (Page 7)!
-                display.setCurrentPage(7);
+                // Quick Action 2: Tap Header Title Bar -> Open App Launcher Overlay!
+                display.toggleAppLauncher();
                 hardware.playBeep(2000, 40);
-                Serial.println("[Touch] Header Title Tapped -> Jumped to App Launcher Grid (Page 7)");
+                Serial.println("[Touch] Header Title Tapped -> Toggled App Launcher Overlay");
 
             } else if (evt.y < 25 && evt.x > 250) {
                 // Top-Right corner: Cycle Theme
@@ -255,25 +277,7 @@ void loop() {
                 }
 
             } else if (display.getCurrentPage() == 7) {
-                // App Launcher Grid Page (Page 7) -> Tap App Tile jumps to target page
-                if (evt.y >= 30 && evt.y <= 230) {
-                    for (int i = 0; i < 8; i++) {
-                        int col = i % 3;
-                        int row = i / 3;
-                        int bx = 11 + col * 102;
-                        int by = 34 + row * 66;
-                        if (evt.x >= bx && evt.x <= bx + 94 && evt.y >= by && evt.y <= by + 60) {
-                            uint8_t targetPages[8] = { 0, 1, 2, 3, 4, 5, 6, 8 };
-                            display.setCurrentPage(targetPages[i]);
-                            hardware.playBeep(2200, 40);
-                            Serial.printf("[Touch] App Launcher -> Opened Page %d\n", targetPages[i]);
-                            break;
-                        }
-                    }
-                }
-
-            } else if (display.getCurrentPage() == 8) {
-                // Settings Page (Page 8 - ALWAYS LAST PAGE)
+                // Settings Page (Page 7 - ALWAYS LAST FEATURE PAGE)
                 if (evt.x < 32 || (evt.y < 33 && evt.x < 160)) {
                     display.previousPage();
                 } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {

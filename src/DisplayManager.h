@@ -62,6 +62,12 @@ public:
         if (artist && strlen(artist) > 0) snprintf(mediaArtist, sizeof(mediaArtist), "%s", artist);
     }
 
+    // App Launcher Overlay Menu Mode
+    void openAppLauncher() { isAppLauncherOpen = true; }
+    void closeAppLauncher() { isAppLauncherOpen = false; }
+    void toggleAppLauncher() { isAppLauncherOpen = !isAppLauncherOpen; }
+    bool isAppLauncherActive() const { return isAppLauncherOpen; }
+
     // Settings Tab State (0 = System, 1 = Themes)
     uint8_t getSettingsTab() const { return settingsTab; }
     void setSettingsTab(uint8_t tab) { settingsTab = tab; }
@@ -76,8 +82,8 @@ private:
     void renderPage4_PcNetDisks();
     void renderPage5_DeskUtilities();
     void renderPage6_MediaControl();
-    void renderPage7_AppLauncherGrid();
-    void renderPage8_Settings();
+    void renderPage7_Settings();           // Settings ALWAYS last feature page (7)
+    void renderAppLauncherOverlay();       // Separate System Overlay Grid Menu
     void renderCalibrationScreen();
     void renderDetailModal();
     void renderSplashScreen();
@@ -132,6 +138,7 @@ private:
     char        mediaTitle[64];
     char        mediaArtist[64];
     int         marqueeOffset;
+    bool        isAppLauncherOpen;
     uint8_t     settingsTab;
     unsigned long lastRenderTime;
     bool        spriteReady;
