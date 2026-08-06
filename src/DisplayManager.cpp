@@ -254,15 +254,13 @@ void DisplayManager::renderHeader() {
     iconLink(268, 12, pcMonitor.isConnected() ? C_CYAN : C_VDIM);
 
     uint16_t acc = getPageAccent(currentPage);
-    char pageBuf[12];
-    if (isAppLauncherOpen) {
-        snprintf(pageBuf, sizeof(pageBuf), "[Grid]");
-    } else {
+    if (!isAppLauncherOpen) {
+        char pageBuf[8];
         snprintf(pageBuf, sizeof(pageBuf), "%d/%d", (int)currentPage + 1, TOTAL_PAGES);
+        spr.setTextDatum(MR_DATUM);
+        spr.setTextColor(acc, C_HDR);
+        spr.drawString(pageBuf, 308, 13, 2);
     }
-    spr.setTextDatum(MR_DATUM);
-    spr.setTextColor(acc, C_HDR);
-    spr.drawString(pageBuf, 308, 13, 2);
 
     // ── Bottom accent line ────────────────────────────────────────────
     spr.drawFastHLine(0, 27, SCREEN_WIDTH, acc);
@@ -1547,15 +1545,15 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(WiFi.isConnected() ? WiFi.localIP().toString().c_str() : "N/A", 278, y + 11, 2);
         y += itemH;
 
-        // 6. Touch Controller
+        // 6. Firmware Version
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_PURPLE, C_CARD);
         spr.setTextDatum(ML_DATUM);
-        spr.drawString("Touch Driver", 42, y + 11, 2);
+        spr.drawString("Firmware Ver", 42, y + 11, 2);
         spr.setTextColor(C_DIM, C_CARD);
         spr.setTextDatum(MR_DATUM);
-        spr.drawString(touch.getTouchTypeString(), 278, y + 11, 2);
+        spr.drawString("v2.5.0", 278, y + 11, 2);
 
     } else {
         // ── TAB 1: THEME PRESET SELECTOR (Shifted down 5px: start by = 63) ──
