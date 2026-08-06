@@ -149,51 +149,59 @@ void DisplayManager::renderHeader() {
 
     // ── Tiny page icon (top-left, ~14px) ─────────────────────────────
     int ix = 12, iy = 13;
-    switch (currentPage) {
-        case 0: // Weather - Sun
-            spr.fillCircle(ix, iy, 4, C_YELLOW);
-            spr.drawLine(ix, iy-6, ix, iy-8,   C_YELLOW);
-            spr.drawLine(ix, iy+6, ix, iy+8,   C_YELLOW);
-            spr.drawLine(ix-6, iy, ix-8, iy,   C_YELLOW);
-            spr.drawLine(ix+6, iy, ix+8, iy,   C_YELLOW);
-            break;
-        case 1: // Calendar
-            spr.drawRoundRect(ix-7, iy-6, 14, 12, 1, C_YELLOW);
-            spr.drawFastHLine(ix-7, iy-3, 14, C_YELLOW);
-            spr.fillRect(ix-4, iy-9, 3, 5, C_YELLOW);
-            spr.fillRect(ix+1, iy-9, 3, 5, C_YELLOW);
-            break;
-        case 2: // Finance - Gold Dollar Coin
-            spr.fillCircle(ix, iy, 5, C_YELLOW);
-            spr.drawCircle(ix, iy, 5, C_ORANGE);
-            break;
-        case 3: // PC Monitor - CPU chip
-            spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_CYAN);
-            spr.fillRect(ix-3, iy-3, 6, 6, C_HDR);
-            for (int p2 = -3; p2 <= 3; p2 += 3) {
-                spr.fillRect(ix+p2-1, iy-9, 2, 3, C_CYAN);
-                spr.fillRect(ix+p2-1, iy+6, 2, 3, C_CYAN);
-            }
-            break;
-        case 4: // PC Net & Storage - Network up/down arrows
-            spr.fillTriangle(ix-6, iy+2, ix-2, iy-6, ix+2, iy+2, C_GREEN);
-            spr.fillTriangle(ix+4, iy-2, ix+8, iy+6, ix+12, iy-2, C_GREEN);
-            break;
-        case 5: // Desk Utilities - Pomodoro tomato
-            spr.fillCircle(ix, iy+2, 6, C_RED);
-            spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
-            spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
-            break;
-        case 6: // Media Control - Play button
-            spr.fillRoundRect(ix-6, iy-5, 12, 10, 2, C_CYAN);
-            spr.fillTriangle(ix-2, iy-3, ix-2, iy+3, ix+2, iy, C_HDR);
-            break;
-        case 7: // Settings tuning sliders icon
-            spr.fillRoundRect(ix-6, iy-4, 12, 2, 1, C_PURPLE);
-            spr.fillCircle(ix-2, iy-3, 2, C_PURPLE);
-            spr.fillRoundRect(ix-6, iy+2, 12, 2, 1, C_PURPLE);
-            spr.fillCircle(ix+2, iy+3, 2, C_PURPLE);
-            break;
+    if (isAppLauncherOpen) {
+        // 4 Windows Start-style Squares (Glowing Cyan App Grid Icon)
+        spr.fillRect(ix - 6, iy - 6, 5, 5, C_CYAN);
+        spr.fillRect(ix + 1, iy - 6, 5, 5, C_CYAN);
+        spr.fillRect(ix - 6, iy + 1, 5, 5, C_CYAN);
+        spr.fillRect(ix + 1, iy + 1, 5, 5, C_CYAN);
+    } else {
+        switch (currentPage) {
+            case 0: // Weather - Sun
+                spr.fillCircle(ix, iy, 4, C_YELLOW);
+                spr.drawLine(ix, iy-6, ix, iy-8,   C_YELLOW);
+                spr.drawLine(ix, iy+6, ix, iy+8,   C_YELLOW);
+                spr.drawLine(ix-6, iy, ix-8, iy,   C_YELLOW);
+                spr.drawLine(ix+6, iy, ix+8, iy,   C_YELLOW);
+                break;
+            case 1: // Calendar
+                spr.drawRoundRect(ix-7, iy-6, 14, 12, 1, C_YELLOW);
+                spr.drawFastHLine(ix-7, iy-3, 14, C_YELLOW);
+                spr.fillRect(ix-4, iy-9, 3, 5, C_YELLOW);
+                spr.fillRect(ix+1, iy-9, 3, 5, C_YELLOW);
+                break;
+            case 2: // Finance - Gold Dollar Coin
+                spr.fillCircle(ix, iy, 5, C_YELLOW);
+                spr.drawCircle(ix, iy, 5, C_ORANGE);
+                break;
+            case 3: // PC Monitor - CPU chip
+                spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_CYAN);
+                spr.fillRect(ix-3, iy-3, 6, 6, C_HDR);
+                for (int p2 = -3; p2 <= 3; p2 += 3) {
+                    spr.fillRect(ix+p2-1, iy-9, 2, 3, C_CYAN);
+                    spr.fillRect(ix+p2-1, iy+6, 2, 3, C_CYAN);
+                }
+                break;
+            case 4: // PC Net & Storage - Network up/down arrows
+                spr.fillTriangle(ix-6, iy+2, ix-2, iy-6, ix+2, iy+2, C_GREEN);
+                spr.fillTriangle(ix+4, iy-2, ix+8, iy+6, ix+12, iy-2, C_GREEN);
+                break;
+            case 5: // Desk Utilities - Pomodoro tomato
+                spr.fillCircle(ix, iy+2, 6, C_RED);
+                spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
+                spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
+                break;
+            case 6: // Media Control - Play button
+                spr.fillRoundRect(ix-6, iy-5, 12, 10, 2, C_CYAN);
+                spr.fillTriangle(ix-2, iy-3, ix-2, iy+3, ix+2, iy, C_HDR);
+                break;
+            case 7: // Settings tuning sliders icon
+                spr.fillRoundRect(ix-6, iy-4, 12, 2, 1, C_PURPLE);
+                spr.fillCircle(ix-2, iy-3, 2, C_PURPLE);
+                spr.fillRoundRect(ix-6, iy+2, 12, 2, 1, C_PURPLE);
+                spr.fillCircle(ix+2, iy+3, 2, C_PURPLE);
+                break;
+        }
     }
 
     if (isAppLauncherOpen) {
