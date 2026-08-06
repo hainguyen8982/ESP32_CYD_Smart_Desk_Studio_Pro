@@ -11,7 +11,8 @@ enum DetailModalType {
     MODAL_GOLD_SJC,
     MODAL_CURRENCY_1,
     MODAL_CURRENCY_2,
-    MODAL_SET_ALARM
+    MODAL_SET_ALARM,
+    MODAL_BEEP_VOLUME
 };
 
 class DisplayManager {
@@ -125,6 +126,7 @@ private:
     void drawVietnameseDuBao3Ngay(int16_t cx, int16_t cy);
 
     void renderModalSetAlarm();
+    void renderModalBeepVolume();
 
     // ── State ────────────────────────────────────────────────
     TFT_eSPI    tft;

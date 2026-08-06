@@ -5,7 +5,7 @@ HardwareManager hardware;
 HardwareManager::HardwareManager()
     : currentBrightness(85),
       autoBrightnessEnabled(true), // Enable Auto-Brightness by default
-      touchSoundEnabled(true),
+      soundVolume(60),            // Default 60% Volume
       lastLdrCheck(0),
       smoothedLdr(-1) {}
 
@@ -18,7 +18,7 @@ void HardwareManager::begin() {
     pinMode(PIN_LDR, INPUT);
     analogSetPinAttenuation(PIN_LDR, ADC_11db);
 
-    // Speaker pin
+    // Speaker pin initialized with LEDC channel 0
     pinMode(PIN_SPEAKER, OUTPUT);
     digitalWrite(PIN_SPEAKER, LOW);
 
@@ -37,8 +37,9 @@ void HardwareManager::setBacklight(uint8_t percentage) {
     analogWrite(PIN_TFT_BL, duty);
 }
 
-void HardwareManager::setTouchSoundEnabled(bool enable) {
-    touchSoundEnabled = enable;
+void HardwareManager::setSoundVolume(uint8_t vol) {
+    if (vol > 100) vol = 100;
+    soundVolume = vol;
 }
 
 void HardwareManager::updateAutoBrightness() {
@@ -75,8 +76,13 @@ void HardwareManager::updateAutoBrightness() {
 }
 
 void HardwareManager::playBeep(uint16_t freqHz, uint16_t durationMs) {
-    if (!touchSoundEnabled) return;
-    tone(PIN_SPEAKER, freqHz, durationMs);
+    if (soundVolume == 0) return;
+    uint32_t duty = (soundVolume * 128) / 100;
+    ledcSetup(0, freqHz, 8);
+    ledcAttachPin(PIN_SPEAKER, 0);
+    ledcWrite(0, duty);
+    delay(durationMs);
+    ledcWrite(0, 0);
 }
 
 void HardwareManager::playAlarmTune() {

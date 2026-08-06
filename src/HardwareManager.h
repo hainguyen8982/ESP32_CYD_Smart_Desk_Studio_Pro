@@ -27,12 +27,13 @@ public:
     bool isAutoBrightnessEnabled() const { return autoBrightnessEnabled; }
     void updateAutoBrightness();
 
-    // Speaker / Sound
+    // Speaker / Sound Volume (0 = MUTE, 1..100 = Volume %)
     void playBeep(uint16_t freqHz = 2000, uint16_t durationMs = 80);
     void playAlarmTune();
     void stopSound();
-    bool isTouchSoundEnabled() const { return touchSoundEnabled; }
-    void setTouchSoundEnabled(bool enable);
+    uint8_t getSoundVolume() const { return soundVolume; }
+    void setSoundVolume(uint8_t vol);
+    bool isTouchSoundEnabled() const { return soundVolume > 0; }
 
     // RGB LED
     void setRGBColor(RGBColor color);
@@ -41,7 +42,7 @@ public:
 private:
     uint8_t currentBrightness;
     bool autoBrightnessEnabled;
-    bool touchSoundEnabled;
+    uint8_t soundVolume;
     unsigned long lastLdrCheck;
     int smoothedLdr;
 };

@@ -1512,15 +1512,18 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(hardware.isAutoBrightnessEnabled() ? "ON" : "OFF", 278, y + 11, 2);
         y += itemH;
 
-        // 3. Touch Beep Sound
+        // 3. Touch Beep Volume
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_GREEN, C_CARD);
         spr.setTextDatum(ML_DATUM);
-        spr.drawString("Touch Beep Sound", 42, y + 11, 2);
+        spr.drawString("Touch Beep Volume", 42, y + 11, 2);
         spr.setTextColor(C_DIM, C_CARD);
         spr.setTextDatum(MR_DATUM);
-        spr.drawString(hardware.isTouchSoundEnabled() ? "ON" : "MUTE", 278, y + 11, 2);
+        char volBuf[16];
+        if (hardware.getSoundVolume() == 0) snprintf(volBuf, sizeof(volBuf), "MUTE");
+        else snprintf(volBuf, sizeof(volBuf), "%d%%", hardware.getSoundVolume());
+        spr.drawString(volBuf, 278, y + 11, 2);
         y += itemH;
 
         // 4. WiFi SSID
@@ -1781,9 +1784,76 @@ void DisplayManager::renderModalSetAlarm() {
     spr.drawString("SAVE", 233, 171, 2);
 }
 
+void DisplayManager::renderModalBeepVolume() {
+    spr.fillSprite(C_BG);
+
+    // Outer Card
+    spr.fillRoundRect(12, 10, 296, 220, 10, C_CARD);
+    spr.drawRoundRect(12, 10, 296, 220, 10, C_PURPLE);
+    spr.drawRoundRect(13, 11, 294, 218, 9, C_PURPLE);
+
+    // Title
+    spr.setTextDatum(TC_DATUM);
+    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.drawString("TOUCH BEEP SOUND VOLUME", 160, 20, 2);
+
+    // Volume level text badge
+    char volStr[32];
+    uint8_t curVol = hardware.getSoundVolume();
+    if (curVol == 0) {
+        snprintf(volStr, sizeof(volStr), "MUTE (0%%)");
+    } else {
+        snprintf(volStr, sizeof(volStr), "%d%% VOLUME", curVol);
+    }
+    spr.setFreeFont(&FreeSansBold9pt7b);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor((curVol == 0) ? C_RED : C_GREEN, C_CARD);
+    spr.drawString(volStr, 160, 56);
+    spr.setFreeFont(NULL);
+
+    // Volume Slider Track Bar
+    spr.fillRoundRect(30, 85, 260, 14, 7, C_TRACE);
+    int fillW = (int)(curVol * 260.0f / 100.0f);
+    fillW = constrain(fillW, 8, 260);
+    uint16_t barC = (curVol == 0) ? C_RED : C_CYAN;
+    spr.fillRoundRect(30, 85, fillW, 14, 7, barC);
+    // Slider Knob
+    int knobX = 30 + (int)(curVol * 260.0f / 100.0f);
+    knobX = constrain(knobX, 36, 284);
+    spr.fillCircle(knobX, 92, 11, C_WHITE);
+    spr.drawCircle(knobX, 92, 11, C_PURPLE);
+
+    // 5 Preset Buttons (0%, 25%, 50%, 75%, 100%)
+    static const uint8_t presets[] = { 0, 25, 50, 75, 100 };
+    static const char* labels[] = { "MUTE", "25%", "50%", "75%", "100%" };
+    for (int i = 0; i < 5; i++) {
+        int bx = 24 + i * 55;
+        int by = 120;
+        bool isSel = (curVol == presets[i]);
+        uint16_t bgC = isSel ? C_PURPLE : C_BG;
+        uint16_t textC = isSel ? C_WHITE : C_DIM;
+        spr.fillRoundRect(bx, by, 48, 30, 6, bgC);
+        spr.drawRoundRect(bx, by, 48, 30, 6, isSel ? C_CYAN : C_TRACE);
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(textC, bgC);
+        spr.drawString(labels[i], bx + 24, by + 15, 1);
+    }
+
+    // Bottom Action Buttons
+    // Close / Save Button
+    spr.fillRoundRect(80, 168, 160, 44, 8, C_GREEN);
+    spr.drawRoundRect(80, 168, 160, 44, 8, C_WHITE);
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_BG, C_GREEN);
+    spr.drawString("SAVE & CLOSE", 160, 190, 2);
+}
+
 void DisplayManager::renderDetailModal() {
     if (currentModal == MODAL_SET_ALARM) {
         renderModalSetAlarm();
+        return;
+    } else if (currentModal == MODAL_BEEP_VOLUME) {
+        renderModalBeepVolume();
         return;
     }
 

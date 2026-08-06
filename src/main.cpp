@@ -95,7 +95,32 @@ void loop() {
 
     if (!touch.isCalibrating() && evt.gesture != GESTURE_NONE) {
         if (display.isModalOpen()) {
-            if (display.getModalType() == MODAL_SET_ALARM) {
+            if (display.getModalType() == MODAL_BEEP_VOLUME) {
+                if (evt.y >= 160) {
+                    // SAVE & CLOSE (Bottom Button)
+                    display.closeDetailModal();
+                    hardware.playBeep(2000, 40);
+                    Serial.println("[Touch] Beep Volume Modal Closed & Saved");
+                } else if (evt.y >= 115 && evt.y <= 155) {
+                    // 5 Preset Buttons (MUTE, 25%, 50%, 75%, 100%)
+                    static const uint8_t presets[] = { 0, 25, 50, 75, 100 };
+                    for (int i = 0; i < 5; i++) {
+                        int bx = 24 + i * 55;
+                        if (evt.x >= bx && evt.x <= bx + 48) {
+                            hardware.setSoundVolume(presets[i]);
+                            hardware.playBeep(2000, 60);
+                            Serial.printf("[Touch] Volume Preset Selected: %d%%\n", presets[i]);
+                            break;
+                        }
+                    }
+                } else if (evt.y >= 70 && evt.y <= 110) {
+                    // Slider Track Tap / Drag
+                    uint8_t vol = (uint8_t)constrain((evt.x - 30) * 100 / 260, 0, 100);
+                    hardware.setSoundVolume(vol);
+                    hardware.playBeep(2000, 60);
+                    Serial.printf("[Touch] Volume Slider Tapped: %d%%\n", vol);
+                }
+            } else if (display.getModalType() == MODAL_SET_ALARM) {
                 if (evt.y >= 140) {
                     if (evt.x < 160) {
                         // CANCEL (Left Button)
@@ -301,10 +326,9 @@ void loop() {
                         Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
                                       hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
                     } else if (evt.y >= 112 && evt.y <= 136) {
-                        hardware.setTouchSoundEnabled(!hardware.isTouchSoundEnabled());
-                        if (hardware.isTouchSoundEnabled()) hardware.playBeep(1400, 40);
-                        Serial.printf("[Touch] Settings -> Touch Sound: %s\n",
-                                      hardware.isTouchSoundEnabled() ? "ON" : "MUTE");
+                        display.openDetailModal(MODAL_BEEP_VOLUME);
+                        hardware.playBeep(1400, 40);
+                        Serial.println("[Touch] Settings -> Opened Beep Volume Modal");
                     } else {
                         if (evt.x < 160) display.previousPage();
                         else display.nextPage();
