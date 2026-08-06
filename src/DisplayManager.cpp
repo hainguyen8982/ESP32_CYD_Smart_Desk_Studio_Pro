@@ -1561,9 +1561,9 @@ void DisplayManager::renderPage8_Settings() {
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  PAGE 7 — MEDIA CONTROL HOTKEYS (With Transparent Side Nav Keys)
+//  PAGE 6 — MEDIA CONTROL HOTKEYS (With Transparent Side Nav Keys)
 // ─────────────────────────────────────────────────────────────────────
-void DisplayManager::renderPage7_MediaControl() {
+void DisplayManager::renderPage6_MediaControl() {
     // ── 1. Top Live Song Title & Artist Marquee Banner (y = 32..56, h = 24px) ──
     spr.fillRoundRect(16, 32, 288, 25, 6, C_CARD);
     spr.drawRoundRect(16, 32, 288, 25, 6, C_CYAN);
