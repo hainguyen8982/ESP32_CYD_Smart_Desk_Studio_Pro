@@ -1412,10 +1412,12 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
         switch (apps[i].targetPage) {
             case 0: iconSun(cx, cy, C_YELLOW); break;
             case 1: iconCal(cx, cy, C_YELLOW); break;
-            case 2: // Finance Gold Bar Icon (Compact ~14px size, matching other icons)
-                spr.fillRoundRect(cx - 7, cy - 4, 14, 8, 2, C_YELLOW);
-                spr.fillRect(cx - 5, cy - 7, 10, 3, C_YELLOW);
-                spr.drawFastVLine(cx - 3, cy - 6, 9, 0xFFFE);
+            case 2: // Finance Golden Dollar Coin Badge ($) - 18px balanced size
+                spr.fillCircle(cx, cy, 9, C_YELLOW);
+                spr.drawCircle(cx, cy, 9, C_ORANGE);
+                spr.setTextDatum(MC_DATUM);
+                spr.setTextColor(C_CARD, C_YELLOW);
+                spr.drawString("$", cx, cy, 2);
                 break;
             case 3: iconCPU(cx, cy, C_CYAN); break;
             case 4: iconNet(cx, cy, C_GREEN); break;
@@ -1424,16 +1426,14 @@ void DisplayManager::renderPage7_AppLauncherGrid() {
                 spr.fillRoundRect(cx - 11, cy - 8, 22, 16, 4, C_CYAN);
                 spr.fillTriangle(cx - 3, cy - 5, cx - 3, cy + 5, cx + 5, cy, C_CARD);
                 break;
-            case 8: // Settings Gear Icon (Real 6-tooth gear with hollow center)
-                spr.fillRect(cx - 2, cy - 9, 4, 18, C_PURPLE);
-                spr.drawLine(cx - 8, cy - 5, cx + 8, cy + 5, C_PURPLE);
-                spr.drawLine(cx - 8, cy - 4, cx + 8, cy + 6, C_PURPLE);
-                spr.drawLine(cx - 7, cy - 5, cx + 9, cy + 5, C_PURPLE);
-                spr.drawLine(cx - 8, cy + 5, cx + 8, cy - 5, C_PURPLE);
-                spr.drawLine(cx - 8, cy + 4, cx + 8, cy - 6, C_PURPLE);
-                spr.drawLine(cx - 7, cy + 5, cx + 9, cy - 5, C_PURPLE);
-                spr.fillCircle(cx, cy, 6, C_PURPLE);
-                spr.fillCircle(cx, cy, 3, C_CARD);
+            case 8: // Settings Tuning Sliders Icon (Modern Control Switches)
+                spr.fillRoundRect(cx - 10, cy - 6, 20, 3, 1, C_PURPLE);
+                spr.fillCircle(cx - 3, cy - 5, 4, C_PURPLE);
+                spr.fillCircle(cx - 3, cy - 5, 2, C_CARD);
+
+                spr.fillRoundRect(cx - 10, cy + 4, 20, 3, 1, C_PURPLE);
+                spr.fillCircle(cx + 4, cy + 5, 4, C_PURPLE);
+                spr.fillCircle(cx + 4, cy + 5, 2, C_CARD);
                 break;
         }
 
