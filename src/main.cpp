@@ -65,7 +65,7 @@ void loop() {
         network.clearRemoteRequestedPage();
     }
 
-    // 6. BOOT Button (GPIO 0) — Long press 3s = Recalibrate
+    // 6. BOOT Button (GPIO 0) — Short press (<1s) = Open App Launcher Grid (Page 7), Long press (3s) = Recalibrate Touch
     if (!touch.isCalibrating()) {
         if (digitalRead(PIN_BOOT_BTN) == LOW) {
             if (!bootBtnWasPressed) {
@@ -77,7 +77,15 @@ void loop() {
                 bootBtnWasPressed = false;
             }
         } else {
-            bootBtnWasPressed = false;
+            if (bootBtnWasPressed) {
+                unsigned long dur = millis() - bootBtnPressStart;
+                if (dur >= 40 && dur < 1000) {
+                    display.setCurrentPage(7); // Jump straight to App Launcher Grid Page 7!
+                    hardware.playBeep(2400, 40);
+                    Serial.println("[System] BOOT button pressed -> Jumped to App Launcher Grid (Page 7)");
+                }
+                bootBtnWasPressed = false;
+            }
         }
     }
 
@@ -126,11 +134,23 @@ void loop() {
             display.previousPage();
             Serial.printf("[Touch] Swiped Right -> Page %d\n", display.getCurrentPage());
 
-        } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_DOUBLE_TAP || evt.gesture == GESTURE_HOLD) {
+        } else if (evt.gesture == GESTURE_HOLD) {
+            // Quick Action 1: Long-press screen anywhere -> Jump straight to App Launcher Grid (Page 7)!
+            display.setCurrentPage(7);
+            hardware.playBeep(2200, 60);
+            Serial.println("[Touch] Long press detected -> Jumped to App Launcher Grid (Page 7)");
+
+        } else if (evt.gesture == GESTURE_TAP || evt.gesture == GESTURE_DOUBLE_TAP) {
             Serial.printf("[Touch] Touch at (%d, %d) Page=%d Gesture=%d\n", evt.x, evt.y, display.getCurrentPage(), evt.gesture);
 
             if (deskUtils.isAlarmRinging()) {
                 deskUtils.dismissAlarm();
+
+            } else if (evt.y < 28 && evt.x >= 25 && evt.x <= 240) {
+                // Quick Action 2: Tap Header Title Bar -> Jump straight to App Launcher Grid (Page 7)!
+                display.setCurrentPage(7);
+                hardware.playBeep(2000, 40);
+                Serial.println("[Touch] Header Title Tapped -> Jumped to App Launcher Grid (Page 7)");
 
             } else if (evt.y < 25 && evt.x > 250) {
                 // Top-Right corner: Cycle Theme
@@ -205,16 +225,11 @@ void loop() {
 
             } else if (display.getCurrentPage() == 6) {
                 // Media Control Page (Page 6)
-                // 1. Left Side Nav Strip (<) or Top Header Left: Prev Page
                 if (evt.x < 32 || (evt.y < 35 && evt.x < 160)) {
                     display.previousPage();
-                }
-                // 2. Right Side Nav Strip (>) or Top Header Right: Next Page
-                else if (evt.x > 288 || (evt.y < 35 && evt.x >= 160)) {
+                } else if (evt.x > 288 || (evt.y < 35 && evt.x >= 160)) {
                     display.nextPage();
-                }
-                // 3. Row 1: Track Controls (y = 48..130)
-                else if (evt.y >= 48 && evt.y <= 130) {
+                } else if (evt.y >= 48 && evt.y <= 130) {
                     if (evt.x >= 34 && evt.x <= 110) {
                         network.triggerMediaAction("prev");
                         hardware.playBeep(1200, 40);
@@ -226,9 +241,7 @@ void loop() {
                         network.triggerMediaAction("next");
                         hardware.playBeep(1200, 40);
                     }
-                }
-                // 4. Row 2: Volume Controls (y = 134..220)
-                else if (evt.y >= 134 && evt.y <= 220) {
+                } else if (evt.y >= 134 && evt.y <= 220) {
                     if (evt.x >= 34 && evt.x <= 110) {
                         network.triggerMediaAction("vol_down");
                         hardware.playBeep(900, 40);
@@ -242,15 +255,30 @@ void loop() {
                 }
 
             } else if (display.getCurrentPage() == 7) {
-                // Settings Page (Page 7)
-                // 1. Dedicated Transparent Side Nav Keys (< or >) & Header: Page Switching FIRST
+                // App Launcher Grid Page (Page 7) -> Tap App Tile jumps to target page
+                if (evt.y >= 34 && evt.y <= 220) {
+                    for (int i = 0; i < 8; i++) {
+                        int col = i % 3;
+                        int row = i / 3;
+                        int bx = 26 + col * 90;
+                        int by = 34 + row * 64;
+                        if (evt.x >= bx && evt.x <= bx + 82 && evt.y >= by && evt.y <= by + 56) {
+                            uint8_t targetPages[8] = { 0, 1, 2, 3, 4, 5, 6, 8 };
+                            display.setCurrentPage(targetPages[i]);
+                            hardware.playBeep(2200, 40);
+                            Serial.printf("[Touch] App Launcher -> Opened Page %d\n", targetPages[i]);
+                            break;
+                        }
+                    }
+                }
+
+            } else if (display.getCurrentPage() == 8) {
+                // Settings Page (Page 8 - ALWAYS LAST PAGE)
                 if (evt.x < 32 || (evt.y < 33 && evt.x < 160)) {
                     display.previousPage();
                 } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {
                     display.nextPage();
-                }
-                // 2. Top Sub-Tab Switcher (Shifted down 5px: y = 33..59)
-                else if (evt.y >= 33 && evt.y <= 59) {
+                } else if (evt.y >= 33 && evt.y <= 59) {
                     if (evt.x >= 34 && evt.x <= 155) {
                         display.setSettingsTab(0);
                         hardware.playBeep(1200, 30);
@@ -258,34 +286,26 @@ void loop() {
                         display.setSettingsTab(1);
                         hardware.playBeep(1200, 30);
                     }
-                }
-                // 3. Tab 0 System Settings Item Selector (y = 60..225)
-                else if (display.getSettingsTab() == 0 && evt.y >= 60 && evt.y <= 225) {
+                } else if (display.getSettingsTab() == 0 && evt.y >= 60 && evt.y <= 225) {
                     if (evt.y >= 60 && evt.y <= 84) {
-                        // Item 1: Calibrate Touch
                         touch.startCalibration();
                         Serial.println("[Touch] Settings -> Calibrate Touch");
                     } else if (evt.y >= 86 && evt.y <= 110) {
-                        // Item 2: Toggle Auto Brightness
                         hardware.setAutoBrightnessEnabled(!hardware.isAutoBrightnessEnabled());
                         if (!hardware.isAutoBrightnessEnabled()) hardware.setBacklight(85);
                         hardware.playBeep(1200, 30);
                         Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
                                       hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
                     } else if (evt.y >= 112 && evt.y <= 136) {
-                        // Item 3: Toggle Touch Sound
                         hardware.setTouchSoundEnabled(!hardware.isTouchSoundEnabled());
                         if (hardware.isTouchSoundEnabled()) hardware.playBeep(1400, 40);
                         Serial.printf("[Touch] Settings -> Touch Sound: %s\n",
                                       hardware.isTouchSoundEnabled() ? "ON" : "MUTE");
                     } else {
-                        // Empty region in Tab 0 -> Page Navigation Fallback
                         if (evt.x < 160) display.previousPage();
                         else display.nextPage();
                     }
-                }
-                // 4. Tab 1 Theme Card Selector (y = 60..225)
-                else if (display.getSettingsTab() == 1 && evt.y >= 60 && evt.y <= 225) {
+                } else if (display.getSettingsTab() == 1 && evt.y >= 60 && evt.y <= 225) {
                     int col = (evt.x >= 160) ? 1 : 0;
                     int row = (evt.y - 63) / 52;
                     int idx = row * 2 + col;
@@ -298,10 +318,10 @@ void loop() {
                             case 4: applyLightDayTheme(); break;
                             case 5: applyRetroGreenTheme(); break;
                         }
-                        hardware.playBeep(1600, 40);
+                        hardware.playBeep(2000, 40);
+                        Serial.printf("[Touch] Settings -> Theme Preset %d applied\n", idx);
                     }
                 }
-
             } else {
                 // Default: Left half = prev page, Right half = next page
                 if (evt.x < 160) {

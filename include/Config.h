@@ -23,7 +23,7 @@
 #define SCREEN_HEIGHT       240
 
 // Number of Dashboard Pages
-#define TOTAL_PAGES         8       // Pages 0-7 = Dashboard, Settings, Media Controller
+#define TOTAL_PAGES         9       // Pages 0-8 (Settings is ALWAYS last page 8)
 
 // System Constants
 #define PC_MONITOR_TIMEOUT_MS 12000   // Extended timeout to reduce "wait connecting" flaps

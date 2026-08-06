@@ -75,8 +75,9 @@ private:
     void renderPage3_PcCpuRam();
     void renderPage4_PcNetDisks();
     void renderPage5_DeskUtilities();
-    void renderPage6_Settings();
-    void renderPage7_MediaControl();
+    void renderPage6_MediaControl();
+    void renderPage7_AppLauncherGrid();
+    void renderPage8_Settings();
     void renderCalibrationScreen();
     void renderDetailModal();
     void renderSplashScreen();

@@ -43,10 +43,12 @@ static uint16_t getPageAccent(uint8_t page) {
         case 0: return theme.cyan;    // Weather
         case 1: return theme.yellow;  // Calendar
         case 2: return theme.yellow;  // Finance
-        case 3: return theme.cyan;    // PC Monitor
-        case 4: return theme.green;   // Net & Storage
-        case 5: return theme.orange;  // Desk Utilities
-        case 6: return theme.purple;  // Settings
+        case 3: return theme.cyan;    // PC CPU
+        case 4: return theme.orange;  // PC GPU
+        case 5: return theme.green;   // Net & Storage
+        case 6: return theme.orange;  // Desk Utilities
+        case 7: return theme.cyan;    // App Launcher Grid
+        case 8: return theme.purple;  // Settings
         default: return theme.cyan;
     }
 }
@@ -122,15 +124,16 @@ void DisplayManager::update() {
     renderHeader();
 
     switch (currentPage) {
-        case 0: renderPage0_WeatherClock();  break;
-        case 1: renderPage1_LunarCalendar(); break;
-        case 2: renderPage2_FinanceGold();   break;
-        case 3: renderPage3_PcCpuRam();      break;
-        case 4: renderPage4_PcNetDisks();    break;
-        case 5: renderPage5_DeskUtilities(); break;
-        case 6: renderPage7_MediaControl();  break;
-        case 7: renderPage6_Settings();      break;
-        default: renderPage0_WeatherClock(); break;
+        case 0: renderPage0_WeatherClock();     break;
+        case 1: renderPage1_LunarCalendar();    break;
+        case 2: renderPage2_FinanceGold();      break;
+        case 3: renderPage3_PcCpuRam();         break;
+        case 4: renderPage4_PcNetDisks();       break;
+        case 5: renderPage5_DeskUtilities();    break;
+        case 6: renderPage6_MediaControl();     break;
+        case 7: renderPage7_AppLauncherGrid();  break;
+        case 8: renderPage8_Settings();         break;
+        default: renderPage0_WeatherClock();    break;
     }
     spr.pushSprite(0, 0);
 }
@@ -170,32 +173,37 @@ void DisplayManager::renderHeader() {
                 spr.fillRect(ix+p2-1, iy+6, 2, 3, C_CYAN);
             }
             break;
-        case 4: // PC Net & Storage - Network up/down arrows
+        case 4: // PC GPU
+            spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_ORANGE);
+            spr.fillRect(ix-3, iy-3, 6, 6, C_HDR);
+            break;
+        case 5: // PC Net & Storage - Network up/down arrows
             spr.fillTriangle(ix-6, iy+2, ix-2, iy-6, ix+2, iy+2, C_GREEN);
             spr.fillTriangle(ix+4, iy-2, ix+8, iy+6, ix+12, iy-2, C_GREEN);
             break;
-        case 5: // Desk Utilities - Pomodoro tomato
+        case 6: // Desk Utilities - Pomodoro tomato
             spr.fillCircle(ix, iy+2, 6, C_RED);
             spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
             spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
             break;
-        case 6: // Media Control music note icon
-            spr.fillRect(ix-4, iy-4, 8, 8, C_CYAN);
-            spr.fillCircle(ix, iy, 2, C_HDR);
+        case 7: // App Launcher Grid
+            spr.fillRect(ix-6, iy-6, 5, 5, C_CYAN);
+            spr.fillRect(ix+1, iy-6, 5, 5, C_CYAN);
+            spr.fillRect(ix-6, iy+1, 5, 5, C_CYAN);
+            spr.fillRect(ix+1, iy+1, 5, 5, C_CYAN);
             break;
-        case 7: // Settings gear icon
+        case 8: // Settings gear icon
             spr.drawCircle(ix, iy, 5, C_PURPLE);
             spr.fillCircle(ix, iy, 2, C_HDR);
             spr.fillRect(ix-1, iy-7, 2, 14, C_PURPLE);
             spr.fillRect(ix-7, iy-1, 14, 2, C_PURPLE);
-            break;
             break;
     }
 
     // ── Page title ────────────────────────────────────────────────────
     static const char* titles[] = {
         "Weather", "Calendar", "Finance",
-        "PC Monitor", "Net & Disk", "Pomodoro", "Settings", "Media"
+        "PC CPU", "PC GPU", "Net & Disk", "Utilities", "App Launcher", "Settings"
     };
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(C_DIM, C_HDR);
@@ -273,110 +281,113 @@ void DisplayManager::drawMiniWeatherIcon(int16_t cx, int16_t cy, uint8_t type) {
 
 void DisplayManager::drawWeatherIconVector(int16_t cx, int16_t cy, uint8_t size, uint8_t type) {
     if (size >= 48) {
-        // ── LARGE 50px VECTOR WEATHER ICON (FOR MAIN WEATHER CARD) ───────────
+        // ── LARGE 50px VECTOR OUTLINE LINE-ART WEATHER ICON ──────────────────
         switch (type) {
             case 0: // 50px Sun
-                spr.fillCircle(cx, cy, 14, C_ORANGE);       // Glowing outer halo
-                spr.fillCircle(cx, cy, 10, C_YELLOW);       // Core sun
-                spr.fillCircle(cx - 3, cy - 3, 3, C_WHITE); // Glossy highlight
+                spr.fillCircle(cx, cy, 11, C_YELLOW);
+                spr.drawCircle(cx, cy, 11, C_ORANGE);
                 static const int8_t ix[] = { 0, 9,13, 9, 0,-9,-13,-9};
                 static const int8_t iy[] = {-13,-9, 0, 9,13, 9,  0,-9};
                 static const int8_t ox[] = { 0,16,21,16, 0,-16,-21,-16};
                 static const int8_t oy[] = {-21,-16, 0,16,21,16,  0,-16};
                 for (int i = 0; i < 8; i++) {
-                    spr.drawLine(cx+ix[i], cy+iy[i], cx+ox[i], cy+oy[i], C_ORANGE);
+                    spr.drawLine(cx+ix[i], cy+iy[i], cx+ox[i], cy+oy[i], C_YELLOW);
                     spr.drawLine(cx+ix[i]+1, cy+iy[i], cx+ox[i]+1, cy+oy[i], C_YELLOW);
                 }
                 break;
 
-            case 1: // 50px Sun + Cloud
-                // Sun peeking top right
-                spr.fillCircle(cx + 8, cy - 6, 8, C_YELLOW);
-                spr.drawCircle(cx + 8, cy - 6, 11, C_ORANGE);
-                // Cloud base & top
-                spr.fillCircle(cx - 8, cy + 3, 8, C_CYAN);
-                spr.fillCircle(cx + 8, cy + 3, 8, C_CYAN);
-                spr.fillCircle(cx,     cy - 3, 8, C_WHITE);
-                spr.fillRect(cx - 16, cy + 3, 32, 8, C_CYAN);
+            case 1: // 50px Sun + Cloud (White outline cloud with sun peeking)
+                spr.fillCircle(cx + 8, cy - 8, 7, C_YELLOW);
+                spr.drawCircle(cx + 8, cy - 8, 7, C_ORANGE);
+                spr.drawLine(cx + 14, cy - 14, cx + 18, cy - 18, C_YELLOW);
+                spr.drawLine(cx + 8, cy - 17, cx + 8, cy - 21, C_YELLOW);
+                spr.drawLine(cx + 17, cy - 8, cx + 21, cy - 8, C_YELLOW);
+
+                // Cloud Outline
+                spr.drawCircle(cx - 8, cy + 3, 7, C_WHITE);
+                spr.drawCircle(cx - 8, cy + 3, 8, C_WHITE);
+                spr.drawCircle(cx + 6, cy + 3, 7, C_WHITE);
+                spr.drawCircle(cx + 6, cy + 3, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 4, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 4, 9, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 10, 30, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 11, 30, C_WHITE);
                 break;
 
-            case 2: // 50px Rain Cloud
-                spr.fillCircle(cx - 8, cy - 3, 8, C_CYAN);
-                spr.fillCircle(cx + 8, cy - 3, 8, C_CYAN);
-                spr.fillCircle(cx,     cy - 8, 8, C_WHITE);
-                spr.fillRect(cx - 16, cy - 3, 32, 8, C_CYAN);
-                // 4 Slanted Cyan Raindrops
-                spr.drawLine(cx - 10, cy + 6, cx - 14, cy + 15, C_CYAN);
-                spr.drawLine(cx - 3,  cy + 6, cx - 7,  cy + 15, C_CYAN);
-                spr.drawLine(cx + 4,  cy + 6, cx,      cy + 15, C_CYAN);
-                spr.drawLine(cx + 11, cy + 6, cx + 7,  cy + 15, C_CYAN);
+            case 2: // 50px Rain Cloud (White outline cloud + Blue Teardrop Raindrops 💧)
+                spr.drawCircle(cx - 8, cy - 4, 7, C_WHITE);
+                spr.drawCircle(cx - 8, cy - 4, 8, C_WHITE);
+                spr.drawCircle(cx + 6, cy - 4, 7, C_WHITE);
+                spr.drawCircle(cx + 6, cy - 4, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 11, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 11, 9, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 3, 30, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 4, 30, C_WHITE);
+
+                // 3 Teardrop Raindrops
+                for (int r = -9; r <= 9; r += 9) {
+                    spr.fillCircle(cx + r, cy + 14, 2, C_CYAN);
+                    spr.fillTriangle(cx + r, cy + 9, cx + r - 2, cy + 14, cx + r + 2, cy + 14, C_CYAN);
+                }
                 break;
 
-            default: // Thunderstorm
-                spr.fillCircle(cx - 8, cy - 3, 8, C_CYAN);
-                spr.fillCircle(cx + 8, cy - 3, 8, C_CYAN);
-                spr.fillCircle(cx,     cy - 8, 8, C_WHITE);
-                spr.fillRect(cx - 16, cy - 3, 32, 8, C_CYAN);
-                // Yellow Lightning Bolt
-                spr.drawLine(cx - 2, cy + 5, cx - 6, cy + 10, C_YELLOW);
-                spr.drawLine(cx - 6, cy + 10, cx + 2, cy + 10, C_YELLOW);
-                spr.drawLine(cx + 2, cy + 10, cx - 3, cy + 17, C_YELLOW);
+            default: // 50px Thunderstorm
+                spr.drawCircle(cx - 8, cy - 4, 7, C_WHITE);
+                spr.drawCircle(cx - 8, cy - 4, 8, C_WHITE);
+                spr.drawCircle(cx + 6, cy - 4, 7, C_WHITE);
+                spr.drawCircle(cx + 6, cy - 4, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 11, 8, C_WHITE);
+                spr.drawCircle(cx - 1, cy - 11, 9, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 3, 30, C_WHITE);
+                spr.drawFastHLine(cx - 15, cy + 4, 30, C_WHITE);
+
+                // Lightning bolt
+                spr.drawLine(cx - 2, cy + 6, cx - 6, cy + 11, C_YELLOW);
+                spr.drawLine(cx - 6, cy + 11, cx + 2, cy + 11, C_YELLOW);
+                spr.drawLine(cx + 2, cy + 11, cx - 3, cy + 18, C_YELLOW);
                 break;
         }
     } else {
-        // ── SMALLER 32px VECTOR WEATHER ICON (FOR 3-DAY FORECAST COLUMNS) ───
+        // ── 32px VECTOR OUTLINE LINE-ART WEATHER ICON ───────────────────
         switch (type) {
-            case 0: // 32px Multi-tone Sun
-                spr.fillCircle(cx, cy, 7, C_ORANGE);
-                spr.fillCircle(cx, cy, 5, C_YELLOW);
-                spr.fillCircle(cx - 2, cy - 2, 2, C_WHITE);
-                static const int8_t ix[] = { 0, 5, 8, 5, 0,-5,-8,-5};
-                static const int8_t iy[] = {-8,-5, 0, 5, 8, 5, 0,-5};
+            case 0: // 32px Sun
+                spr.fillCircle(cx, cy, 6, C_YELLOW);
+                static const int8_t ix[] = { 0, 5, 7, 5, 0,-5,-7,-5};
+                static const int8_t iy[] = {-7,-5, 0, 5, 7, 5, 0,-5};
                 static const int8_t ox[] = { 0, 9,12, 9, 0,-9,-12,-9};
                 static const int8_t oy[] = {-12,-9, 0, 9,12, 9, 0,-9};
                 for (int i = 0; i < 8; i++) {
-                    spr.drawLine(cx+ix[i], cy+iy[i], cx+ox[i], cy+oy[i], C_ORANGE);
-                    spr.drawLine(cx+ix[i]+1, cy+iy[i], cx+ox[i]+1, cy+oy[i], C_YELLOW);
+                    spr.drawLine(cx+ix[i], cy+iy[i], cx+ox[i], cy+oy[i], C_YELLOW);
                 }
                 break;
 
             case 1: // 32px Sun + Cloud
-                spr.fillCircle(cx + 6, cy - 4, 5, C_YELLOW);
-                spr.drawCircle(cx + 6, cy - 4, 7, C_ORANGE);
-                spr.fillCircle(cx - 5, cy + 2, 5, C_CYAN);
-                spr.fillCircle(cx + 5, cy + 2, 5, C_CYAN);
-                spr.fillCircle(cx,     cy - 2, 5, C_WHITE);
-                spr.fillRect(cx - 10, cy + 2, 20, 5, C_CYAN);
+                spr.fillCircle(cx + 5, cy - 5, 4, C_YELLOW);
+                spr.drawCircle(cx - 5, cy + 2, 5, C_WHITE);
+                spr.drawCircle(cx + 4, cy + 2, 5, C_WHITE);
+                spr.drawCircle(cx, cy - 2, 5, C_WHITE);
+                spr.drawFastHLine(cx - 10, cy + 7, 20, C_WHITE);
                 break;
 
             case 2: // 32px Rain Cloud
-                spr.fillCircle(cx - 5, cy - 2, 5, C_CYAN);
-                spr.fillCircle(cx + 5, cy - 2, 5, C_CYAN);
-                spr.fillCircle(cx,     cy - 5, 5, C_WHITE);
-                spr.fillRect(cx - 10, cy - 2, 20, 5, C_CYAN);
-                spr.drawLine(cx - 5, cy + 4, cx - 8, cy + 10, C_CYAN);
-                spr.drawLine(cx,     cy + 4, cx - 3, cy + 10, C_CYAN);
-                spr.drawLine(cx + 5, cy + 4, cx + 2, cy + 10, C_CYAN);
+                spr.drawCircle(cx - 5, cy - 2, 5, C_WHITE);
+                spr.drawCircle(cx + 4, cy - 2, 5, C_WHITE);
+                spr.drawCircle(cx, cy - 6, 5, C_WHITE);
+                spr.drawFastHLine(cx - 10, cy + 3, 20, C_WHITE);
+                spr.fillCircle(cx - 4, cy + 9, 1, C_CYAN);
+                spr.fillTriangle(cx - 4, cy + 6, cx - 5, cy + 9, cx - 3, cy + 9, C_CYAN);
+                spr.fillCircle(cx + 3, cy + 9, 1, C_CYAN);
+                spr.fillTriangle(cx + 3, cy + 6, cx + 2, cy + 9, cx + 4, cy + 9, C_CYAN);
                 break;
 
-            case 3: // 32px Thunderstorm Cloud
-                spr.fillCircle(cx - 5, cy - 2, 5, C_CYAN);
-                spr.fillCircle(cx + 5, cy - 2, 5, C_CYAN);
-                spr.fillCircle(cx,     cy - 5, 5, C_WHITE);
-                spr.fillRect(cx - 10, cy - 2, 20, 5, C_CYAN);
-                // Yellow Lightning Bolt
-                spr.drawLine(cx - 1, cy + 3, cx - 4, cy + 7, C_YELLOW);
-                spr.drawLine(cx - 4, cy + 7, cx + 1, cy + 7, C_YELLOW);
-                spr.drawLine(cx + 1, cy + 7, cx - 2, cy + 12, C_YELLOW);
-                break;
-
-            default: // Fallback to 32px Sun + Cloud
-                spr.fillCircle(cx + 6, cy - 4, 5, C_YELLOW);
-                spr.drawCircle(cx + 6, cy - 4, 7, C_ORANGE);
-                spr.fillCircle(cx - 5, cy + 2, 5, C_CYAN);
-                spr.fillCircle(cx + 5, cy + 2, 5, C_CYAN);
-                spr.fillCircle(cx,     cy - 2, 5, C_WHITE);
-                spr.fillRect(cx - 10, cy + 2, 20, 5, C_CYAN);
+            default: // 32px Thunderstorm
+                spr.drawCircle(cx - 5, cy - 2, 5, C_WHITE);
+                spr.drawCircle(cx + 4, cy - 2, 5, C_WHITE);
+                spr.drawCircle(cx, cy - 6, 5, C_WHITE);
+                spr.drawFastHLine(cx - 10, cy + 3, 20, C_WHITE);
+                spr.drawLine(cx - 1, cy + 5, cx - 4, cy + 9, C_YELLOW);
+                spr.drawLine(cx - 4, cy + 9, cx + 1, cy + 9, C_YELLOW);
+                spr.drawLine(cx + 1, cy + 9, cx - 2, cy + 13, C_YELLOW);
                 break;
         }
     }
@@ -1369,9 +1380,67 @@ void DisplayManager::renderCalibrationScreen() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  PAGE 6 — Settings Page
+//  PAGE 7 — APP LAUNCHER GRID (Quick Access App Launcher 3x3 Grid)
 // ═══════════════════════════════════════════════════════════════════════
-void DisplayManager::renderPage6_Settings() {
+void DisplayManager::renderPage7_AppLauncherGrid() {
+    // Transparent Side Navigation Keys
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN, C_BG);
+    spr.drawString("<", 14, 134, 2);
+    spr.drawString(">", 306, 134, 2);
+
+    struct AppItem {
+        const char* name;
+        uint16_t color;
+        uint8_t targetPage;
+    };
+
+    static const AppItem apps[8] = {
+        { "Weather",    C_CYAN,   0 },
+        { "Calendar",   C_YELLOW, 1 },
+        { "Finance",    C_YELLOW, 2 },
+        { "PC CPU",     C_CYAN,   3 },
+        { "PC GPU",     C_ORANGE, 4 },
+        { "Net & Disk", C_GREEN,  5 },
+        { "Utilities",  C_ORANGE, 6 },
+        { "Settings",   C_PURPLE, 8 }  // Settings ALWAYS page 8
+    };
+
+    for (int i = 0; i < 8; i++) {
+        int col = i % 3;
+        int row = i / 3;
+        int bx = 26 + col * 90;
+        int by = 34 + row * 64;
+
+        uint16_t cardBg = C_CARD;
+        spr.fillRoundRect(bx, by, 82, 56, 8, cardBg);
+        spr.drawRoundRect(bx, by, 82, 56, 8, apps[i].color);
+
+        // Draw Mini Icon inside app tile
+        int cx = bx + 41;
+        int cy = by + 22;
+        switch (apps[i].targetPage) {
+            case 0: iconSun(cx, cy, C_YELLOW); break;
+            case 1: iconCal(cx, cy, C_YELLOW); break;
+            case 2: iconGold(cx, cy, C_YELLOW); break;
+            case 3: iconCPU(cx, cy, C_CYAN); break;
+            case 4: iconCPU(cx, cy, C_ORANGE); break;
+            case 5: iconNet(cx, cy, C_GREEN); break;
+            case 6: iconPomodoro(cx, cy); break;
+            case 8: spr.drawCircle(cx, cy, 5, C_PURPLE); spr.fillCircle(cx, cy, 2, C_CARD); break;
+        }
+
+        // App Label
+        spr.setTextDatum(BC_DATUM);
+        spr.setTextColor(C_WHITE, C_CARD);
+        spr.drawString(apps[i].name, cx, by + 50, 1);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PAGE 8 — Settings Page (ALWAYS LAST PAGE)
+// ═══════════════════════════════════════════════════════════════════════
+void DisplayManager::renderPage8_Settings() {
     // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
     spr.setTextDatum(MC_DATUM);
     spr.setTextColor(C_CYAN, C_BG);
