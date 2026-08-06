@@ -43,12 +43,12 @@ static uint16_t getPageAccent(uint8_t page) {
         case 0: return theme.cyan;    // Weather
         case 1: return theme.yellow;  // Calendar
         case 2: return theme.yellow;  // Finance
-        case 3: return theme.cyan;    // PC CPU
-        case 4: return theme.orange;  // PC GPU
-        case 5: return theme.green;   // Net & Storage
-        case 6: return theme.orange;  // Desk Utilities
+        case 3: return theme.cyan;    // PC Monitor
+        case 4: return theme.green;   // Net & Disk
+        case 5: return theme.orange;  // Desk Utilities
+        case 6: return theme.cyan;    // Media Control
         case 7: return theme.cyan;    // App Launcher Grid
-        case 8: return theme.purple;  // Settings
+        case 8: return theme.purple;  // Settings (ALWAYS LAST)
         default: return theme.cyan;
     }
 }
@@ -160,10 +160,9 @@ void DisplayManager::renderHeader() {
             spr.fillRect(ix-4, iy-9, 3, 5, C_YELLOW);
             spr.fillRect(ix+1, iy-9, 3, 5, C_YELLOW);
             break;
-        case 2: // Finance - Gold bar
-            spr.fillRoundRect(ix-7, iy-3, 14, 7, 1, C_YELLOW);
-            spr.fillRect(ix-5, iy-6, 10, 3, C_YELLOW);
-            spr.drawFastVLine(ix-3, iy-5, 8, 0xFFFE);  // shine
+        case 2: // Finance - Gold Dollar Coin
+            spr.fillCircle(ix, iy, 5, C_YELLOW);
+            spr.drawCircle(ix, iy, 5, C_ORANGE);
             break;
         case 3: // PC Monitor - CPU chip
             spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_CYAN);
@@ -173,18 +172,18 @@ void DisplayManager::renderHeader() {
                 spr.fillRect(ix+p2-1, iy+6, 2, 3, C_CYAN);
             }
             break;
-        case 4: // PC GPU
-            spr.fillRoundRect(ix-6, iy-6, 12, 12, 1, C_ORANGE);
-            spr.fillRect(ix-3, iy-3, 6, 6, C_HDR);
-            break;
-        case 5: // PC Net & Storage - Network up/down arrows
+        case 4: // PC Net & Storage - Network up/down arrows
             spr.fillTriangle(ix-6, iy+2, ix-2, iy-6, ix+2, iy+2, C_GREEN);
             spr.fillTriangle(ix+4, iy-2, ix+8, iy+6, ix+12, iy-2, C_GREEN);
             break;
-        case 6: // Desk Utilities - Pomodoro tomato
+        case 5: // Desk Utilities - Pomodoro tomato
             spr.fillCircle(ix, iy+2, 6, C_RED);
             spr.fillRect(ix-1, iy-5, 2, 4, C_GREEN2);
             spr.fillTriangle(ix, iy-4, ix+5, iy-7, ix+4, iy-2, C_GREEN2);
+            break;
+        case 6: // Media Control - Play button
+            spr.fillRoundRect(ix-6, iy-5, 12, 10, 2, C_CYAN);
+            spr.fillTriangle(ix-2, iy-3, ix-2, iy+3, ix+2, iy, C_HDR);
             break;
         case 7: // App Launcher Grid
             spr.fillRect(ix-6, iy-6, 5, 5, C_CYAN);
@@ -192,18 +191,18 @@ void DisplayManager::renderHeader() {
             spr.fillRect(ix-6, iy+1, 5, 5, C_CYAN);
             spr.fillRect(ix+1, iy+1, 5, 5, C_CYAN);
             break;
-        case 8: // Settings gear icon
-            spr.drawCircle(ix, iy, 5, C_PURPLE);
-            spr.fillCircle(ix, iy, 2, C_HDR);
-            spr.fillRect(ix-1, iy-7, 2, 14, C_PURPLE);
-            spr.fillRect(ix-7, iy-1, 14, 2, C_PURPLE);
+        case 8: // Settings tuning sliders icon
+            spr.fillRoundRect(ix-6, iy-4, 12, 2, 1, C_PURPLE);
+            spr.fillCircle(ix-2, iy-3, 2, C_PURPLE);
+            spr.fillRoundRect(ix-6, iy+2, 12, 2, 1, C_PURPLE);
+            spr.fillCircle(ix+2, iy+3, 2, C_PURPLE);
             break;
     }
 
     // ── Page title ────────────────────────────────────────────────────
     static const char* titles[] = {
         "Weather", "Calendar", "Finance",
-        "PC CPU", "PC GPU", "Net & Disk", "Utilities", "App Launcher", "Settings"
+        "PC Monitor", "Net & Disk", "Utilities", "Media Ctrl", "App Launcher", "Settings"
     };
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(C_DIM, C_HDR);
