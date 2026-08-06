@@ -188,13 +188,7 @@ void DisplayManager::renderHeader() {
             spr.fillRoundRect(ix-6, iy-5, 12, 10, 2, C_CYAN);
             spr.fillTriangle(ix-2, iy-3, ix-2, iy+3, ix+2, iy, C_HDR);
             break;
-        case 7: // App Launcher Grid
-            spr.fillRect(ix-6, iy-6, 5, 5, C_CYAN);
-            spr.fillRect(ix+1, iy-6, 5, 5, C_CYAN);
-            spr.fillRect(ix-6, iy+1, 5, 5, C_CYAN);
-            spr.fillRect(ix+1, iy+1, 5, 5, C_CYAN);
-            break;
-        case 8: // Settings tuning sliders icon
+        case 7: // Settings tuning sliders icon
             spr.fillRoundRect(ix-6, iy-4, 12, 2, 1, C_PURPLE);
             spr.fillCircle(ix-2, iy-3, 2, C_PURPLE);
             spr.fillRoundRect(ix-6, iy+2, 12, 2, 1, C_PURPLE);
@@ -202,14 +196,20 @@ void DisplayManager::renderHeader() {
             break;
     }
 
-    // ── Page title ────────────────────────────────────────────────────
-    static const char* titles[] = {
-        "Weather", "Calendar", "Finance",
-        "PC Monitor", "Net & Disk", "Utilities", "Media Ctrl", "App Launcher", "Settings"
-    };
-    spr.setTextDatum(ML_DATUM);
-    spr.setTextColor(C_DIM, C_HDR);
-    spr.drawString(titles[currentPage], 26, 13, 2);
+    if (isAppLauncherOpen) {
+        spr.setTextDatum(ML_DATUM);
+        spr.setTextColor(C_DIM, C_HDR);
+        spr.drawString("App Launcher", 26, 13, 2);
+    } else {
+        // ── Page title (8 Feature Pages: 0-7) ──────────────────────────────
+        static const char* titles[] = {
+            "Weather", "Calendar", "Finance",
+            "PC Monitor", "Net & Disk", "Utilities", "Media Ctrl", "Settings"
+        };
+        spr.setTextDatum(ML_DATUM);
+        spr.setTextColor(C_DIM, C_HDR);
+        spr.drawString(titles[currentPage], 26, 13, 2);
+    }
 
     // ── Time HH:MM:SS (center at y=13 matching page title and icons) ──
     if (currentPage != 0) {
@@ -246,8 +246,12 @@ void DisplayManager::renderHeader() {
     iconLink(268, 12, pcMonitor.isConnected() ? C_CYAN : C_VDIM);
 
     uint16_t acc = getPageAccent(currentPage);
-    char pageBuf[8];
-    snprintf(pageBuf, sizeof(pageBuf), "%d/%d", (int)currentPage + 1, TOTAL_PAGES);
+    char pageBuf[12];
+    if (isAppLauncherOpen) {
+        snprintf(pageBuf, sizeof(pageBuf), "[Grid]");
+    } else {
+        snprintf(pageBuf, sizeof(pageBuf), "%d/%d", (int)currentPage + 1, TOTAL_PAGES);
+    }
     spr.setTextDatum(MR_DATUM);
     spr.setTextColor(acc, C_HDR);
     spr.drawString(pageBuf, 308, 13, 2);
