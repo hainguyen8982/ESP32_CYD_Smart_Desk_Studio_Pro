@@ -687,42 +687,42 @@ class CYDMonitorApp(ctk.CTk):
                 now_time = time.time()
                 active_p = self.active_cyd_page
 
+                # Always calculate network speeds continuously so delta dt is smooth and instant
+                curr_net = psutil.net_io_counters()
+                dt = now_time - self.last_time
+                if dt > 0 and self.last_net is not None:
+                    down_speed = int((curr_net.bytes_recv - self.last_net.bytes_recv) / dt / 1024)
+                    up_speed = int((curr_net.bytes_sent - self.last_net.bytes_sent) / dt / 1024)
+                else:
+                    down_speed = up_speed = 0
+                self.last_net = curr_net
+                self.last_time = now_time
+
                 # Base lightweight metrics
                 cpu_pct = int(psutil.cpu_percent(interval=None))
                 ram_pct = int(psutil.virtual_memory().percent)
                 gpu_pct = vram_pct = 0
-                down_speed = up_speed = 0
                 disks = []
                 is_playing = False
                 media_title = media_artist = ""
 
-                # Query GPU/VRAM only when CYD is on Page 3 (PC Monitor)
-                if active_p == 3:
+                # Query GPU/VRAM when CYD is on Page 3 (PC Monitor) or Page 4 (Net & Storage)
+                if active_p in (3, 4):
                     gpu_pct, vram_pct = self.gpu_mon.get_metrics()
 
-                # Query Net Speeds & Disk Usage only when CYD is on Page 4 (Net & Storage)
-                if active_p == 4:
-                    curr_net = psutil.net_io_counters()
-                    dt = now_time - self.last_time
-                    if dt > 0:
-                        down_speed = int((curr_net.bytes_recv - self.last_net.bytes_recv) / dt / 1024)
-                        up_speed = int((curr_net.bytes_sent - self.last_net.bytes_sent) / dt / 1024)
-                    self.last_net = curr_net
-                    self.last_time = now_time
+                # Query Disks when on Page 4 or periodically
+                for letter in string.ascii_uppercase:
+                    drive_path = f"{letter}:\\"
+                    if os.path.exists(drive_path):
+                        try:
+                            usage = psutil.disk_usage(drive_path)
+                            if usage.total > 0:
+                                disks.append({"name": letter, "used": int(round((usage.used / usage.total) * 100))})
+                        except Exception:
+                            pass
 
-                    for letter in string.ascii_uppercase:
-                        drive_path = f"{letter}:\\"
-                        if os.path.exists(drive_path):
-                            try:
-                                usage = psutil.disk_usage(drive_path)
-                                if usage.total > 0:
-                                    disks.append({"name": letter, "used": int(round((usage.used / usage.total) * 100))})
-                            except Exception:
-                                pass
-
-                # Query Media Track Info only when CYD is on Page 6 (Media Control)
-                if active_p == 6:
-                    is_playing, media_title, media_artist = check_windows_media_playing()
+                # Query Media Track Info continuously or when on Page 6
+                is_playing, media_title, media_artist = check_windows_media_playing()
 
                 payload = {
                     "cpu": cpu_pct,
@@ -753,7 +753,7 @@ class CYDMonitorApp(ctk.CTk):
             except Exception:
                 with open("debug.log", "a") as _f:
                     _f.write(f"[METRICS ERR] {time.time():.0f}: {traceback.format_exc()}\n")
-                time.sleep(1)
+                time.sleep(0.5)
                 continue
 
             # Reset connection flags each loop iteration
@@ -853,7 +853,11 @@ class CYDMonitorApp(ctk.CTk):
             else:
                 self.after(0, lambda: self._set_status("\u25cf Searching for CYD...", "#d29922"))
 
-            time.sleep(1.0)
+            # Dynamic Real-Time Streaming interval: 0.35s (~3 FPS) on PC Monitor pages (3 & 4), 0.5s on others
+            if self.active_cyd_page in (3, 4):
+                time.sleep(0.35)
+            else:
+                time.sleep(0.5)
 
     def create_tray_icon(self):
         """Runs in its own non-daemon thread. Blocking call."""
