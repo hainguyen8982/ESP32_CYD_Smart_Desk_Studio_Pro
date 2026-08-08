@@ -176,6 +176,12 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
     }
 
     lastDataTime = millis();
-    Serial.printf("[PCMonitor] Data Recv -> CPU:%d%%, RAM:%d%%, GPU:%d%%\n", cpuLoad, ramLoad, gpuLoad);
+    // Send current state back to PC app for bidirectional sync
+    Serial.printf("STATE:{\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}\n",
+                  display.getCurrentPage(),
+                  getCurrentThemePresetName(),
+                  network.getWeather().city,
+                  network.getExchange().cur1Code,
+                  network.getExchange().cur2Code);
     return true;
 }

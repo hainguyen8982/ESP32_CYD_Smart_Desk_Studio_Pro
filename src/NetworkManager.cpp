@@ -65,6 +65,7 @@ NetworkManager::NetworkManager()
     : server(80),
       lastWeatherFetch(0),
       lastGoldFetch(0),
+      exchangeRefreshPending(false),
       remotePage(-1),
       bootState(BOOT_CONNECTING_WIFI),
       bootProgress(15),
@@ -670,6 +671,12 @@ void NetworkManager::update() {
     if (millis() - lastGoldFetch > 5 * 60 * 1000UL || lastGoldFetch == 0) {
         fetchGoldAndExchange();
     }
+
+    // Fast exchange-only refresh when currencies changed (skips slow gold API calls)
+    if (exchangeRefreshPending) {
+        exchangeRefreshPending = false;
+        fetchExchangeOnly();
+    }
 }
 
 static bool getCityCoordinates(const char* city, float &lat, float &lon) {
@@ -849,6 +856,29 @@ void NetworkManager::fetchGoldAndExchange() {
             populateCurrencyHistory7(exchange.cur1Code, exchange.cur1Rate, exchange.cur1History7);
             populateCurrencyHistory7(exchange.cur2Code, exchange.cur2Rate, exchange.cur2History7);
             Serial.printf("[NetworkManager] Exchange Rates Live (%s=%.0f, %s=%.0f)\n",
+                          exchange.cur1Code, exchange.cur1Rate,
+                          exchange.cur2Code, exchange.cur2Rate);
+        }
+    }
+    http.end();
+}
+
+void NetworkManager::fetchExchangeOnly() {
+    if (!isConnected()) return;
+    Serial.println("[NetworkManager] Fast Exchange-Only Refresh...");
+
+    HTTPClient http;
+    http.begin("https://open.er-api.com/v6/latest/USD");
+    if (http.GET() == 200) {
+        JsonDocument eDoc;
+        if (!deserializeJson(eDoc, http.getString())) {
+            float vndUsd = eDoc["rates"]["VND"] | 26180.0f;
+            exchange.cur1Rate = calcCurrencyRate(exchange.cur1Code, vndUsd, &eDoc);
+            exchange.cur2Rate = calcCurrencyRate(exchange.cur2Code, vndUsd, &eDoc);
+            populateCurrencyHistory7(exchange.cur1Code, exchange.cur1Rate, exchange.cur1History7);
+            populateCurrencyHistory7(exchange.cur2Code, exchange.cur2Rate, exchange.cur2History7);
+            exchange.valid = true;
+            Serial.printf("[NetworkManager] Exchange Rates Fast Updated (%s=%.0f, %s=%.0f)\n",
                           exchange.cur1Code, exchange.cur1Rate,
                           exchange.cur2Code, exchange.cur2Rate);
         }

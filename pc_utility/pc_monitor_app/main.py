@@ -115,7 +115,7 @@ def background_skip_youtube_ad():
         print(f"[Skip Ad Error]: {e}")
 
 last_media_time = 0.0
-app_instance = None
+# app_instance is declared in the _send_control_cmd section below
 
 def trigger_instant_media_push():
     def _push():
@@ -389,7 +389,7 @@ class CYDMonitorApp(ctk.CTk):
         app_instance = self
 
         self.title("ESP32 CYD Desk Dashboard Studio")
-        self.geometry("580x780")
+        self.geometry("580x950")
         self.resizable(True, True)
 
         self.esp32_ip = "192.168.1.13"
@@ -836,10 +836,22 @@ class CYDMonitorApp(ctk.CTk):
                     if ser.in_waiting:
                         try:
                             resp_line = ser.read(ser.in_waiting).decode('utf-8', errors='ignore')
-                            if "MEDIA_CMD:" in resp_line:
-                                for l in resp_line.splitlines():
-                                    if "MEDIA_CMD:" in l:
-                                        handle_media_action(l.split("MEDIA_CMD:")[1].strip())
+                            for l in resp_line.splitlines():
+                                l = l.strip()
+                                if "MEDIA_CMD:" in l:
+                                    handle_media_action(l.split("MEDIA_CMD:")[1].strip())
+                                elif l.startswith("STATE:"):
+                                    try:
+                                        st_data = json.loads(l[6:])
+                                        cyd_page = st_data.get("page", -1)
+                                        cyd_theme = st_data.get("theme", "")
+                                        if cyd_page >= 0:
+                                            self.after(0, lambda p=cyd_page: self.highlight_active_page(p))
+                                        if cyd_theme:
+                                            self.after(0, lambda t=cyd_theme: self.highlight_active_theme(t))
+                                        self.after(0, lambda d=st_data: self.update_settings_gui(d))
+                                    except Exception:
+                                        pass
                         except Exception:
                             pass
                 except Exception:
@@ -853,7 +865,7 @@ class CYDMonitorApp(ctk.CTk):
                 if not target_ip:
                     continue
                 try:
-                    resp = http_session.post(f"http://{target_ip}/api/pc", json=payload, timeout=0.4)
+                    resp = http_stream_session.post(f"http://{target_ip}/api/pc", json=payload, timeout=0.4)
                     if resp.ok:
                         connected_wifi = True
                         active_wifi_ip = target_ip
@@ -861,6 +873,16 @@ class CYDMonitorApp(ctk.CTk):
                             self.cached_ip = target_ip
                         try:
                             res_data = resp.json()
+                            # Sync page/theme/city/currencies from CYD response
+                            cyd_page = res_data.get("page", -1)
+                            cyd_theme = res_data.get("theme", "")
+                            if cyd_page >= 0:
+                                self.after(0, lambda p=cyd_page: self.highlight_active_page(p))
+                            if cyd_theme:
+                                self.after(0, lambda t=cyd_theme: self.highlight_active_theme(t))
+                            # Sync settings GUI (city/currencies)
+                            self.after(0, lambda d=res_data: self.update_settings_gui(d))
+                            # Handle media remote action
                             media_act = res_data.get("mediaAction", "")
                             if media_act:
                                 handle_media_action(media_act)

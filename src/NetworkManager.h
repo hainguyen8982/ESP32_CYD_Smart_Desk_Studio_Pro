@@ -71,7 +71,8 @@ public:
 
     void fetchWeather();
     void fetchGoldAndExchange();
-    void triggerAsyncExchangeRefresh() { lastGoldFetch = 0; }
+    void fetchExchangeOnly();
+    void triggerAsyncExchangeRefresh() { exchangeRefreshPending = true; }
     void setCity(const char* newCity);
     
     const WeatherData& getWeather() const { return weather; }
@@ -99,6 +100,7 @@ private:
     WiFiUDP udp;
     unsigned long lastWeatherFetch;
     unsigned long lastGoldFetch;
+    bool exchangeRefreshPending;
     int remotePage;
     char lastMediaAction[32];
 
