@@ -247,16 +247,18 @@ def _send_control_cmd(cmd_json, success_lbl=None, success_msg="", err_msg=""):
     if ip:
         def _http_worker():
             try:
+                resp = None
                 if "page" in cmd_json:
                     resp = requests.get(f"http://{ip}/api/page?id={cmd_json['page']}", timeout=1.5)
                 elif "preset" in cmd_json:
                     resp = requests.get(f"http://{ip}/api/theme?preset={cmd_json['preset']}", timeout=1.5)
                 elif "city" in cmd_json:
-                    resp = requests.post(f"http://{ip}/api/weather/city", json={"city": cmd_json["city"]}, timeout=1.5)
+                    resp = requests.get(f"http://{ip}/api/weather/city?name={cmd_json['city']}", timeout=1.5)
                 elif "cur1" in cmd_json or "cur2" in cmd_json:
                     resp = requests.get(f"http://{ip}/api/exchange?cur1={cmd_json.get('cur1','')}&cur2={cmd_json.get('cur2','')}", timeout=1.5)
-                else:
-                    resp = None
+
+                if not (resp and resp.ok):
+                    resp = requests.post(f"http://{ip}/api/pc", json=cmd_json, timeout=1.5)
 
                 if resp and resp.ok:
                     if success_lbl and success_msg:
@@ -265,6 +267,14 @@ def _send_control_cmd(cmd_json, success_lbl=None, success_msg="", err_msg=""):
                     if success_lbl and err_msg:
                         success_lbl.configure(text=err_msg, text_color="#f85149")
             except Exception:
+                try:
+                    resp = requests.post(f"http://{ip}/api/pc", json=cmd_json, timeout=1.5)
+                    if resp and resp.ok:
+                        if success_lbl and success_msg:
+                            success_lbl.configure(text=success_msg, text_color="#2ea043")
+                        return
+                except Exception:
+                    pass
                 if success_lbl and err_msg:
                     success_lbl.configure(text=err_msg, text_color="#f85149")
 
@@ -404,7 +414,7 @@ class CYDMonitorApp(ctk.CTk):
         app_instance = self
 
         self.title("Smart Desk Studio")
-        self.geometry("580x700")
+        self.geometry("580x820")
         self.resizable(True, True)
 
         self.esp32_ip = "192.168.1.13"
@@ -834,8 +844,10 @@ class CYDMonitorApp(ctk.CTk):
                 try:
                     ports = list(serial.tools.list_ports.comports())
                     for p in ports:
-                        desc = str(p.description).upper()
-                        if p.vid is not None and ("CH340" in desc or "CP210" in desc or "USB" in desc or "UART" in desc or "COM4" in str(p.device).upper()):
+                        p_dev = str(p.device).upper()
+                        p_desc = str(p.description).upper()
+                        # Connect to any COM port on Windows (COM2..COM99) or matching USB serial chips
+                        if ("COM" in p_dev and p_dev != "COM1") or "CH340" in p_desc or "CP210" in p_desc or "USB" in p_desc or "UART" in p_desc or "SERIAL" in p_desc:
                             try:
                                 s = serial.Serial()
                                 s.port = p.device
@@ -848,7 +860,7 @@ class CYDMonitorApp(ctk.CTk):
                                 global active_serial_conn
                                 active_serial_conn = ser
                                 ser_port = p.device
-                                print(f"[USB Serial]: Connected on {p.device}")
+                                print(f"[USB Serial]: Connected successfully on {p.device}")
                                 break
                             except Exception:
                                 pass
