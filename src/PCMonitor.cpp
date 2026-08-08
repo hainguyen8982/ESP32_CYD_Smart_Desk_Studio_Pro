@@ -1,6 +1,8 @@
 #include "PCMonitor.h"
 #include "DisplayManager.h"
+#include "NetworkManager.h"
 #include "Theme.h"
+#include <Preferences.h>
 
 PCMonitor pcMonitor;
 
@@ -81,6 +83,35 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
 
     if (!doc["mediaTitle"].isNull()) {
         display.setMediaInfo(doc["mediaTitle"].as<const char*>(), doc["mediaArtist"] | "");
+    }
+
+    if (!doc["cur1"].isNull() || !doc["cur2"].isNull()) {
+        ExchangeData& ex = network.getExchangeMutable();
+        bool changed = false;
+        if (!doc["cur1"].isNull()) {
+            const char* c1 = doc["cur1"].as<const char*>();
+            if (c1 && strcmp(ex.cur1Code, c1) != 0) {
+                strncpy(ex.cur1Code, c1, 7);
+                ex.cur1Code[7] = '\0';
+                changed = true;
+            }
+        }
+        if (!doc["cur2"].isNull()) {
+            const char* c2 = doc["cur2"].as<const char*>();
+            if (c2 && strcmp(ex.cur2Code, c2) != 0) {
+                strncpy(ex.cur2Code, c2, 7);
+                ex.cur2Code[7] = '\0';
+                changed = true;
+            }
+        }
+        if (changed) {
+            Preferences prefs;
+            prefs.begin("exchange", false);
+            prefs.putString("cur1", ex.cur1Code);
+            prefs.putString("cur2", ex.cur2Code);
+            prefs.end();
+            network.fetchGoldAndExchange();
+        }
     }
 
     // Shift history for line charts

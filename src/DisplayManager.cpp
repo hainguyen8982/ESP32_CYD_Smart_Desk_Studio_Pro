@@ -1918,8 +1918,24 @@ void DisplayManager::renderDetailModal() {
         }
     }
 
-    // Vertical date gridlines & Date X-axis labels
-    const char* dateLabels[7] = { "28/07", "29/07", "30/07", "31/07", "01/08", "02/08", "03/08" };
+    // Dynamic Vertical date gridlines & Date X-axis labels (T-6 to Today)
+    char dateLabelsBuf[7][8];
+    time_t nowSec = time(NULL);
+    struct tm timeinfo;
+    if (nowSec > 1600000000 && localtime_r(&nowSec, &timeinfo)) {
+        for (int i = 0; i < 7; i++) {
+            time_t pastDay = nowSec - (6 - i) * 86400;
+            struct tm pastTm;
+            localtime_r(&pastDay, &pastTm);
+            snprintf(dateLabelsBuf[i], sizeof(dateLabelsBuf[i]), "%02d/%02d", pastTm.tm_mday, pastTm.tm_mon + 1);
+        }
+    } else {
+        const char* defaultLabels[7] = { "02/08", "03/08", "04/08", "05/08", "06/08", "07/08", "08/08" };
+        for (int i = 0; i < 7; i++) {
+            strncpy(dateLabelsBuf[i], defaultLabels[i], 8);
+        }
+    }
+
     float stepX = (float)(cw - 28) / 6.0f;
 
     for (int i = 0; i < 7; i++) {
@@ -1927,7 +1943,7 @@ void DisplayManager::renderDetailModal() {
         spr.drawFastVLine(gx, cy + 5, ch - 22, C_TRACE);
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(C_DIM, C_CARD);
-        spr.drawString(dateLabels[i], gx, cy + ch - 3, 1);
+        spr.drawString(dateLabelsBuf[i], gx, cy + ch - 3, 1);
     }
 
     // High-Res Trend Curve & Price Value Badges

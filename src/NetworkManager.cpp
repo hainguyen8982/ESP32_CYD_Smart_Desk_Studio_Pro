@@ -501,33 +501,69 @@ void NetworkManager::setupWebRoutes() {
         sendCORSResponse(request, 200, res);
     });
 
+    // Exchange Selection API - GET /api/exchange?cur1=USD&cur2=EUR
+    server.on("/api/exchange", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        ExchangeData& ex = getExchangeMutable();
+        bool changed = false;
+        if (request->hasParam("cur1")) {
+            strncpy(ex.cur1Code, request->getParam("cur1")->value().c_str(), 7);
+            ex.cur1Code[7] = '\0';
+            changed = true;
+        }
+        if (request->hasParam("cur2")) {
+            strncpy(ex.cur2Code, request->getParam("cur2")->value().c_str(), 7);
+            ex.cur2Code[7] = '\0';
+            changed = true;
+        }
+        if (changed) {
+            Preferences prefs;
+            prefs.begin("exchange", false);
+            prefs.putString("cur1", ex.cur1Code);
+            prefs.putString("cur2", ex.cur2Code);
+            prefs.end();
+            fetchGoldAndExchange();
+        }
+        char res[128];
+        snprintf(res, sizeof(res), "{\"status\":\"ok\",\"cur1\":\"%s\",\"cur2\":\"%s\"}", ex.cur1Code, ex.cur2Code);
+        sendCORSResponse(request, 200, res);
+    });
+
     // Exchange Selection API - POST { "cur1": "USD", "cur2": "EUR" }
     server.on("/api/exchange", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+        [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            char* buf = (char*)malloc(len + 1);
+            if (!buf) {
+                sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
+                return;
+            }
+            memcpy(buf, data, len);
+            buf[len] = '\0';
+
             JsonDocument doc;
-            if (!deserializeJson(doc, data, len)) {
-                ExchangeData& ex = network.getExchangeMutable();
+            DeserializationError err = deserializeJson(doc, buf);
+            free(buf);
+
+            if (!err) {
+                ExchangeData& ex = getExchangeMutable();
+                bool changed = false;
                 if (!doc["cur1"].isNull()) {
-                    strncpy(ex.cur1Code, doc["cur1"], 7);
+                    strncpy(ex.cur1Code, doc["cur1"].as<const char*>(), 7);
+                    ex.cur1Code[7] = '\0';
+                    changed = true;
                 }
                 if (!doc["cur2"].isNull()) {
-                    strncpy(ex.cur2Code, doc["cur2"], 7);
+                    strncpy(ex.cur2Code, doc["cur2"].as<const char*>(), 7);
+                    ex.cur2Code[7] = '\0';
+                    changed = true;
                 }
-                // Save selected currencies permanently to NVS
-                Preferences prefs;
-                prefs.begin("exchange", false);
-                prefs.putString("cur1", ex.cur1Code);
-                prefs.putString("cur2", ex.cur2Code);
-                prefs.end();
-
-                // Recalculate exchange rates immediately for selected currencies
-                float baseVnd = ex.cur1Rate > 0 ? 26180.0f : 26180.0f;
-                ex.cur1Rate = calcCurrencyRate(ex.cur1Code, baseVnd);
-                ex.cur2Rate = calcCurrencyRate(ex.cur2Code, baseVnd);
-
-                // Generate unique 7-point trend sparklines for each selected currency
-                populateCurrencyHistory7(ex.cur1Code, ex.cur1Rate, ex.cur1History7);
-                populateCurrencyHistory7(ex.cur2Code, ex.cur2Rate, ex.cur2History7);
+                if (changed) {
+                    Preferences prefs;
+                    prefs.begin("exchange", false);
+                    prefs.putString("cur1", ex.cur1Code);
+                    prefs.putString("cur2", ex.cur2Code);
+                    prefs.end();
+                    fetchGoldAndExchange();
+                }
 
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
                 return;

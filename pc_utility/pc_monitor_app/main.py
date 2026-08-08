@@ -632,12 +632,30 @@ class CYDMonitorApp(ctk.CTk):
         c1 = self.cur1_combo.get()
         c2 = self.cur2_combo.get()
         ip = self.ip_entry.get().strip()
-        try:
-            resp = requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
-            if resp.ok:
-                self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
-        except Exception:
-            self.status_lbl.configure(text="❌ Currency error", text_color="#f85149")
+
+        # 1. Send via USB Serial if active
+        global active_serial_conn
+        if active_serial_conn and active_serial_conn.is_open:
+            try:
+                active_serial_conn.write((json.dumps({"cur1": c1, "cur2": c2}) + "\n").encode('utf-8'))
+            except Exception:
+                pass
+
+        # 2. Send via WiFi HTTP POST / GET fallback
+        if ip:
+            try:
+                resp = requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
+                if resp.ok:
+                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
+                else:
+                    requests.get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}", timeout=2)
+                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
+            except Exception:
+                try:
+                    requests.get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}", timeout=2)
+                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
+                except Exception:
+                    self.status_lbl.configure(text="❌ Currency error", text_color="#f85149")
 
     def apply_theme(self, theme_key):
         self.highlight_active_theme(theme_key)
@@ -664,7 +682,8 @@ class CYDMonitorApp(ctk.CTk):
             c1 = self.cur1_combo.get()
             c2 = self.cur2_combo.get()
             ip = self.ip_entry.get().strip()
-            requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=1)
+            if ip:
+                requests.get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}", timeout=1)
         except Exception:
             pass
 
