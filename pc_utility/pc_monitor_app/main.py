@@ -197,6 +197,31 @@ THEMES = [
     ("Retro Green", "retro_green")
 ]
 
+# Global reusable HTTP Session with connection pooling & fast timeouts
+http_session = requests.Session()
+
+def _async_http_post(url, json_data, success_lbl_obj=None, success_msg="", err_msg=""):
+    def _worker():
+        try:
+            resp = http_session.post(url, json=json_data, timeout=1.5)
+            if resp.ok and success_lbl_obj and success_msg:
+                success_lbl_obj.configure(text=success_msg, text_color="#2ea043")
+        except Exception:
+            if success_lbl_obj and err_msg:
+                success_lbl_obj.configure(text=err_msg, text_color="#f85149")
+    threading.Thread(target=_worker, daemon=True).start()
+
+def _async_http_get(url, success_lbl_obj=None, success_msg="", err_msg=""):
+    def _worker():
+        try:
+            resp = http_session.get(url, timeout=1.5)
+            if resp.ok and success_lbl_obj and success_msg:
+                success_lbl_obj.configure(text=success_msg, text_color="#2ea043")
+        except Exception:
+            if success_lbl_obj and err_msg:
+                success_lbl_obj.configure(text=err_msg, text_color="#f85149")
+    threading.Thread(target=_worker, daemon=True).start()
+
 class GPUMonitor:
     """Utility class to read real GPU and VRAM metrics on Windows using NVML or native PDH counters."""
     def __init__(self):
@@ -621,12 +646,9 @@ class CYDMonitorApp(ctk.CTk):
                 break
 
         ip = self.ip_entry.get().strip()
-        try:
-            resp = requests.post(f"http://{ip}/api/weather/city", json={"city": eng_city}, timeout=2)
-            if resp.ok:
-                self.status_lbl.configure(text=f"✅ City: {sel}", text_color="#2ea043")
-        except Exception as e:
-            self.status_lbl.configure(text="❌ Error setting city", text_color="#f85149")
+        if ip:
+            _async_http_post(f"http://{ip}/api/weather/city", {"city": eng_city},
+                             self.status_lbl, f"✅ City: {sel}", "❌ Error setting city")
 
     def apply_currencies(self):
         c1 = self.cur1_combo.get()
@@ -638,24 +660,14 @@ class CYDMonitorApp(ctk.CTk):
         if active_serial_conn and active_serial_conn.is_open:
             try:
                 active_serial_conn.write((json.dumps({"cur1": c1, "cur2": c2}) + "\n").encode('utf-8'))
+                self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
             except Exception:
                 pass
 
-        # 2. Send via WiFi HTTP POST / GET fallback
+        # 2. Non-blocking Async HTTP push
         if ip:
-            try:
-                resp = requests.post(f"http://{ip}/api/exchange", json={"cur1": c1, "cur2": c2}, timeout=2)
-                if resp.ok:
-                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
-                else:
-                    requests.get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}", timeout=2)
-                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
-            except Exception:
-                try:
-                    requests.get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}", timeout=2)
-                    self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
-                except Exception:
-                    self.status_lbl.configure(text="❌ Currency error", text_color="#f85149")
+            _async_http_get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}",
+                            self.status_lbl, f"✅ Currencies: {c1}/{c2}", "❌ Currency error")
 
     def apply_theme(self, theme_key):
         self.highlight_active_theme(theme_key)
@@ -670,21 +682,10 @@ class CYDMonitorApp(ctk.CTk):
             except Exception:
                 pass
 
-        # 2. Send via WiFi HTTP POST / GET fallback
+        # 2. Non-blocking Async HTTP push
         if ip:
-            try:
-                resp = requests.post(f"http://{ip}/api/theme", json={"preset": theme_key}, timeout=2)
-                if resp.ok:
-                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
-                else:
-                    requests.get(f"http://{ip}/api/theme?preset={theme_key}", timeout=2)
-                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
-            except Exception:
-                try:
-                    requests.get(f"http://{ip}/api/theme?preset={theme_key}", timeout=2)
-                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
-                except Exception:
-                    self.status_lbl.configure(text="❌ Theme error", text_color="#f85149")
+            _async_http_get(f"http://{ip}/api/theme?preset={theme_key}",
+                            self.status_lbl, f"✅ Theme: {theme_key}", "❌ Theme error")
 
     def switch_page(self, page_id):
         self.highlight_active_page(page_id)
@@ -699,14 +700,10 @@ class CYDMonitorApp(ctk.CTk):
             except Exception:
                 pass
 
-        # 2. Send via WiFi HTTP
+        # 2. Non-blocking Async HTTP push
         if ip:
-            try:
-                resp = requests.get(f"http://{ip}/api/page?id={page_id}", timeout=2)
-                if resp.ok:
-                    self.status_lbl.configure(text=f"✅ Page: {page_id}", text_color="#2ea043")
-            except Exception:
-                pass
+            _async_http_get(f"http://{ip}/api/page?id={page_id}",
+                            self.status_lbl, f"✅ Page: {page_id}", "❌ Page error")
 
     def stream_loop(self):
         # Sync current selected currencies to ESP32 on connect
@@ -875,7 +872,7 @@ class CYDMonitorApp(ctk.CTk):
                 if not target_ip:
                     continue
                 try:
-                    resp = requests.post(f"http://{target_ip}/api/pc", json=payload, timeout=0.4)
+                    resp = http_session.post(f"http://{target_ip}/api/pc", json=payload, timeout=0.4)
                     if resp.ok:
                         connected_wifi = True
                         active_wifi_ip = target_ip
