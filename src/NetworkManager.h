@@ -71,6 +71,7 @@ public:
 
     void fetchWeather();
     void fetchGoldAndExchange();
+    void triggerAsyncExchangeRefresh() { lastGoldFetch = 0; }
     void setCity(const char* newCity);
     
     const WeatherData& getWeather() const { return weather; }

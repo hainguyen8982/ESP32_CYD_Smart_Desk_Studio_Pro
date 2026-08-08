@@ -198,29 +198,65 @@ THEMES = [
 ]
 
 # Global reusable HTTP Session with connection pooling & fast timeouts
-http_session = requests.Session()
+http_stream_session = requests.Session()
+app_instance = None
 
-def _async_http_post(url, json_data, success_lbl_obj=None, success_msg="", err_msg=""):
-    def _worker():
+def _send_control_cmd(cmd_json, success_lbl=None, success_msg="", err_msg=""):
+    # 1. Send via USB Serial FIRST if connected & open
+    global active_serial_conn
+    sent_usb = False
+    if active_serial_conn and active_serial_conn.is_open:
         try:
-            resp = http_session.post(url, json=json_data, timeout=1.5)
-            if resp.ok and success_lbl_obj and success_msg:
-                success_lbl_obj.configure(text=success_msg, text_color="#2ea043")
-        except Exception:
-            if success_lbl_obj and err_msg:
-                success_lbl_obj.configure(text=err_msg, text_color="#f85149")
-    threading.Thread(target=_worker, daemon=True).start()
+            active_serial_conn.write((json.dumps(cmd_json) + "\n").encode('utf-8'))
+            sent_usb = True
+            if success_lbl and success_msg:
+                success_lbl.configure(text=success_msg, text_color="#2ea043")
+        except Exception as e:
+            sent_usb = False
 
-def _async_http_get(url, success_lbl_obj=None, success_msg="", err_msg=""):
-    def _worker():
+    # 2. If USB Serial succeeded, return immediately! (Do NOT fire HTTP to avoid false error overwrites)
+    if sent_usb:
+        return
+
+    # 3. Otherwise, if IP is configured, send via non-blocking standalone HTTP in background thread
+    global app_instance
+    ip = ""
+    if app_instance:
         try:
-            resp = http_session.get(url, timeout=1.5)
-            if resp.ok and success_lbl_obj and success_msg:
-                success_lbl_obj.configure(text=success_msg, text_color="#2ea043")
+            ip = app_instance.ip_entry.get().strip()
         except Exception:
-            if success_lbl_obj and err_msg:
-                success_lbl_obj.configure(text=err_msg, text_color="#f85149")
-    threading.Thread(target=_worker, daemon=True).start()
+            pass
+        if not ip:
+            ip = app_instance.cached_ip
+
+    if ip:
+        def _http_worker():
+            try:
+                if "page" in cmd_json:
+                    resp = requests.get(f"http://{ip}/api/page?id={cmd_json['page']}", timeout=1.5)
+                elif "preset" in cmd_json:
+                    resp = requests.get(f"http://{ip}/api/theme?preset={cmd_json['preset']}", timeout=1.5)
+                elif "city" in cmd_json:
+                    resp = requests.post(f"http://{ip}/api/weather/city", json={"city": cmd_json["city"]}, timeout=1.5)
+                elif "cur1" in cmd_json or "cur2" in cmd_json:
+                    resp = requests.get(f"http://{ip}/api/exchange?cur1={cmd_json.get('cur1','')}&cur2={cmd_json.get('cur2','')}", timeout=1.5)
+                else:
+                    resp = None
+
+                if resp and resp.ok:
+                    if success_lbl and success_msg:
+                        success_lbl.configure(text=success_msg, text_color="#2ea043")
+                else:
+                    if success_lbl and err_msg:
+                        success_lbl.configure(text=err_msg, text_color="#f85149")
+            except Exception:
+                if success_lbl and err_msg:
+                    success_lbl.configure(text=err_msg, text_color="#f85149")
+
+        threading.Thread(target=_http_worker, daemon=True).start()
+    else:
+        if success_lbl and err_msg:
+            success_lbl.configure(text="❌ Not connected", text_color="#f85149")
 
 class GPUMonitor:
     """Utility class to read real GPU and VRAM metrics on Windows using NVML or native PDH counters."""
@@ -644,77 +680,20 @@ class CYDMonitorApp(ctk.CTk):
             if vn == sel:
                 eng_city = eng
                 break
-
-        ip = self.ip_entry.get().strip()
-
-        # 1. Send via USB Serial if connected
-        global active_serial_conn
-        if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write((json.dumps({"city": eng_city}) + "\n").encode('utf-8'))
-                self.status_lbl.configure(text=f"✅ City: {sel}", text_color="#2ea043")
-            except Exception:
-                pass
-
-        # 2. Non-blocking Async HTTP push
-        if ip:
-            _async_http_post(f"http://{ip}/api/weather/city", {"city": eng_city},
-                             self.status_lbl, f"✅ City: {sel}", "❌ Error setting city")
+        _send_control_cmd({"city": eng_city}, self.status_lbl, f"✅ City: {sel}", "❌ Error setting city")
 
     def apply_currencies(self):
         c1 = self.cur1_combo.get()
         c2 = self.cur2_combo.get()
-        ip = self.ip_entry.get().strip()
-
-        # 1. Send via USB Serial if active
-        global active_serial_conn
-        if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write((json.dumps({"cur1": c1, "cur2": c2}) + "\n").encode('utf-8'))
-                self.status_lbl.configure(text=f"✅ Currencies: {c1}/{c2}", text_color="#2ea043")
-            except Exception:
-                pass
-
-        # 2. Non-blocking Async HTTP push
-        if ip:
-            _async_http_get(f"http://{ip}/api/exchange?cur1={c1}&cur2={c2}",
-                            self.status_lbl, f"✅ Currencies: {c1}/{c2}", "❌ Currency error")
+        _send_control_cmd({"cur1": c1, "cur2": c2}, self.status_lbl, f"✅ Currencies: {c1}/{c2}", "❌ Currency error")
 
     def apply_theme(self, theme_key):
         self.highlight_active_theme(theme_key)
-        ip = self.ip_entry.get().strip()
-
-        # 1. Send via USB Serial if connected
-        global active_serial_conn
-        if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write((json.dumps({"preset": theme_key}) + "\n").encode('utf-8'))
-                self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
-            except Exception:
-                pass
-
-        # 2. Non-blocking Async HTTP push
-        if ip:
-            _async_http_get(f"http://{ip}/api/theme?preset={theme_key}",
-                            self.status_lbl, f"✅ Theme: {theme_key}", "❌ Theme error")
+        _send_control_cmd({"preset": theme_key}, self.status_lbl, f"✅ Theme: {theme_key}", "❌ Theme error")
 
     def switch_page(self, page_id):
         self.highlight_active_page(page_id)
-        ip = self.ip_entry.get().strip()
-
-        # 1. Send via USB Serial if connected
-        global active_serial_conn
-        if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write((json.dumps({"page": page_id}) + "\n").encode('utf-8'))
-                self.status_lbl.configure(text=f"✅ Page: {page_id}", text_color="#2ea043")
-            except Exception:
-                pass
-
-        # 2. Non-blocking Async HTTP push
-        if ip:
-            _async_http_get(f"http://{ip}/api/page?id={page_id}",
-                            self.status_lbl, f"✅ Page: {page_id}", "❌ Page error")
+        _send_control_cmd({"page": page_id}, self.status_lbl, f"✅ Page: {page_id}", "❌ Page error")
 
     def stream_loop(self):
         # Sync current selected currencies to ESP32 on connect
@@ -861,15 +840,6 @@ class CYDMonitorApp(ctk.CTk):
                                 for l in resp_line.splitlines():
                                     if "MEDIA_CMD:" in l:
                                         handle_media_action(l.split("MEDIA_CMD:")[1].strip())
-                            if "{" in resp_line:
-                                j_str = resp_line[resp_line.find("{"):resp_line.rfind("}")+1]
-                                st_data = json.loads(j_str)
-                                if "page" in st_data:
-                                    self.after(0, lambda v=st_data["page"]: self.highlight_active_page(v))
-                                if "theme" in st_data:
-                                    self.after(0, lambda v=st_data["theme"]: self.highlight_active_theme(v))
-                                if "mediaAction" in st_data and st_data["mediaAction"]:
-                                    handle_media_action(st_data["mediaAction"])
                         except Exception:
                             pass
                 except Exception:
@@ -891,14 +861,9 @@ class CYDMonitorApp(ctk.CTk):
                             self.cached_ip = target_ip
                         try:
                             res_data = resp.json()
-                            page_val = res_data.get("page", -1)
-                            theme_val = res_data.get("theme", "")
                             media_act = res_data.get("mediaAction", "")
-                            if page_val >= 0:
-                                self.after(0, lambda v=page_val: self.highlight_active_page(v))
-                            if theme_val:
-                                self.after(0, lambda v=theme_val: self.highlight_active_theme(v))
-                            self.after(0, lambda d=res_data: self.update_settings_gui(d))
+                            if media_act:
+                                handle_media_action(media_act)
                         except Exception:
                             pass
                         break # Connected successfully!

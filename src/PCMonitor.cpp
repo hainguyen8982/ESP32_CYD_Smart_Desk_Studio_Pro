@@ -137,7 +137,7 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
             prefs.putString("cur1", ex.cur1Code);
             prefs.putString("cur2", ex.cur2Code);
             prefs.end();
-            network.fetchGoldAndExchange();
+            network.triggerAsyncExchangeRefresh();
         }
     }
 

@@ -391,8 +391,10 @@ void NetworkManager::setupWebRoutes() {
 
     // Weather City API (GET / POST)
     server.on("/api/weather/city", HTTP_GET, [this](AsyncWebServerRequest *request) {
-        if (request->hasParam("name")) {
-            String c = request->getParam("name")->value();
+        String c = "";
+        if (request->hasParam("city")) c = request->getParam("city")->value();
+        else if (request->hasParam("name")) c = request->getParam("name")->value();
+        if (c.length() > 0) {
             setCity(c.c_str());
             sendCORSResponse(request, 200, "{\"status\":\"ok\",\"city\":\"" + c + "\"}");
             return;
@@ -433,6 +435,7 @@ void NetworkManager::setupWebRoutes() {
             else if (p == "cherry") applyCherryTheme();
             else if (p == "light_day") applyLightDayTheme();
             else if (p == "retro_green") applyRetroGreenTheme();
+            saveTheme();
             sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
             return;
         }
@@ -552,7 +555,10 @@ void NetworkManager::setupWebRoutes() {
             prefs.putString("cur1", ex.cur1Code);
             prefs.putString("cur2", ex.cur2Code);
             prefs.end();
-            fetchGoldAndExchange();
+            float vndUsd = 26180.0f;
+            ex.cur1Rate = calcCurrencyRate(ex.cur1Code, vndUsd);
+            ex.cur2Rate = calcCurrencyRate(ex.cur2Code, vndUsd);
+            triggerAsyncExchangeRefresh();
         }
         char res[128];
         snprintf(res, sizeof(res), "{\"status\":\"ok\",\"cur1\":\"%s\",\"cur2\":\"%s\"}", ex.cur1Code, ex.cur2Code);
@@ -593,7 +599,10 @@ void NetworkManager::setupWebRoutes() {
                     prefs.putString("cur1", ex.cur1Code);
                     prefs.putString("cur2", ex.cur2Code);
                     prefs.end();
-                    fetchGoldAndExchange();
+                    float vndUsd = 26180.0f;
+                    ex.cur1Rate = calcCurrencyRate(ex.cur1Code, vndUsd);
+                    ex.cur2Rate = calcCurrencyRate(ex.cur2Code, vndUsd);
+                    triggerAsyncExchangeRefresh();
                 }
 
                 sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
