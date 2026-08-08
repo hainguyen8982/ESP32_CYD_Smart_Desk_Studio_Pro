@@ -52,6 +52,21 @@ def start_udp_media_listener():
                         if "MEDIA_CMD:" in msg:
                             act = msg.split("MEDIA_CMD:")[1].strip()
                             handle_media_action(act)
+                        elif "STATE:" in msg or msg.startswith("{"):
+                            try:
+                                json_str = msg.split("STATE:")[1].strip() if "STATE:" in msg else msg
+                                st_data = json.loads(json_str)
+                                global app_instance
+                                if app_instance:
+                                    cyd_page = st_data.get("page", -1)
+                                    cyd_theme = st_data.get("theme", "")
+                                    if cyd_page >= 0:
+                                        app_instance.after(0, lambda p=cyd_page: app_instance.highlight_active_page(p))
+                                    if cyd_theme:
+                                        app_instance.after(0, lambda t=cyd_theme: app_instance.highlight_active_theme(t))
+                                    app_instance.after(0, lambda d=st_data: app_instance.update_settings_gui(d))
+                            except Exception:
+                                pass
                 except socket.timeout:
                     continue
                 except Exception:
@@ -388,8 +403,8 @@ class CYDMonitorApp(ctk.CTk):
         global app_instance
         app_instance = self
 
-        self.title("ESP32 CYD Desk Dashboard Studio")
-        self.geometry("580x950")
+        self.title("Smart Desk Studio")
+        self.geometry("580x700")
         self.resizable(True, True)
 
         self.esp32_ip = "192.168.1.13"
@@ -397,6 +412,11 @@ class CYDMonitorApp(ctk.CTk):
         self.is_streaming = True
         self.tray_icon = None
         self.active_cyd_page = 0
+
+        # Last synced CYD state to prevent overwriting user's active dropdown selections
+        self.last_cyd_city = None
+        self.last_cyd_cur1 = None
+        self.last_cyd_cur2 = None
 
         # Network speed & GPU tracking
         self.last_net = psutil.net_io_counters()
@@ -463,7 +483,7 @@ class CYDMonitorApp(ctk.CTk):
         hdr_frame.pack(fill="x", padx=10, pady=(10, 5))
 
         title_lbl = ctk.CTkLabel(
-            hdr_frame, text="💻 ESP32 CYD Smart Dashboard Studio",
+            hdr_frame, text="🖥️ Smart Desk Dashboard Studio",
             font=ctk.CTkFont(size=18, weight="bold"), text_color="#58a6ff"
         )
         title_lbl.pack(pady=10)
@@ -472,7 +492,7 @@ class CYDMonitorApp(ctk.CTk):
         conn_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
         conn_frame.pack(fill="x", padx=10, pady=4)
 
-        ip_lbl = ctk.CTkLabel(conn_frame, text="ESP32 IP Address:", font=ctk.CTkFont(size=13))
+        ip_lbl = ctk.CTkLabel(conn_frame, text="Dashboard IP Address:", font=ctk.CTkFont(size=13))
         ip_lbl.pack(side="left", padx=12, pady=10)
 
         self.ip_entry = ctk.CTkEntry(conn_frame, width=140)
@@ -480,7 +500,7 @@ class CYDMonitorApp(ctk.CTk):
         self.ip_entry.pack(side="left", padx=5, pady=10)
 
         self.status_lbl = ctk.CTkLabel(
-            conn_frame, text="● Searching for CYD...", font=ctk.CTkFont(size=12, weight="bold"), text_color="#d29922"
+            conn_frame, text="● Searching for Dashboard...", font=ctk.CTkFont(size=12, weight="bold"), text_color="#d29922"
         )
         self.status_lbl.pack(side="right", padx=15, pady=10)
 
@@ -664,14 +684,22 @@ class CYDMonitorApp(ctk.CTk):
             return
         if "city" in st_data and st_data["city"]:
             c_val = str(st_data["city"]).strip()
-            for eng, vn in VN_CITIES:
-                if eng.lower() == c_val.lower():
-                    self.city_combo.set(vn)
-                    break
+            if c_val != self.last_cyd_city:
+                self.last_cyd_city = c_val
+                for eng, vn in VN_CITIES:
+                    if eng.lower() == c_val.lower():
+                        self.city_combo.set(vn)
+                        break
         if "cur1" in st_data and st_data["cur1"]:
-            self.cur1_combo.set(str(st_data["cur1"]).upper())
+            c1 = str(st_data["cur1"]).upper()
+            if c1 != self.last_cyd_cur1:
+                self.last_cyd_cur1 = c1
+                self.cur1_combo.set(c1)
         if "cur2" in st_data and st_data["cur2"]:
-            self.cur2_combo.set(str(st_data["cur2"]).upper())
+            c2 = str(st_data["cur2"]).upper()
+            if c2 != self.last_cyd_cur2:
+                self.last_cyd_cur2 = c2
+                self.cur2_combo.set(c2)
 
     def apply_city(self):
         sel = self.city_combo.get()
@@ -927,7 +955,7 @@ class CYDMonitorApp(ctk.CTk):
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Exit", on_exit)
         )
-        self.tray_icon = pystray.Icon("CYDStudio", image, "CYD Dashboard Studio", menu)
+        self.tray_icon = pystray.Icon("SmartDeskStudio", image, "Smart Desk Studio", menu)
         self.tray_icon.run()  # blocks until icon.stop()
 
     def minimize_to_tray(self):

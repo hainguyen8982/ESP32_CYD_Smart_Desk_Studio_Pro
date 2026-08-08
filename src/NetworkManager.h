@@ -73,6 +73,7 @@ public:
     void fetchGoldAndExchange();
     void fetchExchangeOnly();
     void triggerAsyncExchangeRefresh() { exchangeRefreshPending = true; }
+    void broadcastStateInstant();
     void setCity(const char* newCity);
     
     const WeatherData& getWeather() const { return weather; }

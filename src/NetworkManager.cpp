@@ -885,3 +885,20 @@ void NetworkManager::fetchExchangeOnly() {
     }
     http.end();
 }
+
+void NetworkManager::broadcastStateInstant() {
+    char buf[128];
+    snprintf(buf, sizeof(buf), "STATE:{\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}",
+             display.getCurrentPage(),
+             getCurrentThemePresetName(),
+             weather.city,
+             exchange.cur1Code,
+             exchange.cur2Code);
+
+    if (WiFi.status() == WL_CONNECTED) {
+        udp.beginPacket(IPAddress(255, 255, 255, 255), 8080);
+        udp.write((const uint8_t*)buf, strlen(buf));
+        udp.endPacket();
+    }
+    Serial.println(buf);
+}

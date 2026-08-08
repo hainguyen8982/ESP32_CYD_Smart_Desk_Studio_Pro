@@ -60,6 +60,9 @@ void applyLightDayTheme();
 // Set built-in "Retro Green" theme
 void applyRetroGreenTheme();
 
+// Apply theme preset by string name (ocean_dark, cyberpunk, forest, cherry, light_day, retro_green)
+void applyThemeByName(const char* name);
+
 // Cycle to next built-in preset theme
 void nextTheme();
 

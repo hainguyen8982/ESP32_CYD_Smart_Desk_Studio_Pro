@@ -2,6 +2,7 @@
 //  Theme.cpp — Runtime theme implementation
 // ═══════════════════════════════════════════════════════════════════════
 #include "Theme.h"
+#include "NetworkManager.h"
 #include <stdlib.h>
 
 // Global theme instance — default is Ocean Dark
@@ -44,6 +45,7 @@ void saveTheme() {
     prefs.putUChar("idx", currentThemeIdx);
     prefs.end();
     Serial.println("[Theme] Preset index saved to NVS");
+    network.broadcastStateInstant();
 }
 
 void loadTheme() {
@@ -69,6 +71,7 @@ void loadTheme() {
 
 // 🌊 Ocean Dark — pure black + deep dark slate navy card + cyan + orange
 void applyOceanDarkTheme() {
+    currentThemeIdx = 0;
     theme.bg     = hexToRGB565("#000000");  // pure pitch black
     theme.card   = hexToRGB565("#0E1726");  // deep dark slate navy card
     theme.hdr    = hexToRGB565("#000000");  // pitch black header
@@ -86,6 +89,7 @@ void applyOceanDarkTheme() {
 
 // 🟣 Cyberpunk — pure black + magenta + electric blue
 void applyCyberpunkTheme() {
+    currentThemeIdx = 1;
     theme.bg     = hexToRGB565("#000000");
     theme.card   = hexToRGB565("#140026");  // deep dark purple card
     theme.hdr    = hexToRGB565("#000000");
@@ -103,6 +107,7 @@ void applyCyberpunkTheme() {
 
 // 🌲 Forest — dark green + lime + amber
 void applyForestTheme() {
+    currentThemeIdx = 2;
     theme.bg     = hexToRGB565("#000000");
     theme.card   = hexToRGB565("#0B1B0E");  // deep dark emerald card
     theme.hdr    = hexToRGB565("#000000");
@@ -120,6 +125,7 @@ void applyForestTheme() {
 
 // 🔴 Cherry — dark charcoal + crimson + rose
 void applyCherryTheme() {
+    currentThemeIdx = 3;
     theme.bg     = hexToRGB565("#000000");
     theme.card   = hexToRGB565("#1F0010");  // deep dark crimson card
     theme.hdr    = hexToRGB565("#000000");
@@ -137,6 +143,7 @@ void applyCherryTheme() {
 
 // ☀️ Light Day — clean white + blue + orange
 void applyLightDayTheme() {
+    currentThemeIdx = 4;
     theme.bg     = hexToRGB565("#E2E8F0");  // Slate grey background
     theme.card   = hexToRGB565("#FFFFFF");  // Pure white card
     theme.hdr    = hexToRGB565("#CBD5E1");  // Header background
@@ -154,6 +161,7 @@ void applyLightDayTheme() {
 
 // 🎮 Retro Green — black + phosphor green (CRT terminal)
 void applyRetroGreenTheme() {
+    currentThemeIdx = 5;
     theme.bg     = hexToRGB565("#000000");
     theme.card   = hexToRGB565("#001A00");  // deep dark matrix green card
     theme.hdr    = hexToRGB565("#000000");
@@ -168,6 +176,7 @@ void applyRetroGreenTheme() {
     theme.vdim   = hexToRGB565("#003300");
     theme.trace  = hexToRGB565("#003300");
 }
+
 static const char* themePresetNames[] = {
     "ocean_dark", "cyberpunk", "forest", "cherry", "light_day", "retro_green"
 };

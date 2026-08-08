@@ -90,9 +90,14 @@ void DisplayManager::begin() {
     }
 }
 
-void DisplayManager::setCurrentPage(uint8_t p) { if (p < TOTAL_PAGES) currentPage = p; }
-void DisplayManager::nextPage()     { currentPage = (currentPage + 1) % TOTAL_PAGES; }
-void DisplayManager::previousPage() { currentPage = (currentPage + TOTAL_PAGES - 1) % TOTAL_PAGES; }
+void DisplayManager::setCurrentPage(uint8_t p) {
+    if (p < TOTAL_PAGES && currentPage != p) {
+        currentPage = p;
+        network.broadcastStateInstant();
+    }
+}
+void DisplayManager::nextPage()     { currentPage = (currentPage + 1) % TOTAL_PAGES; network.broadcastStateInstant(); }
+void DisplayManager::previousPage() { currentPage = (currentPage + TOTAL_PAGES - 1) % TOTAL_PAGES; network.broadcastStateInstant(); }
 
 void DisplayManager::update() {
     if (millis() - lastRenderTime < 33) return;   // ~30 fps cap
