@@ -660,20 +660,53 @@ class CYDMonitorApp(ctk.CTk):
     def apply_theme(self, theme_key):
         self.highlight_active_theme(theme_key)
         ip = self.ip_entry.get().strip()
-        try:
-            resp = requests.post(f"http://{ip}/api/theme", json={"preset": theme_key}, timeout=2)
-            if resp.ok:
+
+        # 1. Send via USB Serial if connected
+        global active_serial_conn
+        if active_serial_conn and active_serial_conn.is_open:
+            try:
+                active_serial_conn.write((json.dumps({"preset": theme_key}) + "\n").encode('utf-8'))
                 self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
-        except Exception:
-            self.status_lbl.configure(text="❌ Theme error", text_color="#f85149")
+            except Exception:
+                pass
+
+        # 2. Send via WiFi HTTP POST / GET fallback
+        if ip:
+            try:
+                resp = requests.post(f"http://{ip}/api/theme", json={"preset": theme_key}, timeout=2)
+                if resp.ok:
+                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
+                else:
+                    requests.get(f"http://{ip}/api/theme?preset={theme_key}", timeout=2)
+                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
+            except Exception:
+                try:
+                    requests.get(f"http://{ip}/api/theme?preset={theme_key}", timeout=2)
+                    self.status_lbl.configure(text=f"✅ Theme: {theme_key}", text_color="#2ea043")
+                except Exception:
+                    self.status_lbl.configure(text="❌ Theme error", text_color="#f85149")
 
     def switch_page(self, page_id):
         self.highlight_active_page(page_id)
         ip = self.ip_entry.get().strip()
-        try:
-            requests.get(f"http://{ip}/api/page?id={page_id}", timeout=2)
-        except Exception:
-            pass
+
+        # 1. Send via USB Serial if connected
+        global active_serial_conn
+        if active_serial_conn and active_serial_conn.is_open:
+            try:
+                active_serial_conn.write((json.dumps({"page": page_id}) + "\n").encode('utf-8'))
+                self.status_lbl.configure(text=f"✅ Page: {page_id}", text_color="#2ea043")
+            except Exception:
+                pass
+
+        # 2. Send via WiFi HTTP
+        if ip:
+            try:
+                resp = requests.get(f"http://{ip}/api/page?id={page_id}", timeout=2)
+                if resp.ok:
+                    self.status_lbl.configure(text=f"✅ Page: {page_id}", text_color="#2ea043")
+            except Exception:
+                pass
 
     def stream_loop(self):
         # Sync current selected currencies to ESP32 on connect

@@ -402,8 +402,18 @@ void NetworkManager::setupWebRoutes() {
 
     server.on("/api/weather/city", HTTP_POST, [this](AsyncWebServerRequest *request) {}, NULL,
         [this](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            char* buf = (char*)malloc(len + 1);
+            if (!buf) {
+                sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
+                return;
+            }
+            memcpy(buf, data, len);
+            buf[len] = '\0';
+
             JsonDocument doc;
-            DeserializationError err = deserializeJson(doc, data, len);
+            DeserializationError err = deserializeJson(doc, buf);
+            free(buf);
+
             if (!err && !doc["city"].isNull()) {
                 const char* c = doc["city"];
                 setCity(c);
@@ -413,8 +423,20 @@ void NetworkManager::setupWebRoutes() {
             sendCORSResponse(request, 400, "{\"status\":\"invalid request\"}");
         });
 
-    // Theme API - GET current theme JSON
+    // Theme API - GET current theme JSON or switch preset GET /api/theme?preset=ocean_dark
     server.on("/api/theme", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (request->hasParam("preset")) {
+            String p = request->getParam("preset")->value();
+            if (p == "ocean_dark") applyOceanDarkTheme();
+            else if (p == "cyberpunk") applyCyberpunkTheme();
+            else if (p == "forest") applyForestTheme();
+            else if (p == "cherry") applyCherryTheme();
+            else if (p == "light_day") applyLightDayTheme();
+            else if (p == "retro_green") applyRetroGreenTheme();
+            sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
+            return;
+        }
+
         char bg[8], card[8], hdr[8], cyan[8], orange[8], green[8], yellow[8], red[8], purple[8], white[8], dim[8];
         rgb565ToHex(theme.bg, bg);
         rgb565ToHex(theme.card, card);
@@ -451,8 +473,18 @@ void NetworkManager::setupWebRoutes() {
     // Theme API - POST new theme JSON or Preset
     server.on("/api/theme", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+            char* buf = (char*)malloc(len + 1);
+            if (!buf) {
+                sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
+                return;
+            }
+            memcpy(buf, data, len);
+            buf[len] = '\0';
+
             JsonDocument doc;
-            DeserializationError err = deserializeJson(doc, data, len);
+            DeserializationError err = deserializeJson(doc, buf);
+            free(buf);
+
             if (err) {
                 sendCORSResponse(request, 400, "{\"status\":\"invalid json\"}");
                 return;
@@ -479,7 +511,6 @@ void NetworkManager::setupWebRoutes() {
                 if (!doc["white"].isNull())  theme.white  = hexToRGB565(doc["white"]);
                 if (!doc["dim"].isNull())    theme.dim    = hexToRGB565(doc["dim"]);
             }
-
             saveTheme();
             sendCORSResponse(request, 200, "{\"status\":\"ok\"}");
         });
