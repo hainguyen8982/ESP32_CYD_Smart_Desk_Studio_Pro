@@ -85,6 +85,33 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
         display.setMediaInfo(doc["mediaTitle"].as<const char*>(), doc["mediaArtist"] | "");
     }
 
+    if (!doc["page"].isNull()) {
+        uint8_t p = doc["page"].as<uint8_t>();
+        if (p < TOTAL_PAGES) {
+            display.setCurrentPage(p);
+        }
+    }
+
+    if (!doc["preset"].isNull()) {
+        const char* p = doc["preset"].as<const char*>();
+        if (p) {
+            if (strcmp(p, "ocean_dark") == 0) applyOceanDarkTheme();
+            else if (strcmp(p, "cyberpunk") == 0) applyCyberpunkTheme();
+            else if (strcmp(p, "forest") == 0) applyForestTheme();
+            else if (strcmp(p, "cherry") == 0) applyCherryTheme();
+            else if (strcmp(p, "light_day") == 0) applyLightDayTheme();
+            else if (strcmp(p, "retro_green") == 0) applyRetroGreenTheme();
+            saveTheme();
+        }
+    }
+
+    if (!doc["city"].isNull()) {
+        const char* c = doc["city"].as<const char*>();
+        if (c) {
+            network.setCity(c);
+        }
+    }
+
     if (!doc["cur1"].isNull() || !doc["cur2"].isNull()) {
         ExchangeData& ex = network.getExchangeMutable();
         bool changed = false;

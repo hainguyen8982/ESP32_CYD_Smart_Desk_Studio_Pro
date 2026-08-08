@@ -646,6 +646,17 @@ class CYDMonitorApp(ctk.CTk):
                 break
 
         ip = self.ip_entry.get().strip()
+
+        # 1. Send via USB Serial if connected
+        global active_serial_conn
+        if active_serial_conn and active_serial_conn.is_open:
+            try:
+                active_serial_conn.write((json.dumps({"city": eng_city}) + "\n").encode('utf-8'))
+                self.status_lbl.configure(text=f"✅ City: {sel}", text_color="#2ea043")
+            except Exception:
+                pass
+
+        # 2. Non-blocking Async HTTP push
         if ip:
             _async_http_post(f"http://{ip}/api/weather/city", {"city": eng_city},
                              self.status_lbl, f"✅ City: {sel}", "❌ Error setting city")
