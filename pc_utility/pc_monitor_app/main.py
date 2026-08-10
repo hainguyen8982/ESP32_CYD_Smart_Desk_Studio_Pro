@@ -739,7 +739,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
         self.toggle_alm_btn = ctk.CTkButton(
-            alm_row1, text="🔕 Alarm Off", width=115, height=32, fg_color="#7F1D1D", hover_color="#991B1B",
+            alm_row1, text="⏰ Alarm Off", width=115, height=32, fg_color="#7F1D1D", hover_color="#991B1B",
             text_color="#FCA5A5", border_width=2, border_color="#EF4444",
             font=ctk.CTkFont(size=12, weight="bold"), command=self.toggle_alarm_state
         )
@@ -1329,26 +1329,21 @@ class SmartDeskStudioProApp(ctk.CTk):
         search_entry.bind("<KeyRelease>", lambda e: _render_dialog_list(search_entry.get()))
         _render_dialog_list()
 
-    def _hover_alarm_toggle(self, is_hover):
-        if hasattr(self, 'toggle_alm_frame'):
-            if getattr(self, 'alarm_enabled_state', False):
-                self.toggle_alm_frame.configure(fg_color="#10B981" if is_hover else "#059669")
-            else:
-                self.toggle_alm_frame.configure(fg_color="#991B1B" if is_hover else "#7F1D1D")
-
     def _update_alarm_toggle_ui(self, enabled):
         self.alarm_enabled_state = enabled
-        if hasattr(self, 'toggle_alm_frame'):
+        if hasattr(self, 'toggle_alm_btn'):
             if enabled:
                 # Alarm ON: Bright Emerald Green
-                self.toggle_alm_frame.configure(fg_color="#059669", border_color="#34D399")
-                self.toggle_alm_ico.configure(text="🔔", text_color="#FFFFFF")
-                self.toggle_alm_txt.configure(text="Alarm On", text_color="#FFFFFF")
+                self.toggle_alm_btn.configure(
+                    text="⏰ Alarm On", fg_color="#059669", hover_color="#10B981",
+                    text_color="#FFFFFF", border_width=2, border_color="#34D399"
+                )
             else:
                 # Alarm OFF: Active Red
-                self.toggle_alm_frame.configure(fg_color="#7F1D1D", border_color="#EF4444")
-                self.toggle_alm_ico.configure(text="🔕", text_color="#FCA5A5")
-                self.toggle_alm_txt.configure(text="Alarm Off", text_color="#FCA5A5")
+                self.toggle_alm_btn.configure(
+                    text="⏰ Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
+                    text_color="#FCA5A5", border_width=2, border_color="#EF4444"
+                )
 
     def toggle_alarm_state(self):
         self.last_user_action_time = time.time()
