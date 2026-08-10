@@ -35,6 +35,7 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 active_serial_conn = None
+serial_lock = threading.Lock()
 app_instance = None
 
 CANVAS_WIDTH = 320
@@ -137,6 +138,9 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.last_net = None
         self.last_time = time.time()
         self.last_port_scan = 0
+
+        # Thread-safe control dictionary for merging commands into Serial JSON stream
+        self.pending_control = {}
 
         self.current_page_idx = 0
         self.selected_elem_id = None
@@ -369,6 +373,9 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.page_btns.append(btn_box)
 
         for col_i in range(2): p_grid.columnconfigure(col_i, weight=1)
+
+        # Highlight default page 0
+        self._highlight_page_button(0)
 
         # 3. Preset Theme Switcher
         th_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -880,11 +887,12 @@ class SmartDeskStudioProApp(ctk.CTk):
         success = False
 
         if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write(f"SKIN_JSON:{payload_str}\n".encode('utf-8'))
-                success = True
-                tk.messagebox.showinfo("⚡ Live Sync Success", "Skin successfully synced to ESP32 CYD via USB Serial!")
-            except Exception: pass
+            with serial_lock:
+                try:
+                    active_serial_conn.write(f"SKIN_JSON:{payload_str}\n".encode('utf-8'))
+                    success = True
+                    tk.messagebox.showinfo("⚡ Live Sync Success", "Skin successfully synced to ESP32 CYD via USB Serial!")
+                except Exception: pass
 
         if not success and self.cached_ip:
             try:
@@ -903,28 +911,42 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.status_lbl.configure(text="● Scanning USB/WiFi ports...", text_color="#EAB308")
 
     def apply_theme(self, theme_key):
-        _send_control_cmd({"preset": theme_key}, self.status_lbl, f"✅ Theme: {theme_key}", "❌ Theme error")
+        self.pending_control["preset"] = theme_key
+        self.status_lbl.configure(text=f"✅ Theme set: {theme_key}", text_color="#39FF14")
 
     def switch_page(self, page_id):
         self.active_cyd_page = page_id
+        self.pending_control["page"] = page_id
+        self._highlight_page_button(page_id)
+        self.draw_sim_canvas_preview()
+        self.status_lbl.configure(text=f"✅ Switched to Page {page_id}", text_color="#39FF14")
+
+    def _highlight_page_button(self, page_id):
         for pid, btn_box in enumerate(self.page_btns):
             p_code, p_title, p_sub, p_col = PAGE_ITEMS[pid]
             if pid == page_id:
                 btn_box.configure(fg_color="#1f2937", border_color=p_col, border_width=2)
             else:
                 btn_box.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
-        self.draw_sim_canvas_preview()
-        _send_control_cmd({"page": page_id}, self.status_lbl, f"✅ Switched to Page {page_id}", "❌ Switch error")
+
+    def _sync_page_from_cyd(self, page_id):
+        if page_id != self.active_cyd_page:
+            self.active_cyd_page = page_id
+            self._highlight_page_button(page_id)
+            self.draw_sim_canvas_preview()
 
     def apply_city(self):
         sel = self.city_combo.get(); eng_city = "Hanoi"
         for eng, vn in VN_CITIES:
             if vn == sel: eng_city = eng; break
-        _send_control_cmd({"city": eng_city}, self.status_lbl, f"✅ City: {sel}", "❌ Error setting city")
+        self.pending_control["city"] = eng_city
+        self.status_lbl.configure(text=f"✅ Weather City set: {sel}", text_color="#39FF14")
 
     def apply_currencies(self):
         c1 = self.cur1_combo.get(); c2 = self.cur2_combo.get()
-        _send_control_cmd({"cur1": c1, "cur2": c2}, self.status_lbl, f"✅ Currencies: {c1}/{c2}", "❌ Currency error")
+        self.pending_control["cur1"] = c1
+        self.pending_control["cur2"] = c2
+        self.status_lbl.configure(text=f"✅ FX Currencies set: {c1}/{c2}", text_color="#39FF14")
 
     def _update_telemetry_ui(self, c, r, d, u):
         if hasattr(self, 'lbl_cpu'):
@@ -962,6 +984,12 @@ class SmartDeskStudioProApp(ctk.CTk):
                 ram_pct = int(psutil.virtual_memory().percent)
 
                 payload = {"cpu": cpu_pct, "ram": ram_pct, "net_down": down_speed, "net_up": up_speed}
+
+                # MERGE PENDING USER CONTROL COMMANDS INTO TELEMETRY JSON PACKET
+                if self.pending_control:
+                    payload.update(self.pending_control)
+                    self.pending_control = {}
+
                 self.after(0, lambda c=cpu_pct, r=ram_pct, d=down_speed, u=up_speed:
                            self._update_telemetry_ui(c, r, d, u))
             except Exception:
@@ -1002,24 +1030,50 @@ class SmartDeskStudioProApp(ctk.CTk):
                         s.rts = False
                         s.open()
                         ser = s
-                        active_serial_conn = ser
+                        with serial_lock:
+                            active_serial_conn = ser
                         self.cached_com_port = p_name
                         break
                     except Exception:
                         ser = None
-                        active_serial_conn = None
+                        with serial_lock:
+                            active_serial_conn = None
 
             if ser and ser.is_open:
                 try:
-                    ser.write((json.dumps(payload) + "\n").encode('utf-8'))
+                    with serial_lock:
+                        ser.write((json.dumps(payload) + "\n").encode('utf-8'))
+                        ser.flush()
+
+                        # Read response from CYD if present
+                        if ser.in_waiting > 0:
+                            raw_lines = ser.read_all().decode('utf-8', errors='ignore').split('\n')
+                            for line in raw_lines:
+                                line = line.strip()
+                                if line.startswith("STATE:"):
+                                    try:
+                                        sdata = json.loads(line[6:])
+                                        p_idx = sdata.get("page", 0)
+                                        self.after(0, lambda p=p_idx: self._sync_page_from_cyd(p))
+                                    except Exception: pass
+
                     connected_usb = True
                     ser_port = ser.port
                 except Exception:
                     try: ser.close()
                     except Exception: pass
                     ser = None
-                    active_serial_conn = None
+                    with serial_lock:
+                        active_serial_conn = None
                     connected_usb = False
+
+            # Fallback to WiFi HTTP if USB not connected
+            if not connected_usb and self.esp32_ip:
+                try:
+                    resp = requests.post(f"http://{self.esp32_ip}/api/pc", json=payload, timeout=0.4)
+                    if resp.ok:
+                        connected_wifi = True
+                except Exception: pass
 
             # Update status banner accurately
             if connected_usb:
@@ -1061,18 +1115,10 @@ class SmartDeskStudioProApp(ctk.CTk):
                 tk.messagebox.showerror("Import Error", f"Failed to load JSON file: {e}")
 
 def _send_control_cmd(cmd_dict, status_lbl, success_msg, err_msg):
-    def _thread_task():
-        global active_serial_conn
-        sent_usb = False
-        if active_serial_conn and active_serial_conn.is_open:
-            try:
-                active_serial_conn.write((json.dumps(cmd_dict) + "\n").encode('utf-8'))
-                sent_usb = True
-            except Exception: pass
-        if sent_usb and status_lbl:
+    if app_instance:
+        app_instance.pending_control.update(cmd_dict)
+        if status_lbl:
             status_lbl.configure(text=success_msg, text_color="#39FF14")
-
-    threading.Thread(target=_thread_task, daemon=True).start()
 
 if __name__ == "__main__":
     app = SmartDeskStudioProApp()
