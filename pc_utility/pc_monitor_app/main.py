@@ -273,6 +273,10 @@ class SmartDeskStudioProApp(ctk.CTk):
                 if action == "play_pause":
                     ctypes.windll.user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
                     ctypes.windll.user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 2, 0)
+                    # Instantly flip local media state so next JSON to CYD is correct
+                    # (don't wait 2s for the WinRT poller to detect the change)
+                    with _media_info_lock:
+                        _media_session_info["playing"] = not _media_session_info.get("playing", False)
                     self.status_lbl.configure(text="🎵 Media: Play / Pause Toggled", text_color="#38bdf8")
                 elif action == "next":
                     ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, 0)

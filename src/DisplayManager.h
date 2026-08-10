@@ -57,8 +57,15 @@ public:
 
     // Media Play/Pause State & Track Info
     bool getMediaPlaying() const { return isMediaPlaying; }
-    void togglePlayState() { isMediaPlaying = !isMediaPlaying; }
-    void setMediaPlaying(bool p) { isMediaPlaying = p; }
+    void togglePlayState() {
+        isMediaPlaying = !isMediaPlaying;
+        lastLocalMediaToggle = millis();  // debounce: ignore remote state for 3s
+    }
+    void setMediaPlaying(bool p) {
+        // Ignore remote (PC) state for 3s after local touch toggle to avoid flicker
+        if (millis() - lastLocalMediaToggle < 3000) return;
+        isMediaPlaying = p;
+    }
     void setMediaInfo(const char* title, const char* artist) {
         if (title && strlen(title) > 0) snprintf(mediaTitle, sizeof(mediaTitle), "%s", title);
         if (artist && strlen(artist) > 0) snprintf(mediaArtist, sizeof(mediaArtist), "%s", artist);
@@ -138,6 +145,7 @@ private:
     uint8_t     tempAlarmMin;
     int16_t     calendarMonthOffset;
     bool        isMediaPlaying;
+    unsigned long lastLocalMediaToggle;  // debounce remote state after local toggle
     char        mediaTitle[64];
     char        mediaArtist[64];
     int         marqueeOffset;
