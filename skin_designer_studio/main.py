@@ -17,6 +17,17 @@ SCALE = 2.5  # 2.5x Display scale for crisp PC editing (800x600 canvas)
 
 PRESET_DIR = os.path.join(os.path.dirname(__file__), "preset_skins")
 
+PAGE_NAMES = [
+    "Page 0: Clock & Weather",
+    "Page 1: Lunar Calendar",
+    "Page 2: Financial Market",
+    "Page 3: PC Monitor (CPU & RAM)",
+    "Page 4: PC Monitor (Net & Storage)",
+    "Page 5: Desk Utilities (Pomodoro)",
+    "Page 6: Media Remote Control",
+    "Page 7: System Settings"
+]
+
 # 5x7 Dot Matrix Character Bitmaps
 DOT_MATRIX_5X7 = {
     '0': [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
@@ -36,6 +47,13 @@ DOT_MATRIX_5X7 = {
     ' ': [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000]
 }
 
+# 7-Segment Digit Segment Bitmasks (a, b, c, d, e, f, g)
+SEGMENT7_MASKS = {
+    '0': 0x3F, '1': 0x06, '2': 0x5B, '3': 0x4F, '4': 0x66,
+    '5': 0x6D, '6': 0x7D, '7': 0x07, '8': 0x7F, '9': 0x6F,
+    '-': 0x40, ' ': 0x00
+}
+
 WIDGET_TYPES = [
     ("Digital Clock & Lunar", "clock", 180, 65),
     ("Weather City & Forecast", "weather", 110, 65),
@@ -52,17 +70,23 @@ class SkinDesignerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("🎨 Smart Desk Studio - Dashboard Skin Designer & Dot Matrix Studio")
-        self.geometry("1240x820")
+        self.title("🎨 Smart Desk Studio - Dashboard Multi-Page Skin Designer")
+        self.geometry("1260x840")
         self.resizable(True, True)
 
+        self.current_page_idx = 0
+
         self.skin_data = {
-            "skin_name": "Custom Skin",
+            "skin_name": "Custom Multi-Page Skin",
             "author": "User Designer",
             "version": "1.0",
             "canvas": {"width": CANVAS_WIDTH, "height": CANVAS_HEIGHT, "bg_color": "#000000"},
-            "widgets": []
+            "pages": {}
         }
+
+        # Initialize 8 empty pages 0..7
+        for i in range(8):
+            self.skin_data["pages"][str(i)] = {"name": PAGE_NAMES[i], "widgets": []}
 
         self.selected_widget_id = None
         self.drag_data = {"x": 0, "y": 0, "widget": None, "handle": None}
@@ -98,7 +122,7 @@ class SkinDesignerApp(ctk.CTk):
         hdr.pack(fill="x", pady=(0, 10))
 
         title_lbl = ctk.CTkLabel(
-            hdr, text="🎨 Smart Desk Studio — Layout & Dot Matrix LED Designer (320x240)",
+            hdr, text="🎨 Smart Desk Studio — Multi-Page Layout & Font Designer (Pages 0..7)",
             font=ctk.CTkFont(size=16, weight="bold"), text_color="#58a6ff"
         )
         title_lbl.pack(side="left", padx=15, pady=8)
@@ -119,7 +143,7 @@ class SkinDesignerApp(ctk.CTk):
         banner = ctk.CTkFrame(main_frame, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=6)
         banner.pack(fill="x", pady=(0, 10))
 
-        b_text = "💡 Phím Tắt:  🖱️ Click chọn  |  🖱️ Kéo di chuyển  |  🔲 Kéo núm vuông góc dưới để Resize  |  ⬅️⬆️➡️⬇️ Mũi Tên: Vi chỉnh 1px (Shift + Mũi tên: 5px)  |  ⌨️ Delete/Backspace: Xóa Widget"
+        b_text = "💡 Phím Tắt: 🖱️ Click chọn | 🖱️ Kéo di chuyển | 🔲 Resize núm góc | ⬅️⬆️➡️⬇️ Mũi Tên: Vi chỉnh 1px (Shift: 5px) | ⌨️ Delete: Xóa Widget"
         b_lbl = ctk.CTkLabel(banner, text=b_text, font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
         b_lbl.pack(padx=10, pady=6)
 
@@ -144,7 +168,7 @@ class SkinDesignerApp(ctk.CTk):
 
         ctk.CTkFrame(left_box, fg_color="#30363d", height=1).pack(fill="x", padx=10, pady=10)
 
-        w_lbl = ctk.CTkLabel(left_box, text="➕ Add Widgets", font=ctk.CTkFont(size=14, weight="bold"))
+        w_lbl = ctk.CTkLabel(left_box, text="➕ Add Widgets to Current Page", font=ctk.CTkFont(size=12, weight="bold"))
         w_lbl.pack(anchor="w", padx=12, pady=(5, 5))
 
         for name, wtype, def_w, def_h in WIDGET_TYPES:
@@ -155,17 +179,26 @@ class SkinDesignerApp(ctk.CTk):
             )
             btn.pack(fill="x", padx=10, pady=3)
 
-        # 2. Center Interactive Canvas (2.5x Scale = 800x600)
+        # 2. Center Interactive Canvas (With Page Switcher Tabs at top)
         center_box = ctk.CTkFrame(body, fg_color="#090d16", corner_radius=10)
         center_box.pack(side="left", fill="both", expand=True)
 
-        c_info = ctk.CTkLabel(
-            center_box, text="📺 Canvas 320x240 Pixel-Perfect (Scaled 2.5x) | Click Widget & Dùng 4 phím Mũi Tên để di chuyển từng 1px",
-            font=ctk.CTkFont(size=12), text_color="#8b949e"
-        )
-        c_info.pack(pady=(8, 2))
+        # Dashboard Page Switcher Bar
+        page_hdr = ctk.CTkFrame(center_box, fg_color="#161b22", height=40)
+        page_hdr.pack(fill="x", padx=10, pady=(10, 5))
 
-        # Tkinter Canvas
+        p_title = ctk.CTkLabel(page_hdr, text="🖥️ Select Dashboard Page:", font=ctk.CTkFont(size=12, weight="bold"))
+        p_title.pack(side="left", padx=10, pady=5)
+
+        self.page_combo = ctk.CTkOptionMenu(
+            page_hdr,
+            values=PAGE_NAMES,
+            command=self.on_page_select, width=240
+        )
+        self.page_combo.set(PAGE_NAMES[0])
+        self.page_combo.pack(side="left", padx=10, pady=5)
+
+        # Tkinter Canvas (2.5x Scale)
         self.canvas = tk.Canvas(
             center_box, width=int(CANVAS_WIDTH * SCALE), height=int(CANVAS_HEIGHT * SCALE),
             bg="#000000", highlightthickness=2, highlightbackground="#30363d"
@@ -216,7 +249,7 @@ class SkinDesignerApp(ctk.CTk):
 
         self.font_combo = ctk.CTkOptionMenu(
             right_box,
-            values=["Dot Matrix LED", "Default Sans", "7-Segment Digital", "Monospace Code"],
+            values=["Dot Matrix LED", "7-Segment Digital", "Monospace Code", "Default Sans"],
             command=self.on_font_change, width=210
         )
         self.font_combo.set("Dot Matrix LED")
@@ -239,6 +272,14 @@ class SkinDesignerApp(ctk.CTk):
         )
         self.del_btn.pack(side="bottom", padx=10, pady=15)
 
+    def on_page_select(self, val):
+        for i, name in enumerate(PAGE_NAMES):
+            if name == val:
+                self.current_page_idx = i
+                break
+        self.selected_widget_id = None
+        self.redraw_canvas()
+
     def load_preset(self, preset_name):
         filename_map = {
             "Retro Dot Matrix LED Clock": "dot_matrix_led.json",
@@ -251,11 +292,32 @@ class SkinDesignerApp(ctk.CTk):
         if os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    self.skin_data = json.load(f)
+                    data = json.load(f)
+
+                # Ensure data has pages 0..7
+                if "pages" in data:
+                    self.skin_data = data
+                else:
+                    # Legacy 1-page json conversion
+                    widgets = data.get("widgets", [])
+                    self.skin_data = {
+                        "skin_name": data.get("skin_name", "Preset"),
+                        "canvas": data.get("canvas", {"width": 320, "height": 240, "bg_color": "#000000"}),
+                        "pages": {}
+                    }
+                    for i in range(8):
+                        self.skin_data["pages"][str(i)] = {"name": PAGE_NAMES[i], "widgets": list(widgets) if i == 0 else []}
+
                 self.selected_widget_id = None
                 self.redraw_canvas()
             except Exception as e:
                 print(f"Error loading preset: {e}")
+
+    def get_current_widgets(self):
+        pg_str = str(self.current_page_idx)
+        if pg_str not in self.skin_data.get("pages", {}):
+            self.skin_data.setdefault("pages", {})[pg_str] = {"name": PAGE_NAMES[self.current_page_idx], "widgets": []}
+        return self.skin_data["pages"][pg_str]["widgets"]
 
     def draw_dot_matrix_text(self, text, start_x, start_y, dot_size, pitch, on_color, off_color="#121212", wid_tag=""):
         cur_x = start_x
@@ -272,49 +334,60 @@ class SkinDesignerApp(ctk.CTk):
                         dx, dy, dx + dot_size, dy + dot_size,
                         fill=col_fill, outline="", tags=("widget", wid_tag)
                     )
-            cur_x += 6 * pitch  # Advance 5 dots + 1 space
+            cur_x += 6 * pitch
+
+    def draw_7segment_text(self, text, start_x, start_y, seg_w, seg_h, color, wid_tag=""):
+        """Draw 7-segment digital display numbers"""
+        cur_x = start_x
+        for ch in text:
+            if ch == ':':
+                # Draw Colon Dots
+                self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.3), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.3) + 4, fill=color, outline="", tags=("widget", wid_tag))
+                self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.7), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.7) + 4, fill=color, outline="", tags=("widget", wid_tag))
+                cur_x += int(seg_w * 0.5)
+                continue
+
+            mask = SEGMENT7_MASKS.get(ch, 0x00)
+            off_col = "#151820"
+            t = 4  # thickness
+
+            # Segments: a (top), b (top-right), c (bot-right), d (bot), e (bot-left), f (top-left), g (center)
+            # a: top horizontal
+            self.canvas.create_rectangle(cur_x + t, start_y, cur_x + seg_w - t, start_y + t, fill=color if (mask & 0x01) else off_col, outline="", tags=("widget", wid_tag))
+            # b: top right
+            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + t, cur_x + seg_w, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x02) else off_col, outline="", tags=("widget", wid_tag))
+            # c: bot right
+            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), cur_x + seg_w, start_y + seg_h - t, fill=color if (mask & 0x04) else off_col, outline="", tags=("widget", wid_tag))
+            # d: bot horizontal
+            self.canvas.create_rectangle(cur_x + t, start_y + seg_h - t, cur_x + seg_w - t, start_y + seg_h, fill=color if (mask & 0x08) else off_col, outline="", tags=("widget", wid_tag))
+            # e: bot left
+            self.canvas.create_rectangle(cur_x, start_y + int(seg_h/2) + int(t/2), cur_x + t, start_y + seg_h - t, fill=color if (mask & 0x10) else off_col, outline="", tags=("widget", wid_tag))
+            # f: top left
+            self.canvas.create_rectangle(cur_x, start_y + t, cur_x + t, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x20) else off_col, outline="", tags=("widget", wid_tag))
+            # g: center horizontal
+            self.canvas.create_rectangle(cur_x + t, start_y + int(seg_h/2) - int(t/2), cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), fill=color if (mask & 0x40) else off_col, outline="", tags=("widget", wid_tag))
+
+            cur_x += seg_w + 6
 
     def draw_pixel_sun(self, start_x, start_y, dot_size, pitch, color, wid_tag=""):
-        # 7x7 Pixel Art Sun
-        sun_map = [
-            0b0011100,
-            0b0111110,
-            0b1111111,
-            0b1111111,
-            0b1111111,
-            0b0111110,
-            0b0011100
-        ]
+        sun_map = [0b0011100, 0b0111110, 0b1111111, 0b1111111, 0b1111111, 0b0111110, 0b0011100]
         for r in range(7):
             bits = sun_map[r]
             for c in range(7):
                 if (bits >> (6 - c)) & 1:
                     dx = start_x + c * pitch
                     dy = start_y + r * pitch
-                    self.canvas.create_oval(
-                        dx, dy, dx + dot_size, dy + dot_size,
-                        fill=color, outline="", tags=("widget", wid_tag)
-                    )
+                    self.canvas.create_oval(dx, dy, dx + dot_size, dy + dot_size, fill=color, outline="", tags=("widget", wid_tag))
 
     def draw_pixel_sunrise(self, start_x, start_y, dot_size, pitch, color, wid_tag=""):
-        # Half Sun + Horizon Line
-        sun_map = [
-            0b0011100,
-            0b0111110,
-            0b1111111,
-            0b0000000,
-            0b1111111
-        ]
+        sun_map = [0b0011100, 0b0111110, 0b1111111, 0b0000000, 0b1111111]
         for r in range(5):
             bits = sun_map[r]
             for c in range(7):
                 if (bits >> (6 - c)) & 1:
                     dx = start_x + c * pitch
                     dy = start_y + r * pitch
-                    self.canvas.create_oval(
-                        dx, dy, dx + dot_size, dy + dot_size,
-                        fill=color, outline="", tags=("widget", wid_tag)
-                    )
+                    self.canvas.create_oval(dx, dy, dx + dot_size, dy + dot_size, fill=color, outline="", tags=("widget", wid_tag))
 
     def redraw_canvas(self):
         self.canvas.delete("all")
@@ -327,8 +400,17 @@ class SkinDesignerApp(ctk.CTk):
         for y in range(0, int(CANVAS_HEIGHT * SCALE), int(20 * SCALE)):
             self.canvas.create_line(0, y, int(CANVAS_WIDTH * SCALE), y, fill="#141418", dash=(2, 4))
 
-        # Render Widgets
-        for w in self.skin_data.get("widgets", []):
+        # Render Active Page Widgets
+        widgets = self.get_current_widgets()
+
+        if not widgets:
+            self.canvas.create_text(
+                int(CANVAS_WIDTH * SCALE / 2), int(CANVAS_HEIGHT * SCALE / 2),
+                text=f"[{PAGE_NAMES[self.current_page_idx]}]\nTrang chưa có Widget. Nhấp +Add Widget bên trái để thêm.",
+                fill="#484f58", font=("Segoe UI", 13), justify="center"
+            )
+
+        for w in widgets:
             wx = int(w["x"] * SCALE)
             wy = int(w["y"] * SCALE)
             ww = int(w["w"] * SCALE)
@@ -350,26 +432,34 @@ class SkinDesignerApp(ctk.CTk):
             # Widget Visual Simulation Mockup
             wtype = w.get("type", "")
 
-            if wtype in ["clock_dot_matrix", "clock_dot_matrix_evening"] or font_style == "dot_matrix":
+            if font_style == "segment7":
+                # 7-Segment Digital Font
+                if wtype in ["clock", "clock_dot_matrix", "clock_dot_matrix_evening"]:
+                    self.draw_7segment_text("14:35:08", wx + 15, wy + 15, seg_w=18, seg_h=36, color=accent, wid_tag=wid)
+                elif "gauge" in wtype:
+                    self.draw_7segment_text("42-68", wx + 15, wy + 15, seg_w=16, seg_h=32, color=accent, wid_tag=wid)
+                else:
+                    self.draw_7segment_text("12:00", wx + 15, wy + 15, seg_w=18, seg_h=36, color=accent, wid_tag=wid)
+            elif font_style == "mono":
+                # Monospace Code Font
+                self.canvas.create_text(wx + 10, wy + 18, text=f"> {w.get('name','')}", fill=accent, font=("Consolas", int(7 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                self.canvas.create_text(wx + 10, wy + 42, text="sys.status: [OK]", fill="#39FF14", font=("Consolas", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
+            elif font_style == "dot_matrix" or wtype in ["clock_dot_matrix", "clock_dot_matrix_evening"]:
+                # Dot Matrix LED Font
                 if wtype == "clock_dot_matrix":
-                    # Sun + 4:40 AM
                     self.draw_pixel_sun(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FFCC00", wid_tag=wid)
                     self.draw_dot_matrix_text("4:40 AM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
                 elif wtype == "clock_dot_matrix_evening":
-                    # Sunrise + 7:32 PM
                     self.draw_pixel_sunrise(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FF9900", wid_tag=wid)
                     self.draw_dot_matrix_text("7:32 PM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
                 elif wtype == "dot_matrix_divider":
-                    # Row of glowing LED dots
                     line_y = wy + int(wh / 2) - 2
                     for dx in range(wx + 10, wx + ww - 10, 8):
                         self.canvas.create_oval(dx, line_y, dx + 5, line_y + 5, fill=accent, outline="", tags=("widget", wid))
-                elif wtype == "clock":
-                    self.draw_dot_matrix_text("14:35:08", wx + 15, wy + 15, dot_size=4, pitch=6, on_color=accent, off_color="#181818", wid_tag=wid)
                 else:
-                    self.canvas.create_text(wx + 15, wy + 20, text=w.get("name", ""), fill=accent, font=("Consolas", int(10 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.draw_dot_matrix_text("14:35:08", wx + 15, wy + 15, dot_size=4, pitch=6, on_color=accent, off_color="#181818", wid_tag=wid)
             else:
-                # Standard Vector / Sans Rendering
+                # Standard Vector / Default Sans Rendering
                 if wtype == "clock":
                     self.canvas.create_text(wx + 15, wy + 20, text="14:35:08", fill=accent, font=("Consolas", int(14 * SCALE), "bold"), anchor="w", tags=("widget", wid))
                     self.canvas.create_text(wx + 15, wy + 42, text="Thứ Hai, 10/08 • 18/07 Âm", fill="#8b949e", font=("Segoe UI", int(5 * SCALE)), anchor="w", tags=("widget", wid))
@@ -405,9 +495,10 @@ class SkinDesignerApp(ctk.CTk):
 
     def on_canvas_click(self, event):
         x, y = event.x, event.y
+        widgets = self.get_current_widgets()
 
         # Check if clicked on a resize handle first
-        for w in self.skin_data.get("widgets", []):
+        for w in widgets:
             wx = int(w["x"] * SCALE)
             wy = int(w["y"] * SCALE)
             ww = int(w["w"] * SCALE)
@@ -423,7 +514,7 @@ class SkinDesignerApp(ctk.CTk):
                 return
 
         # Check if clicked inside a widget rectangle
-        for w in reversed(self.skin_data.get("widgets", [])):
+        for w in reversed(widgets):
             wx = int(w["x"] * SCALE)
             wy = int(w["y"] * SCALE)
             ww = int(w["w"] * SCALE)
@@ -465,7 +556,6 @@ class SkinDesignerApp(ctk.CTk):
         self.drag_data["handle"] = None
 
     def nudge_selected_widget(self, dx, dy):
-        """Keyboard arrow key pixel nudging (1px or 5px)"""
         w = self.get_selected_widget()
         if w:
             w["x"] = max(0, min(CANVAS_WIDTH - w["w"], w["x"] + dx))
@@ -483,9 +573,9 @@ class SkinDesignerApp(ctk.CTk):
 
             font_val_map = {
                 "dot_matrix": "Dot Matrix LED",
-                "default": "Default Sans",
                 "segment7": "7-Segment Digital",
-                "mono": "Monospace Code"
+                "mono": "Monospace Code",
+                "default": "Default Sans"
             }
             cur_font = w.get("font_style", "dot_matrix" if "dot_matrix" in w.get("type","") else "default")
             self.font_combo.set(font_val_map.get(cur_font, "Dot Matrix LED"))
@@ -504,11 +594,11 @@ class SkinDesignerApp(ctk.CTk):
         if w:
             font_key_map = {
                 "Dot Matrix LED": "dot_matrix",
-                "Default Sans": "default",
                 "7-Segment Digital": "segment7",
-                "Monospace Code": "mono"
+                "Monospace Code": "mono",
+                "Default Sans": "default"
             }
-            w["font_style"] = font_key_map.get(val, "dot_matrix")
+            w["font_style"] = font_key_map.get(val, "default")
             self.redraw_canvas()
 
     def apply_manual_geometry(self):
@@ -540,7 +630,8 @@ class SkinDesignerApp(ctk.CTk):
                 self.redraw_canvas()
 
     def add_widget(self, name, wtype, def_w, def_h):
-        new_id = f"w_{len(self.skin_data['widgets']) + 1}_{wtype}"
+        widgets = self.get_current_widgets()
+        new_id = f"w_{len(widgets) + 1}_{wtype}"
         is_matrix = ("dot_matrix" in wtype)
         new_w = {
             "id": new_id,
@@ -555,18 +646,19 @@ class SkinDesignerApp(ctk.CTk):
             "accent_color": "#FF3333" if wtype == "dot_matrix_divider" else ("#FFFFFF" if is_matrix else "#00D4FF"),
             "text_color": "#FFFFFF"
         }
-        self.skin_data["widgets"].append(new_w)
+        widgets.append(new_w)
         self.selected_widget_id = new_id
         self.redraw_canvas()
 
     def delete_selected_widget(self):
         if self.selected_widget_id:
-            self.skin_data["widgets"] = [w for w in self.skin_data["widgets"] if w["id"] != self.selected_widget_id]
+            widgets = self.get_current_widgets()
+            self.skin_data["pages"][str(self.current_page_idx)]["widgets"] = [w for w in widgets if w["id"] != self.selected_widget_id]
             self.selected_widget_id = None
             self.redraw_canvas()
 
     def get_selected_widget(self):
-        for w in self.skin_data.get("widgets", []):
+        for w in self.get_current_widgets():
             if w["id"] == self.selected_widget_id:
                 return w
         return None
@@ -577,7 +669,7 @@ class SkinDesignerApp(ctk.CTk):
             try:
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(self.skin_data, f, indent=2, ensure_ascii=False)
-                tk.messagebox.showinfo("Export Success", f"Skin Layout JSON successfully saved to:\n{path}")
+                tk.messagebox.showinfo("Export Success", f"Multi-Page Skin Layout JSON successfully saved to:\n{path}")
             except Exception as e:
                 tk.messagebox.showerror("Export Error", f"Failed to save JSON file: {e}")
 
@@ -586,7 +678,19 @@ class SkinDesignerApp(ctk.CTk):
         if path and os.path.exists(path):
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    self.skin_data = json.load(f)
+                    data = json.load(f)
+                if "pages" in data:
+                    self.skin_data = data
+                else:
+                    widgets = data.get("widgets", [])
+                    self.skin_data = {
+                        "skin_name": data.get("skin_name", "Preset"),
+                        "canvas": data.get("canvas", {"width": 320, "height": 240, "bg_color": "#000000"}),
+                        "pages": {}
+                    }
+                    for i in range(8):
+                        self.skin_data["pages"][str(i)] = {"name": PAGE_NAMES[i], "widgets": list(widgets) if i == 0 else []}
+
                 self.selected_widget_id = None
                 self.redraw_canvas()
                 tk.messagebox.showinfo("Import Success", "Skin Layout JSON successfully loaded!")
