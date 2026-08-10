@@ -362,15 +362,24 @@ class SmartDeskStudioProApp(ctk.CTk):
                     ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
                     self.status_lbl.configure(text="🔇 Mute Toggled", text_color="#F85149")
                 elif action == "skip_ad":
-                    # Skip YouTube Ad (Tab + Enter) + Next Track for Spotify
-                    ctypes.windll.user32.keybd_event(VK_TAB, 0, 0, 0)
-                    ctypes.windll.user32.keybd_event(VK_TAB, 0, 2, 0)
-                    time.sleep(0.05)
-                    ctypes.windll.user32.keybd_event(VK_RETURN, 0, 0, 0)
-                    ctypes.windll.user32.keybd_event(VK_RETURN, 0, 2, 0)
-                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, 0)
-                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 2, 0)
-                    self.status_lbl.configure(text="⏭️ Media: Skip Ad / Next Track", text_color="#FFA726")
+                    # Multi-Phase YouTube & Spotify Ad Skip Sequence (from reference project)
+                    user32 = ctypes.windll.user32
+                    # Phase 1: Global Media Next Track (0xB0) for music apps
+                    user32.keybd_event(0xB0, 0, 0, 0)
+                    user32.keybd_event(0xB0, 0, 2, 0)
+                    time.sleep(0.03)
+                    # Phase 2: Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+                    user32.keybd_event(0x10, 0, 0, 0) # Shift down
+                    user32.keybd_event(0x4E, 0, 0, 0) # N down
+                    user32.keybd_event(0x4E, 0, 2, 0) # N up
+                    user32.keybd_event(0x10, 0, 2, 0) # Shift up
+                    time.sleep(0.03)
+                    # Phase 3: 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+                    for _ in range(5):
+                        user32.keybd_event(0x27, 0, 0, 0)
+                        user32.keybd_event(0x27, 0, 2, 0)
+                        time.sleep(0.015)
+                    self.status_lbl.configure(text="⏭️ Media: Multi-Phase Skip Ad Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
@@ -1260,14 +1269,17 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.active_cyd_theme = cyd_theme
             self._highlight_theme_button(cyd_theme)
 
-        # Only sync city from CYD ONCE at initial connection (never reset user's local selection/typing)
+        # Sync city from CYD ONLY when the city reported by CYD actually changes!
         cyd_city = sdata.get("city", "")
-        if cyd_city and hasattr(self, 'city_combo') and not getattr(self, 'city_user_modified', False) and not getattr(self, 'city_synced', False):
-            for eng, vn in VN_CITIES:
-                if eng.lower() == cyd_city.lower():
-                    self.city_combo.set(vn)
-                    self.city_synced = True
-                    break
+        if cyd_city and hasattr(self, 'city_combo'):
+            c_val = cyd_city.strip()
+            if c_val.lower() != getattr(self, 'last_cyd_city', '').lower():
+                if time.time() - self.last_user_action_time > 4.0:
+                    self.last_cyd_city = c_val.lower()
+                    for eng, vn in VN_CITIES:
+                        if eng.lower() == c_val.lower():
+                            self.city_combo.set(vn)
+                            break
 
         cur1 = sdata.get("cur1", "")
         if cur1 and hasattr(self, 'cur1_combo'):
@@ -1279,12 +1291,12 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def apply_city(self):
         self.last_user_action_time = time.time()
-        self.city_user_modified = False
-        self.city_synced = True
-        sel = self.city_combo.get(); eng_city = "Hanoi"
+        sel = self.city_combo.get()
+        eng_city = "Hanoi"
         for eng, vn in VN_CITIES:
             if vn.lower() == sel.lower() or eng.lower() == sel.lower():
                 eng_city = eng; break
+        self.last_cyd_city = eng_city.lower()
         self.pending_control["city"] = eng_city
         self.status_lbl.configure(text=f"✅ Weather City set: {sel}", text_color="#39FF14")
 
