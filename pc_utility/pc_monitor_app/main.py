@@ -609,7 +609,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ico_lbl.pack(side="left", padx=(0, 4))
 
             title_lbl = ctk.CTkLabel(title_row, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
-            title_lbl.pack(side="left", pady=(3, 0))
+            title_lbl.pack(side="left", pady=0)
 
             sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w")
             sub_lbl.pack(anchor="w", pady=0)
@@ -703,9 +703,9 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("⏮️", "Prev Track", "prev", "#818CF8", 14),
             ("⏯️", "Play / Pause", "play_pause", "#39FF14", 14),
             ("⏭️", "Next Track", "next", "#818CF8", 14),
-            ("🔉", "Vol Down", "vol_down", "#FBBF24", 20),
+            ("🔉", "Vol Down", "vol_down", "#FBBF24", 18),
             ("⏭️", "Skip Ad", "skip_ad", "#FFA726", 14),
-            ("🔊", "Vol Up", "vol_up", "#FBBF24", 20)
+            ("🔊", "Vol Up", "vol_up", "#FBBF24", 18)
         ]
 
         for idx, (m_ico, m_txt, m_act, acc_c, ico_sz) in enumerate(media_btns):
@@ -717,10 +717,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             inner.place(relx=0.5, rely=0.5, anchor="center")
             
             ico_lbl = ctk.CTkLabel(inner, text=m_ico, font=ctk.CTkFont(size=ico_sz), text_color=acc_c)
-            if m_act in ("vol_down", "vol_up"):
-                ico_lbl.pack(side="left", padx=(0, 4), pady=(0, 6))
-            else:
-                ico_lbl.pack(side="left", padx=(0, 4), pady=(0, 2))
+            ico_lbl.pack(side="left", padx=(0, 4), pady=(0, 2))
             
             txt_lbl = ctk.CTkLabel(inner, text=m_txt, font=ctk.CTkFont(size=12, weight="bold"), text_color=acc_c)
             txt_lbl.pack(side="left", pady=0)
@@ -768,7 +765,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.toggle_alm_inner.place(relx=0.5, rely=0.5, anchor="center")
 
         self.toggle_alm_ico = ctk.CTkLabel(self.toggle_alm_inner, text="🔕", font=ctk.CTkFont(size=13), text_color="#FCA5A5")
-        self.toggle_alm_ico.pack(side="left", padx=(0, 4), pady=(0, 5))
+        self.toggle_alm_ico.pack(side="left", padx=(0, 4), pady=(0, 2))
 
         self.toggle_alm_txt = ctk.CTkLabel(self.toggle_alm_inner, text="Alarm Off", font=ctk.CTkFont(size=12, weight="bold"), text_color="#FCA5A5")
         self.toggle_alm_txt.pack(side="left", pady=0)
