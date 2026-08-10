@@ -235,46 +235,132 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.build_tab_designer()
         self.build_tab_settings()
 
-    # ── TAB 1: LIVE CONTROL CENTER ────────────────────────────────────
+    # ── TAB 1: LIVE CONTROL CENTER (REDESIGNED ULTRA-PREMIUM UI) ──────
     def build_tab_live(self):
         container = ctk.CTkScrollableFrame(self.tab_live, fg_color="transparent")
         container.pack(fill="both", expand=True, padx=5, pady=5)
 
-        # Live Metrics Grid
-        m_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
-        m_frame.pack(fill="x", pady=5)
+        # 1. Hardware Telemetry Metrics Cards
+        tele_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        tele_frame.pack(fill="x", pady=(0, 8))
 
-        m_title = ctk.CTkLabel(m_frame, text="📊 PC Hardware Realtime Metrics", font=ctk.CTkFont(size=14, weight="bold"))
-        m_title.pack(anchor="w", padx=12, pady=(8, 4))
+        t_hdr = ctk.CTkLabel(tele_frame, text="📊 Live PC Hardware Telemetry", font=ctk.CTkFont(size=14, weight="bold"), text_color="#58a6ff")
+        t_hdr.pack(anchor="w", padx=15, pady=(10, 6))
 
-        self.metrics_lbl = ctk.CTkLabel(m_frame, text="CPU: 0% | RAM: 0% | Net Down: 0 KB/s | Net Up: 0 KB/s", font=ctk.CTkFont(size=13), text_color="#38bdf8")
-        self.metrics_lbl.pack(anchor="w", padx=12, pady=(0, 10))
+        m_grid = ctk.CTkFrame(tele_frame, fg_color="transparent")
+        m_grid.pack(fill="x", padx=10, pady=(0, 10))
 
-        # Page Switcher
+        # CPU Box
+        cpu_box = ctk.CTkFrame(m_grid, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=8, width=150)
+        cpu_box.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        ctk.CTkLabel(cpu_box, text="💻 CPU LOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#8b949e").pack(anchor="w", padx=10, pady=(8, 0))
+        self.lbl_cpu = ctk.CTkLabel(cpu_box, text="0%", font=ctk.CTkFont(size=22, weight="bold"), text_color="#00F5FF")
+        self.lbl_cpu.pack(anchor="w", padx=10, pady=2)
+        self.bar_cpu = ctk.CTkProgressBar(cpu_box, height=6, progress_color="#00F5FF", fg_color="#21262d")
+        self.bar_cpu.set(0.0)
+        self.bar_cpu.pack(fill="x", padx=10, pady=(0, 10))
+
+        # RAM Box
+        ram_box = ctk.CTkFrame(m_grid, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=8, width=150)
+        ram_box.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        ctk.CTkLabel(ram_box, text="🧠 RAM LOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#8b949e").pack(anchor="w", padx=10, pady=(8, 0))
+        self.lbl_ram = ctk.CTkLabel(ram_box, text="0%", font=ctk.CTkFont(size=22, weight="bold"), text_color="#AB47BC")
+        self.lbl_ram.pack(anchor="w", padx=10, pady=2)
+        self.bar_ram = ctk.CTkProgressBar(ram_box, height=6, progress_color="#AB47BC", fg_color="#21262d")
+        self.bar_ram.set(0.0)
+        self.bar_ram.pack(fill="x", padx=10, pady=(0, 10))
+
+        # Net Down Box
+        down_box = ctk.CTkFrame(m_grid, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=8, width=150)
+        down_box.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        ctk.CTkLabel(down_box, text="⬇️ NET DOWNLOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#8b949e").pack(anchor="w", padx=10, pady=(8, 0))
+        self.lbl_net_down = ctk.CTkLabel(down_box, text="0 KB/s", font=ctk.CTkFont(size=18, weight="bold"), text_color="#00E676")
+        self.lbl_net_down.pack(anchor="w", padx=10, pady=(4, 10))
+
+        # Net Up Box
+        up_box = ctk.CTkFrame(m_grid, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=8, width=150)
+        up_box.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+        ctk.CTkLabel(up_box, text="⬆️ NET UPLOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#8b949e").pack(anchor="w", padx=10, pady=(8, 0))
+        self.lbl_net_up = ctk.CTkLabel(up_box, text="0 KB/s", font=ctk.CTkFont(size=18, weight="bold"), text_color="#FFA726")
+        self.lbl_net_up.pack(anchor="w", padx=10, pady=(4, 10))
+
+        for col_i in range(4):
+            m_grid.columnconfigure(col_i, weight=1)
+
+        # 2. Descriptive Page Switcher Grid (8 Buttons with Full Titles & Icons)
         p_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
-        p_frame.pack(fill="x", pady=5)
+        p_frame.pack(fill="x", pady=6)
 
-        p_lbl = ctk.CTkLabel(p_frame, text="🖥️ Switch Dashboard Page (Pages 0..7)", font=ctk.CTkFont(size=14, weight="bold"))
-        p_lbl.pack(anchor="w", padx=12, pady=(8, 4))
+        p_lbl = ctk.CTkLabel(p_frame, text="🖥️ Switch Dashboard Page (Pages 0..7)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#58a6ff")
+        p_lbl.pack(anchor="w", padx=15, pady=(10, 6))
 
-        p_btn_frame = ctk.CTkFrame(p_frame, fg_color="transparent")
-        p_btn_frame.pack(fill="x", padx=10, pady=(0, 10))
+        p_grid = ctk.CTkFrame(p_frame, fg_color="transparent")
+        p_grid.pack(fill="x", padx=10, pady=(0, 10))
 
         self.page_btns = []
+        page_titles = [
+            "Page 0: 🌤️ Weather Clock",
+            "Page 1: 📆 Lunar Calendar",
+            "Page 2: 📈 Finance & Gold",
+            "Page 3: 💻 PC Hardware",
+            "Page 4: 🚀 Net & Disks",
+            "Page 5: ⏳ Pomodoro Desk",
+            "Page 6: 🎵 Media Remote",
+            "Page 7: ⚙️ System Settings"
+        ]
+
         for pid in range(8):
+            row = pid // 4
+            col = pid % 4
             btn = ctk.CTkButton(
-                p_btn_frame, text=f"Page {pid}", width=80, fg_color="#21262d", hover_color="#30363d",
+                p_grid, text=page_titles[pid], font=ctk.CTkFont(size=12, weight="bold"),
+                height=38, fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9",
                 command=lambda p=pid: self.switch_page(p)
             )
-            btn.grid(row=0, column=pid, padx=3, pady=3)
+            btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
             self.page_btns.append(btn)
 
-        # Weather Location & Currency Settings
-        w_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
-        w_frame.pack(fill="x", pady=5)
+        for col_i in range(4):
+            p_grid.columnconfigure(col_i, weight=1)
 
-        w_lbl = ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"))
-        w_lbl.pack(anchor="w", padx=12, pady=(8, 4))
+        # 3. Preset Theme Switcher (6 Theme Buttons with Color Swatches)
+        th_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        th_frame.pack(fill="x", pady=6)
+
+        th_lbl = ctk.CTkLabel(th_frame, text="🎨 Preset Firmware Theme Switcher (Chủ Đề Giao Diện)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#58a6ff")
+        th_lbl.pack(anchor="w", padx=15, pady=(10, 6))
+
+        th_grid = ctk.CTkFrame(th_frame, fg_color="transparent")
+        th_grid.pack(fill="x", padx=10, pady=(0, 10))
+
+        preset_themes = [
+            ("🌊 Ocean Dark", "ocean_dark", "#0F172A", "#38BDF8"),
+            ("🟣 Cyberpunk Neon", "cyberpunk", "#140026", "#FF00CC"),
+            ("🌲 Forest Slate", "forest", "#064E3B", "#10B981"),
+            ("🌸 Cherry Blossom", "cherry", "#831843", "#F472B6"),
+            ("☀️ Light Day", "light_day", "#F8FAFC", "#0284C7"),
+            ("🟢 Retro Green", "retro_green", "#000000", "#00FF41")
+        ]
+
+        for idx, (tname, tkey, bg_col, acc_col) in enumerate(preset_themes):
+            row = idx // 3
+            col = idx % 3
+            t_btn = ctk.CTkButton(
+                th_grid, text=f"✨ {tname}", font=ctk.CTkFont(size=12, weight="bold"),
+                height=36, fg_color="#21262d", hover_color="#30363d", text_color=acc_col,
+                command=lambda k=tkey: self.apply_theme(k)
+            )
+            t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+
+        for col_i in range(3):
+            th_grid.columnconfigure(col_i, weight=1)
+
+        # 4. Weather Location & Foreign Exchange Settings
+        w_frame = ctk.CTkFrame(container, fg_color="#161b22", corner_radius=10)
+        w_frame.pack(fill="x", pady=6)
+
+        w_lbl = ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#58a6ff")
+        w_lbl.pack(anchor="w", padx=15, pady=(10, 6))
 
         w_inner = ctk.CTkFrame(w_frame, fg_color="transparent")
         w_inner.pack(fill="x", padx=12, pady=(0, 10))
@@ -796,13 +882,16 @@ class SmartDeskStudioProApp(ctk.CTk):
             tk.messagebox.showwarning("Sync Notice", "Could not reach CYD hardware over USB or WiFi.\nSkin saved locally.")
 
     # ── CONTROL FUNCTIONS ─────────────────────────────────────────────
+    def apply_theme(self, theme_key):
+        _send_control_cmd({"preset": theme_key}, self.status_lbl, f"✅ Theme: {theme_key}", "❌ Theme error")
+
     def switch_page(self, page_id):
         self.active_cyd_page = page_id
         for pid, btn in enumerate(self.page_btns):
             if pid == page_id:
-                btn.configure(fg_color="#1f6feb")
+                btn.configure(fg_color="#1f6feb", text_color="#FFFFFF")
             else:
-                btn.configure(fg_color="#21262d")
+                btn.configure(fg_color="#21262d", text_color="#c9d1d9")
         _send_control_cmd({"page": page_id}, self.status_lbl, f"✅ Switched to Page {page_id}", "❌ Switch error")
 
     def apply_city(self):
@@ -817,6 +906,15 @@ class SmartDeskStudioProApp(ctk.CTk):
         c1 = self.cur1_combo.get()
         c2 = self.cur2_combo.get()
         _send_control_cmd({"cur1": c1, "cur2": c2}, self.status_lbl, f"✅ Currencies: {c1}/{c2}", "❌ Currency error")
+
+    def _update_telemetry_ui(self, c, r, d, u):
+        if hasattr(self, 'lbl_cpu'):
+            self.lbl_cpu.configure(text=f"{c}%")
+            self.bar_cpu.set(c / 100.0)
+            self.lbl_ram.configure(text=f"{r}%")
+            self.bar_ram.set(r / 100.0)
+            self.lbl_net_down.configure(text=f"{d} KB/s" if d < 1024 else f"{d/1024:.1f} MB/s")
+            self.lbl_net_up.configure(text=f"{u} KB/s" if u < 1024 else f"{u/1024:.1f} MB/s")
 
     # ── HARDWARE METRICS STREAM LOOP (< 50ms Connection) ──────────────
     def stream_loop(self):
@@ -843,7 +941,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
                 payload = {"cpu": cpu_pct, "ram": ram_pct, "net_down": down_speed, "net_up": up_speed}
                 self.after(0, lambda c=cpu_pct, r=ram_pct, d=down_speed, u=up_speed:
-                           self.metrics_lbl.configure(text=f"CPU: {c}% | RAM: {r}% | Net Down: {d} KB/s | Net Up: {u} KB/s"))
+                           self._update_telemetry_ui(c, r, d, u))
             except Exception:
                 time.sleep(0.5); continue
 
