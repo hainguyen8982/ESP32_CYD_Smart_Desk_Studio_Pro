@@ -643,27 +643,36 @@ class SmartDeskStudioProApp(ctk.CTk):
         w_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         w_frame.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
+        ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 4))
 
-        w_inner = ctk.CTkFrame(w_frame, fg_color="transparent")
-        w_inner.pack(fill="x", padx=12, pady=(0, 12))
+        # Top row: Search input + Set City button + FX Currencies
+        w_top = ctk.CTkFrame(w_frame, fg_color="transparent")
+        w_top.pack(fill="x", padx=12, pady=(0, 6))
 
-        city_names = [c[1] for c in VN_CITIES]
-        self.city_combo = ctk.CTkComboBox(w_inner, values=city_names, width=170, command=lambda _: setattr(self, 'last_user_action_time', time.time()))
-        self.city_combo.set("Hà Nội"); self.city_combo.pack(side="left", padx=(0, 6))
+        self.city_search_entry = ctk.CTkEntry(
+            w_top, placeholder_text="🔍 Gõ tìm thành phố (VD: Đà Nẵng, Cần Thơ)...",
+            width=210
+        )
+        self.city_search_entry.pack(side="left", padx=(0, 6))
+        self.city_search_entry.bind("<KeyRelease>", self._filter_city_list)
 
-        set_city_btn = ctk.CTkButton(w_inner, text="Set City", width=75, command=self.apply_city)
-        set_city_btn.pack(side="left", padx=(0, 12))
+        set_city_btn = ctk.CTkButton(w_top, text="🌤️ Set City", width=85, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(weight="bold"), command=self.apply_city)
+        set_city_btn.pack(side="left", padx=(0, 10))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW"]
-        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=70)
+        self.cur1_combo = ctk.CTkOptionMenu(w_top, values=currencies, width=65)
         self.cur1_combo.set("USD"); self.cur1_combo.pack(side="left", padx=(0, 4))
 
-        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=70)
+        self.cur2_combo = ctk.CTkOptionMenu(w_top, values=currencies, width=65)
         self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 6))
 
-        set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=75, command=self.apply_currencies)
+        set_cur_btn = ctk.CTkButton(w_top, text="Set FX", width=65, command=self.apply_currencies)
         set_cur_btn.pack(side="left")
+
+        # Compact Scrollable City Picker (Height 100px, 100% Mouse Wheel Scrollable)
+        self.city_scroll_frame = ctk.CTkScrollableFrame(w_frame, height=95, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=6)
+        self.city_scroll_frame.pack(fill="x", padx=12, pady=(0, 10))
+        self._populate_city_list()
 
         # 5. Media Remote PC Buttons
         m_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -1249,9 +1258,45 @@ class SmartDeskStudioProApp(ctk.CTk):
                 else:
                     t_btn.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
-    def _on_city_selected(self, choice=None):
-        self.city_user_modified = True
+    def _populate_city_list(self, filter_text=""):
+        if not hasattr(self, 'city_scroll_frame'): return
+        for child in self.city_scroll_frame.winfo_children():
+            child.destroy()
+
+        norm_filter = remove_vietnamese_accents(filter_text.strip().lower())
+        matched = []
+        for eng, vn in VN_CITIES:
+            norm_vn = remove_vietnamese_accents(vn.lower())
+            if not norm_filter or norm_filter in norm_vn or norm_filter in eng.lower():
+                matched.append((eng, vn))
+
+        for idx, (eng, vn) in enumerate(matched):
+            row = idx // 3
+            col = idx % 3
+            btn = ctk.CTkButton(
+                self.city_scroll_frame, text=vn, font=ctk.CTkFont(size=11),
+                height=26, fg_color="#111827", hover_color="#1f2937", text_color="#e2e8f0",
+                border_width=1, border_color="#1f2937", corner_radius=5,
+                command=lambda e=eng, v=vn: self._on_city_pill_clicked(e, v)
+            )
+            btn.grid(row=row, column=col, padx=3, pady=3, sticky="ew")
+
+        for c_i in range(3):
+            self.city_scroll_frame.columnconfigure(c_i, weight=1)
+
+    def _filter_city_list(self, event=None):
         self.last_user_action_time = time.time()
+        self.city_user_modified = True
+        txt = self.city_search_entry.get()
+        self._populate_city_list(txt)
+
+    def _on_city_pill_clicked(self, eng_name, vn_name):
+        self.last_user_action_time = time.time()
+        self.city_user_modified = True
+        self.selected_city_eng = eng_name
+        self.selected_city_vn = vn_name
+        self.city_search_entry.delete(0, 'end')
+        self.city_search_entry.insert(0, vn_name)
 
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
@@ -1271,14 +1316,15 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         # Sync city from CYD ONLY when the city reported by CYD actually changes!
         cyd_city = sdata.get("city", "")
-        if cyd_city and hasattr(self, 'city_combo'):
+        if cyd_city and hasattr(self, 'city_search_entry'):
             c_val = cyd_city.strip()
             if c_val.lower() != getattr(self, 'last_cyd_city', '').lower():
                 if time.time() - self.last_user_action_time > 4.0:
                     self.last_cyd_city = c_val.lower()
                     for eng, vn in VN_CITIES:
                         if eng.lower() == c_val.lower():
-                            self.city_combo.set(vn)
+                            self.city_search_entry.delete(0, 'end')
+                            self.city_search_entry.insert(0, vn)
                             break
 
         cur1 = sdata.get("cur1", "")
@@ -1291,14 +1337,16 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def apply_city(self):
         self.last_user_action_time = time.time()
-        sel = self.city_combo.get()
-        eng_city = "Hanoi"
+        sel = self.city_search_entry.get().strip() if hasattr(self, 'city_search_entry') else ""
+        eng_city = getattr(self, 'selected_city_eng', 'Hanoi')
         for eng, vn in VN_CITIES:
-            if vn.lower() == sel.lower() or eng.lower() == sel.lower():
-                eng_city = eng; break
+            if vn.lower() == sel.lower() or eng.lower() == sel.lower() or remove_vietnamese_accents(vn.lower()) == remove_vietnamese_accents(sel.lower()):
+                eng_city = eng
+                sel = vn
+                break
         self.last_cyd_city = eng_city.lower()
         self.pending_control["city"] = eng_city
-        self.status_lbl.configure(text=f"✅ Weather City set: {sel}", text_color="#39FF14")
+        self.status_lbl.configure(text=f"✅ Weather City set: {sel} ({eng_city})", text_color="#39FF14")
 
     def apply_currencies(self):
         self.last_user_action_time = time.time()

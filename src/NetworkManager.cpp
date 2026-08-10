@@ -703,27 +703,72 @@ void NetworkManager::update() {
 
 static bool getCityCoordinates(const char* city, float &lat, float &lon) {
     String c = String(city);
-    if (c.equalsIgnoreCase("Ho Chi Minh") || c.equalsIgnoreCase("Saigon") || c.equalsIgnoreCase("TP. Hồ Chí Minh") || c.equalsIgnoreCase("Chanh Hung")) {
-        lat = 10.8231f; lon = 106.6297f; return true;
-    } else if (c.equalsIgnoreCase("Hanoi") || c.equalsIgnoreCase("Ha Noi") || c.equalsIgnoreCase("Hà Nội")) {
-        lat = 21.0285f; lon = 105.8542f; return true;
-    } else if (c.equalsIgnoreCase("Da Nang") || c.equalsIgnoreCase("Danang") || c.equalsIgnoreCase("Đà Nẵng")) {
-        lat = 16.0544f; lon = 108.2022f; return true;
-    } else if (c.equalsIgnoreCase("Can Tho") || c.equalsIgnoreCase("Cần Thơ")) {
-        lat = 10.0452f; lon = 105.7469f; return true;
-    } else if (c.equalsIgnoreCase("Hai Phong") || c.equalsIgnoreCase("Hải Phòng")) {
-        lat = 20.8449f; lon = 106.6881f; return true;
-    } else if (c.equalsIgnoreCase("Da Lat") || c.equalsIgnoreCase("Dalat") || c.equalsIgnoreCase("Đà Lạt")) {
-        lat = 11.9404f; lon = 108.4583f; return true;
-    } else if (c.equalsIgnoreCase("Nha Trang")) {
-        lat = 12.2388f; lon = 109.1967f; return true;
-    } else if (c.equalsIgnoreCase("Hue") || c.equalsIgnoreCase("Huế")) {
-        lat = 16.4637f; lon = 107.5905f; return true;
-    } else if (c.equalsIgnoreCase("Vung Tau") || c.equalsIgnoreCase("Vũng Tàu")) {
-        lat = 10.3460f; lon = 107.0843f; return true;
-    } else if (c.equalsIgnoreCase("Phu Quoc") || c.equalsIgnoreCase("Phú Quốc")) {
-        lat = 10.2899f; lon = 103.9840f; return true;
-    }
+    if (c.equalsIgnoreCase("Ho Chi Minh") || c.equalsIgnoreCase("Saigon") || c.equalsIgnoreCase("TP. Hồ Chí Minh")) { lat = 10.8231f; lon = 106.6297f; return true; }
+    if (c.equalsIgnoreCase("Hanoi") || c.equalsIgnoreCase("Ha Noi") || c.equalsIgnoreCase("Hà Nội")) { lat = 21.0285f; lon = 105.8542f; return true; }
+    if (c.equalsIgnoreCase("Da Nang") || c.equalsIgnoreCase("Danang") || c.equalsIgnoreCase("Đà Nẵng")) { lat = 16.0544f; lon = 108.2022f; return true; }
+    if (c.equalsIgnoreCase("Can Tho") || c.equalsIgnoreCase("Cần Thơ")) { lat = 10.0452f; lon = 105.7469f; return true; }
+    if (c.equalsIgnoreCase("Hai Phong") || c.equalsIgnoreCase("Hải Phòng")) { lat = 20.8449f; lon = 106.6881f; return true; }
+    if (c.equalsIgnoreCase("An Giang")) { lat = 10.5380f; lon = 105.1328f; return true; }
+    if (c.equalsIgnoreCase("Vung Tau") || c.equalsIgnoreCase("Ba Ria") || c.equalsIgnoreCase("Bà Rịa - Vũng Tàu")) { lat = 10.3460f; lon = 107.0843f; return true; }
+    if (c.equalsIgnoreCase("Bac Giang") || c.equalsIgnoreCase("Bắc Giang")) { lat = 21.2731f; lon = 106.1946f; return true; }
+    if (c.equalsIgnoreCase("Bac Kan") || c.equalsIgnoreCase("Bắc Kạn")) { lat = 22.1470f; lon = 105.8348f; return true; }
+    if (c.equalsIgnoreCase("Bac Lieu") || c.equalsIgnoreCase("Bạc Liêu")) { lat = 9.2941f; lon = 105.7244f; return true; }
+    if (c.equalsIgnoreCase("Bac Ninh") || c.equalsIgnoreCase("Bắc Ninh")) { lat = 21.1861f; lon = 106.0763f; return true; }
+    if (c.equalsIgnoreCase("Ben Tre") || c.equalsIgnoreCase("Bến Tre")) { lat = 10.2432f; lon = 106.3751f; return true; }
+    if (c.equalsIgnoreCase("Binh Dinh") || c.equalsIgnoreCase("Quy Nhon") || c.equalsIgnoreCase("Bình Định")) { lat = 13.7820f; lon = 109.2197f; return true; }
+    if (c.equalsIgnoreCase("Binh Duong") || c.equalsIgnoreCase("Bình Dương")) { lat = 11.1719f; lon = 106.6519f; return true; }
+    if (c.equalsIgnoreCase("Binh Phuoc") || c.equalsIgnoreCase("Bình Phước")) { lat = 11.7512f; lon = 106.9184f; return true; }
+    if (c.equalsIgnoreCase("Binh Thuan") || c.equalsIgnoreCase("Phan Thiet") || c.equalsIgnoreCase("Bình Thuận")) { lat = 10.9333f; lon = 108.1000f; return true; }
+    if (c.equalsIgnoreCase("Ca Mau") || c.equalsIgnoreCase("Cà Mau")) { lat = 9.1769f; lon = 105.1524f; return true; }
+    if (c.equalsIgnoreCase("Cao Bang") || c.equalsIgnoreCase("Cao Bằng")) { lat = 22.6659f; lon = 105.9739f; return true; }
+    if (c.equalsIgnoreCase("Dak Lak") || c.equalsIgnoreCase("Buon Ma Thuot") || c.equalsIgnoreCase("Đắk Lắk")) { lat = 12.6667f; lon = 108.0500f; return true; }
+    if (c.equalsIgnoreCase("Dak Nong") || c.equalsIgnoreCase("Đắk Nông")) { lat = 12.0042f; lon = 107.6875f; return true; }
+    if (c.equalsIgnoreCase("Dien Bien") || c.equalsIgnoreCase("Điện Biên")) { lat = 21.3857f; lon = 103.0217f; return true; }
+    if (c.equalsIgnoreCase("Dong Nai") || c.equalsIgnoreCase("Bien Hoa") || c.equalsIgnoreCase("Đồng Nai")) { lat = 10.9574f; lon = 106.8427f; return true; }
+    if (c.equalsIgnoreCase("Dong Thap") || c.equalsIgnoreCase("Cao Lanh") || c.equalsIgnoreCase("Đồng Tháp")) { lat = 10.4571f; lon = 105.6322f; return true; }
+    if (c.equalsIgnoreCase("Gia Lai") || c.equalsIgnoreCase("Pleiku")) { lat = 13.9833f; lon = 108.0000f; return true; }
+    if (c.equalsIgnoreCase("Ha Giang") || c.equalsIgnoreCase("Hà Giang")) { lat = 22.8233f; lon = 104.9839f; return true; }
+    if (c.equalsIgnoreCase("Ha Nam") || c.equalsIgnoreCase("Phu Ly") || c.equalsIgnoreCase("Hà Nam")) { lat = 20.5411f; lon = 105.9138f; return true; }
+    if (c.equalsIgnoreCase("Ha Tinh") || c.equalsIgnoreCase("Hà Tĩnh")) { lat = 18.3431f; lon = 105.9058f; return true; }
+    if (c.equalsIgnoreCase("Hai Duong") || c.equalsIgnoreCase("Hải Dương")) { lat = 20.9364f; lon = 106.3164f; return true; }
+    if (c.equalsIgnoreCase("Hau Giang") || c.equalsIgnoreCase("Vi Thanh") || c.equalsIgnoreCase("Hậu Giang")) { lat = 9.7843f; lon = 105.4701f; return true; }
+    if (c.equalsIgnoreCase("Hoa Binh") || c.equalsIgnoreCase("Hòa Bình")) { lat = 20.8172f; lon = 105.3378f; return true; }
+    if (c.equalsIgnoreCase("Hung Yen") || c.equalsIgnoreCase("Hưng Yên")) { lat = 20.6464f; lon = 106.0511f; return true; }
+    if (c.equalsIgnoreCase("Nha Trang") || c.equalsIgnoreCase("Khanh Hoa")) { lat = 12.2388f; lon = 109.1967f; return true; }
+    if (c.equalsIgnoreCase("Kien Giang") || c.equalsIgnoreCase("Rach Gia") || c.equalsIgnoreCase("Kiên Giang")) { lat = 10.0125f; lon = 105.0809f; return true; }
+    if (c.equalsIgnoreCase("Kon Tum")) { lat = 14.3503f; lon = 108.0000f; return true; }
+    if (c.equalsIgnoreCase("Lai Chau") || c.equalsIgnoreCase("Lai Châu")) { lat = 22.3964f; lon = 103.4586f; return true; }
+    if (c.equalsIgnoreCase("Da Lat") || c.equalsIgnoreCase("Dalat") || c.equalsIgnoreCase("Lam Dong") || c.equalsIgnoreCase("Đà Lạt")) { lat = 11.9404f; lon = 108.4583f; return true; }
+    if (c.equalsIgnoreCase("Lang Son") || c.equalsIgnoreCase("Lạng Sơn")) { lat = 21.8537f; lon = 106.7615f; return true; }
+    if (c.equalsIgnoreCase("Lao Cai") || c.equalsIgnoreCase("Sa Pa") || c.equalsIgnoreCase("Lào Cai")) { lat = 22.4856f; lon = 103.9707f; return true; }
+    if (c.equalsIgnoreCase("Long An") || c.equalsIgnoreCase("Tan An")) { lat = 10.5367f; lon = 106.4106f; return true; }
+    if (c.equalsIgnoreCase("Nam Dinh") || c.equalsIgnoreCase("Nam Định")) { lat = 20.4371f; lon = 106.1742f; return true; }
+    if (c.equalsIgnoreCase("Nghe An") || c.equalsIgnoreCase("Vinh") || c.equalsIgnoreCase("Nghệ An")) { lat = 18.6734f; lon = 105.6813f; return true; }
+    if (c.equalsIgnoreCase("Ninh Binh") || c.equalsIgnoreCase("Ninh Bình")) { lat = 20.2539f; lon = 105.9750f; return true; }
+    if (c.equalsIgnoreCase("Ninh Thuan") || c.equalsIgnoreCase("Phan Rang") || c.equalsIgnoreCase("Ninh Thuận")) { lat = 11.5653f; lon = 108.9886f; return true; }
+    if (c.equalsIgnoreCase("Phu Tho") || c.equalsIgnoreCase("Viet Tri") || c.equalsIgnoreCase("Phú Thọ")) { lat = 21.3228f; lon = 105.4019f; return true; }
+    if (c.equalsIgnoreCase("Phu Yen") || c.equalsIgnoreCase("Tuy Hoa") || c.equalsIgnoreCase("Phú Yên")) { lat = 13.0882f; lon = 109.3114f; return true; }
+    if (c.equalsIgnoreCase("Quang Binh") || c.equalsIgnoreCase("Dong Hoi") || c.equalsIgnoreCase("Quảng Bình")) { lat = 17.4761f; lon = 106.6006f; return true; }
+    if (c.equalsIgnoreCase("Quang Nam") || c.equalsIgnoreCase("Tam Ky") || c.equalsIgnoreCase("Hoi An") || c.equalsIgnoreCase("Quảng Nam")) { lat = 15.5708f; lon = 108.4756f; return true; }
+    if (c.equalsIgnoreCase("Quang Ngai") || c.equalsIgnoreCase("Quảng Ngãi")) { lat = 15.1205f; lon = 108.7924f; return true; }
+    if (c.equalsIgnoreCase("Quang Ninh") || c.equalsIgnoreCase("Ha Long") || c.equalsIgnoreCase("Quảng Ninh")) { lat = 20.9505f; lon = 107.0733f; return true; }
+    if (c.equalsIgnoreCase("Quang Tri") || c.equalsIgnoreCase("Dong Ha") || c.equalsIgnoreCase("Quảng Trị")) { lat = 16.8164f; lon = 107.1003f; return true; }
+    if (c.equalsIgnoreCase("Soc Trang") || c.equalsIgnoreCase("Sóc Trăng")) { lat = 9.6033f; lon = 105.9800f; return true; }
+    if (c.equalsIgnoreCase("Son La") || c.equalsIgnoreCase("Sơn La")) { lat = 21.3270f; lon = 103.9144f; return true; }
+    if (c.equalsIgnoreCase("Tay Ninh") || c.equalsIgnoreCase("Tây Ninh")) { lat = 11.3100f; lon = 106.0983f; return true; }
+    if (c.equalsIgnoreCase("Thai Binh") || c.equalsIgnoreCase("Thái Bình")) { lat = 20.4463f; lon = 106.3364f; return true; }
+    if (c.equalsIgnoreCase("Thai Nguyen") || c.equalsIgnoreCase("Thái Nguyên")) { lat = 21.5928f; lon = 105.8442f; return true; }
+    if (c.equalsIgnoreCase("Thanh Hoa") || c.equalsIgnoreCase("Thanh Hóa")) { lat = 19.8067f; lon = 105.7851f; return true; }
+    if (c.equalsIgnoreCase("Hue") || c.equalsIgnoreCase("Thua Thien Hue") || c.equalsIgnoreCase("Huế")) { lat = 16.4637f; lon = 107.5905f; return true; }
+    if (c.equalsIgnoreCase("Tien Giang") || c.equalsIgnoreCase("My Tho") || c.equalsIgnoreCase("Tiền Giang")) { lat = 10.3633f; lon = 106.3619f; return true; }
+    if (c.equalsIgnoreCase("Tra Vinh") || c.equalsIgnoreCase("Trà Vinh")) { lat = 9.9347f; lon = 106.3444f; return true; }
+    if (c.equalsIgnoreCase("Tuyen Quang") || c.equalsIgnoreCase("Tuyên Quang")) { lat = 21.8239f; lon = 105.2157f; return true; }
+    if (c.equalsIgnoreCase("Vinh Long") || c.equalsIgnoreCase("Vĩnh Long")) { lat = 10.2537f; lon = 105.9722f; return true; }
+    if (c.equalsIgnoreCase("Vinh Phuc") || c.equalsIgnoreCase("Vinh Yen") || c.equalsIgnoreCase("Vĩnh Phúc")) { lat = 21.3089f; lon = 105.6047f; return true; }
+    if (c.equalsIgnoreCase("Yen Bai") || c.equalsIgnoreCase("Yên Bái")) { lat = 21.7050f; lon = 104.8753f; return true; }
+    if (c.equalsIgnoreCase("Phu Quoc") || c.equalsIgnoreCase("Phú Quốc")) { lat = 10.2899f; lon = 103.9840f; return true; }
+
+    // Fallback: Default to Saigon coordinates
     lat = 10.8231f; lon = 106.6297f;
     return true;
 }
