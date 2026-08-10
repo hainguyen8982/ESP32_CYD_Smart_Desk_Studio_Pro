@@ -55,11 +55,12 @@ SEGMENT7_MASKS = {
 }
 
 ELEMENT_PRESETS = [
-    ("WiFi IP Address Text", "text", "📶 192.168.1.13", 95, 14, "#00E676", "mono"),
-    ("PC Serial Status Icon", "text", "💻 USB Connected", 90, 14, "#38BDF8", "mono"),
+    ("WiFi Signal Icon (Dynamic RSSI)", "wifi_signal", "📶 -54dBm", 55, 14, "#00E676", "mono"),
+    ("WiFi IP Address Text", "text", "192.168.1.13", 75, 14, "#00E676", "mono"),
+    ("PC Serial Status Icon", "text", "💻 USB", 45, 14, "#38BDF8", "mono"),
     ("Page Title & Icon", "text", "🌤️ Weather Clock", 110, 14, "#FFD700", "default"),
-    ("Page Counter Index", "text", "0/7", 35, 14, "#8B949E", "mono"),
-    ("Status Bar Current Time", "text", "14:35", 45, 14, "#FFFFFF", "mono"),
+    ("Page Counter Index", "text", "0/7", 30, 14, "#8B949E", "mono"),
+    ("Status Bar Current Time", "status_time", "⏰ 14:35", 55, 14, "#FFFFFF", "mono"),
     ("Digital Clock Digits", "matrix_text", "14:35:08", 170, 35, "#00F5FF", "dot_matrix"),
     ("Solar & Lunar Date", "text", "Thứ Hai 10/08 • 18/07 Âm", 170, 18, "#8B949E", "default"),
     ("Dot Matrix Sun Icon", "pixel_sun", "sun", 50, 50, "#FFCC00", "dot_matrix"),
@@ -82,7 +83,7 @@ class SkinDesignerApp(ctk.CTk):
         self.skin_data = {
             "skin_name": "Custom Multi-Page Skin",
             "author": "User Designer",
-            "version": "2.0",
+            "version": "2.1",
             "canvas": {"width": CANVAS_WIDTH, "height": CANVAS_HEIGHT, "bg_color": "#000000"},
             "pages": {}
         }
@@ -142,7 +143,7 @@ class SkinDesignerApp(ctk.CTk):
         banner = ctk.CTkFrame(main_frame, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=6)
         banner.pack(fill="x", pady=(0, 10))
 
-        b_text = "💡 Click trực tiếp lên từng đối tượng (IP, Icon, Tiêu đề, Giờ, Page Index...) để chỉnh sửa hoặc xóa trên Menu Phải!  |  ⬅️⬆️➡️⬇️ Mũi Tên: Dịch 1px  |  ⌨️ Delete: Xóa"
+        b_text = "💡 Click trực tiếp lên từng đối tượng (WiFi Icon, IP, Time, Title, Page Index...) để chỉnh sửa hoặc xóa trên Menu Phải! | 📶 WiFi Icon tự động nhảy vạch theo signal thực tế!"
         b_lbl = ctk.CTkLabel(banner, text=b_text, font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
         b_lbl.pack(padx=10, pady=6)
 
@@ -345,6 +346,14 @@ class SkinDesignerApp(ctk.CTk):
 
             cur_x += seg_w + 6
 
+    def draw_wifi_signal_bars(self, ex, ey, color, elem_id):
+        # Render 4 Dynamic WiFi Signal Bars (1..4 bars)
+        for b in range(4):
+            bx = ex + b * 5
+            bh = 4 + b * 3
+            by = ey + 12 - bh
+            self.canvas.create_rectangle(bx, by, bx + 3, ey + 12, fill=color, outline="", tags=("element", elem_id))
+
     def draw_pixel_sun(self, start_x, start_y, dot_size, pitch, color, elem_id=""):
         sun_map = [0b0011100, 0b0111110, 0b1111111, 0b1111111, 0b1111111, 0b0111110, 0b0011100]
         for r in range(7):
@@ -399,7 +408,12 @@ class SkinDesignerApp(ctk.CTk):
             content = elem.get("content", "")
 
             # Render element visuals
-            if etype == "pixel_sun":
+            if etype == "wifi_signal":
+                self.draw_wifi_signal_bars(ex, ey, color, eid)
+                self.canvas.create_text(ex + 24, ey + int(eh/2), text="-54dBm", fill=color, font=("Consolas", int(4 * SCALE)), anchor="w", tags=("element", eid))
+            elif etype == "status_time":
+                self.canvas.create_text(ex, ey + int(eh/2), text="⏰ 14:35", fill=color, font=("Consolas", int(4.5 * SCALE), "bold"), anchor="w", tags=("element", eid))
+            elif etype == "pixel_sun":
                 self.draw_pixel_sun(ex, ey, dot_size=5, pitch=7, color=color, elem_id=eid)
             elif etype == "pixel_sunrise":
                 self.draw_pixel_sunrise(ex, ey, dot_size=5, pitch=7, color=color, elem_id=eid)

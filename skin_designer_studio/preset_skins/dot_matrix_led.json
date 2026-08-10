@@ -1,7 +1,7 @@
 {
   "skin_name": "Retro Dot Matrix LED Clock",
   "author": "Smart Desk Studio",
-  "version": "2.0",
+  "version": "2.1",
   "canvas": {
     "width": 320,
     "height": 240,
@@ -12,15 +12,28 @@
       "name": "Page 0: Main Weather Clock",
       "elements": [
         {
+          "id": "sb_wifi",
+          "group": "Status Bar",
+          "name": "WiFi RSSI Signal Icon (Dynamic)",
+          "type": "wifi_signal",
+          "content": "📶 -54dBm",
+          "font_style": "mono",
+          "x": 5,
+          "y": 2,
+          "w": 55,
+          "h": 14,
+          "color": "#00E676"
+        },
+        {
           "id": "sb_ip",
           "group": "Status Bar",
           "name": "WiFi & IP Address",
           "type": "text",
-          "content": "📶 192.168.1.13",
+          "content": "192.168.1.13",
           "font_style": "mono",
-          "x": 5,
+          "x": 65,
           "y": 2,
-          "w": 95,
+          "w": 75,
           "h": 14,
           "color": "#00E676"
         },
@@ -31,9 +44,9 @@
           "type": "text",
           "content": "💻 USB",
           "font_style": "mono",
-          "x": 105,
+          "x": 145,
           "y": 2,
-          "w": 50,
+          "w": 45,
           "h": 14,
           "color": "#38BDF8"
         },
@@ -44,9 +57,9 @@
           "type": "text",
           "content": "🌤️ Weather Clock",
           "font_style": "default",
-          "x": 160,
+          "x": 195,
           "y": 2,
-          "w": 110,
+          "w": 80,
           "h": 14,
           "color": "#FFD700"
         },
@@ -57,9 +70,9 @@
           "type": "text",
           "content": "0/7",
           "font_style": "mono",
-          "x": 280,
+          "x": 285,
           "y": 2,
-          "w": 35,
+          "w": 30,
           "h": 14,
           "color": "#8B949E"
         },
@@ -130,7 +143,63 @@
         }
       ]
     },
-    "1": { "name": "Page 1: Lunar Calendar", "elements": [] },
+    "1": {
+      "name": "Page 1: Lunar Calendar",
+      "elements": [
+        {
+          "id": "p1_wifi",
+          "group": "Status Bar",
+          "name": "WiFi RSSI Signal Icon (Dynamic)",
+          "type": "wifi_signal",
+          "content": "📶 -54dBm",
+          "font_style": "mono",
+          "x": 5,
+          "y": 2,
+          "w": 55,
+          "h": 14,
+          "color": "#00E676"
+        },
+        {
+          "id": "p1_time",
+          "group": "Status Bar",
+          "name": "Status Bar Current Time",
+          "type": "status_time",
+          "content": "⏰ 14:35",
+          "font_style": "mono",
+          "x": 65,
+          "y": 2,
+          "w": 55,
+          "h": 14,
+          "color": "#FFFFFF"
+        },
+        {
+          "id": "p1_title",
+          "group": "Status Bar",
+          "name": "Page Title & Icon",
+          "type": "text",
+          "content": "📅 Lunar Calendar",
+          "font_style": "default",
+          "x": 130,
+          "y": 2,
+          "w": 145,
+          "h": 14,
+          "color": "#FFD700"
+        },
+        {
+          "id": "p1_page",
+          "group": "Status Bar",
+          "name": "Page Counter (1/7)",
+          "type": "text",
+          "content": "1/7",
+          "font_style": "mono",
+          "x": 285,
+          "y": 2,
+          "w": 30,
+          "h": 14,
+          "color": "#8B949E"
+        }
+      ]
+    },
     "2": { "name": "Page 2: Financial Market", "elements": [] },
     "3": { "name": "Page 3: PC Monitor (CPU & RAM)", "elements": [] },
     "4": { "name": "Page 4: PC Monitor (Net & Disks)", "elements": [] },
