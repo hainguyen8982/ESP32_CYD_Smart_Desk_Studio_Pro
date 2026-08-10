@@ -602,22 +602,14 @@ class SmartDeskStudioProApp(ctk.CTk):
             txt_inner = ctk.CTkFrame(btn_box, fg_color="transparent")
             txt_inner.pack(side="left", fill="x", expand=True, padx=2, pady=4)
 
-            title_row = ctk.CTkFrame(txt_inner, fg_color="transparent")
-            title_row.pack(anchor="w", pady=0)
-
-            ico_lbl = ctk.CTkLabel(title_row, text=p_ico, font=ctk.CTkFont(size=13))
-            ico_lbl.pack(side="left", padx=(0, 4))
-
-            title_lbl = ctk.CTkLabel(title_row, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
-            title_lbl.pack(side="left", pady=0)
+            title_lbl = ctk.CTkLabel(txt_inner, text=f"{p_ico}  {p_title}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
+            title_lbl.pack(anchor="w", pady=0)
 
             sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w")
             sub_lbl.pack(anchor="w", pady=0)
 
             badge_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             txt_inner.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
-            title_row.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
-            ico_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             title_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             sub_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
 
@@ -700,34 +692,23 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
         media_btns = [
-            ("⏮️", "Prev Track", "prev", "#818CF8", 14),
-            ("⏯️", "Play / Pause", "play_pause", "#39FF14", 14),
-            ("⏭️", "Next Track", "next", "#818CF8", 14),
-            ("🔉", "Vol Down", "vol_down", "#FBBF24", 18),
-            ("⏭️", "Skip Ad", "skip_ad", "#FFA726", 14),
-            ("🔊", "Vol Up", "vol_up", "#FBBF24", 18)
+            ("⏮️ Prev Track", "prev", "#818CF8"),
+            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
+            ("⏭️ Next Track", "next", "#818CF8"),
+            ("🔉 Vol Down", "vol_down", "#FBBF24"),
+            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
+            ("🔊 Vol Up", "vol_up", "#FBBF24")
         ]
 
-        for idx, (m_ico, m_txt, m_act, acc_c, ico_sz) in enumerate(media_btns):
+        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
-            btn_frame = ctk.CTkFrame(m_btn_grid, height=38, fg_color="#030712", corner_radius=6, border_width=1, border_color="#1f2937")
-            btn_frame.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
-            
-            inner = ctk.CTkFrame(btn_frame, fg_color="transparent")
-            inner.place(relx=0.5, rely=0.5, anchor="center")
-            
-            ico_lbl = ctk.CTkLabel(inner, text=m_ico, font=ctk.CTkFont(size=ico_sz), text_color=acc_c)
-            ico_lbl.pack(side="left", padx=(0, 4), pady=(0, 2))
-            
-            txt_lbl = ctk.CTkLabel(inner, text=m_txt, font=ctk.CTkFont(size=12, weight="bold"), text_color=acc_c)
-            txt_lbl.pack(side="left", pady=0)
-            
-            def _bind_btn(frame, inner_f, i_lbl, t_lbl, act):
-                for w in (frame, inner_f, i_lbl, t_lbl):
-                    w.bind("<Button-1>", lambda e, a=act: self.handle_media_action(a))
-                    w.bind("<Enter>", lambda e, f=frame: f.configure(fg_color="#1f2937"))
-                    w.bind("<Leave>", lambda e, f=frame: f.configure(fg_color="#030712"))
-            _bind_btn(btn_frame, inner, ico_lbl, txt_lbl, m_act)
+            mb = ctk.CTkButton(
+                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
+                height=36, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
+                border_width=1, border_color="#1f2937",
+                command=lambda a=m_act: self.handle_media_action(a)
+            )
+            mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
         for col_i in range(3): m_btn_grid.columnconfigure(col_i, weight=1)
 
@@ -752,28 +733,18 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 15))
 
         self.set_alm_btn = ctk.CTkButton(
-            alm_row1, text="⏰ Set Alarm", width=115, fg_color="#FB7185", hover_color="#E11D48",
+            alm_row1, text="⏰ Set Alarm", width=115, height=32, fg_color="#FB7185", hover_color="#E11D48",
             font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
         )
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
-        self.toggle_alm_frame = ctk.CTkFrame(alm_row1, width=115, height=32, fg_color="#7F1D1D", corner_radius=6, border_width=2, border_color="#EF4444")
-        self.toggle_alm_frame.pack_propagate(False)
-        self.toggle_alm_frame.pack(side="left")
+        self.toggle_alm_btn = ctk.CTkButton(
+            alm_row1, text="🔕 Alarm Off", width=115, height=32, fg_color="#7F1D1D", hover_color="#991B1B",
+            text_color="#FCA5A5", border_width=2, border_color="#EF4444",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.toggle_alarm_state
+        )
+        self.toggle_alm_btn.pack(side="left")
 
-        self.toggle_alm_inner = ctk.CTkFrame(self.toggle_alm_frame, fg_color="transparent")
-        self.toggle_alm_inner.place(relx=0.5, rely=0.5, anchor="center")
-
-        self.toggle_alm_ico = ctk.CTkLabel(self.toggle_alm_inner, text="🔕", font=ctk.CTkFont(size=13), text_color="#FCA5A5")
-        self.toggle_alm_ico.pack(side="left", padx=(0, 4), pady=(0, 2))
-
-        self.toggle_alm_txt = ctk.CTkLabel(self.toggle_alm_inner, text="Alarm Off", font=ctk.CTkFont(size=12, weight="bold"), text_color="#FCA5A5")
-        self.toggle_alm_txt.pack(side="left", pady=0)
-
-        for w in (self.toggle_alm_frame, self.toggle_alm_inner, self.toggle_alm_ico, self.toggle_alm_txt):
-            w.bind("<Button-1>", lambda e: self.toggle_alarm_state())
-            w.bind("<Enter>", lambda e: self._hover_alarm_toggle(True))
-            w.bind("<Leave>", lambda e: self._hover_alarm_toggle(False))
 
         # Row 2: Full-width Memo / Note text input field
         alm_row2 = ctk.CTkFrame(alm_frame, fg_color="transparent")
