@@ -183,9 +183,9 @@ void NetworkManager::begin() {
     server.begin();
     Serial.println("[NetworkManager] AsyncWebServer Started on Port 80");
 
-    if (MDNS.begin("cyd-dashboard")) {
+    if (MDNS.begin("smartdesk")) {
         MDNS.addService("http", "tcp", 80);
-        Serial.println("[NetworkManager] mDNS Responder Started (http://cyd-dashboard.local)");
+        Serial.println("[NetworkManager] mDNS Responder Started (http://smartdesk.local)");
     }
 
     if (isConnected()) {
@@ -321,10 +321,8 @@ void NetworkManager::setupWebRoutes() {
                       "</div>"
                       "<div class='card'>"
                       "<div class='card-title'>💱 Tỉ Giá Ngoại Tệ</div>"
-                      "<div class='grid-2'>"
-                      "<div><label>Ngoại tệ 1:</label><select class='select-box' id='cur1'><option value='USD'>USD</option><option value='EUR'>EUR</option><option value='JPY'>JPY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='CNY'>CNY</option><option value='KRW'>KRW</option></select></div>"
-                      "<div><label>Ngoại tệ 2:</label><select class='select-box' id='cur2'><option value='EUR'>EUR</option><option value='USD'>USD</option><option value='JPY'>JPY</option><option value='CNY'>CNY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='KRW'>KRW</option></select></div>"
-                      "</div>"
+                      "<div style='margin-bottom:8px'><label>Ngoại tệ 1:</label><select class='select-box' id='cur1'><option value='USD'>USD</option><option value='EUR'>EUR</option><option value='JPY'>JPY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='CNY'>CNY</option><option value='KRW'>KRW</option></select></div>"
+                      "<div style='margin-bottom:8px'><label>Ngoại tệ 2:</label><select class='select-box' id='cur2'><option value='EUR'>EUR</option><option value='USD'>USD</option><option value='JPY'>JPY</option><option value='CNY'>CNY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='KRW'>KRW</option></select></div>"
                       "<button class='btn-primary' onclick='applyFX()'>💱 Cập Nhật Tỉ Giá</button>"
                       "</div></div>"
                       "<!-- TAB 1: ALARM & MEMO -->"
