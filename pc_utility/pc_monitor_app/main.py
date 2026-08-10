@@ -669,7 +669,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         w_inner.pack(fill="x", padx=12, pady=(0, 12))
 
         self.city_picker_btn = ctk.CTkButton(
-            w_inner, text="🏙️ Hà Nội  ▼", width=170, fg_color="#1f2937", hover_color="#374151",
+            w_inner, text="🏙️ Hà Nội  ▼", width=175, fg_color="#1f2937", hover_color="#374151",
             text_color="#F8FAFC", border_width=1, border_color="#38bdf8",
             font=ctk.CTkFont(size=12, weight="bold"), command=self._open_city_picker_dialog
         )
@@ -677,17 +677,17 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.selected_city_eng = "Hanoi"
         self.selected_city_vn = "Hà Nội"
 
-        set_city_btn = ctk.CTkButton(w_inner, text="🌤️ Set City", width=85, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(weight="bold"), command=self.apply_city)
+        set_city_btn = ctk.CTkButton(w_inner, text="🌤️ Set City", width=95, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_city)
         set_city_btn.pack(side="left", padx=(0, 12))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW"]
-        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=65)
+        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
         self.cur1_combo.set("USD"); self.cur1_combo.pack(side="left", padx=(0, 4))
 
-        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=65)
+        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
         self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 6))
 
-        set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=65, command=self.apply_currencies)
+        set_cur_btn = ctk.CTkButton(w_inner, text="💱 Set FX", width=95, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_currencies)
         set_cur_btn.pack(side="left")
 
         # 5. Media Remote PC Buttons
@@ -703,7 +703,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("⏮️ Prev Track", "prev", "#818CF8"),
             ("⏯️ Play / Pause", "play_pause", "#39FF14"),
             ("⏭️ Next Track", "next", "#818CF8"),
-            ("🔉 Vol Down", "vol_down", "#FBBF24"),
+            ("🔊 Vol Down", "vol_down", "#FBBF24"),
             ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
             ("🔊 Vol Up", "vol_up", "#FBBF24")
         ]
@@ -747,7 +747,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
         self.toggle_alm_btn = ctk.CTkButton(
-            alm_row1, text="🔔 Alarm Off", width=115, fg_color="#7F1D1D", hover_color="#991B1B",
+            alm_row1, text="⏰ Alarm Off", width=115, fg_color="#7F1D1D", hover_color="#991B1B",
             text_color="#FCA5A5", border_width=2, border_color="#EF4444",
             font=ctk.CTkFont(size=12, weight="bold"), command=self.toggle_alarm_state
         )
@@ -1348,7 +1348,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             else:
                 # Alarm OFF: Active Red
                 self.toggle_alm_btn.configure(
-                    text="🔔 Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
+                    text="⏰ Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
                     text_color="#FCA5A5", border_width=2, border_color="#EF4444"
                 )
 
