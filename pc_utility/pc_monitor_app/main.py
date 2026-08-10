@@ -1261,7 +1261,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def _highlight_page_button(self, page_id):
         for pid, btn_box in enumerate(self.page_btns):
-            p_code, p_title, p_sub, p_col = PAGE_ITEMS[pid]
+            p_code, p_ico, p_title, p_sub, p_col = PAGE_ITEMS[pid]
             if pid == page_id:
                 btn_box.configure(fg_color="#1f2937", border_color=p_col, border_width=2)
             else:
