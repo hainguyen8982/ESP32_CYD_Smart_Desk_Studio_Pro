@@ -948,11 +948,26 @@ class SmartDeskStudioProApp(ctk.CTk):
             else:
                 btn_box.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
-    def _sync_page_from_cyd(self, page_id):
+    def _sync_state_from_cyd(self, sdata):
+        page_id = sdata.get("page", 0)
         if page_id != self.active_cyd_page:
             self.active_cyd_page = page_id
             self._highlight_page_button(page_id)
             self.draw_sim_canvas_preview()
+
+        cyd_city = sdata.get("city", "")
+        if cyd_city and hasattr(self, 'city_combo'):
+            for eng, vn in VN_CITIES:
+                if eng.lower() == cyd_city.lower():
+                    self.city_combo.set(vn); break
+
+        cur1 = sdata.get("cur1", "")
+        if cur1 and hasattr(self, 'cur1_combo'):
+            self.cur1_combo.set(cur1)
+
+        cur2 = sdata.get("cur2", "")
+        if cur2 and hasattr(self, 'cur2_combo'):
+            self.cur2_combo.set(cur2)
 
     def apply_city(self):
         sel = self.city_combo.get(); eng_city = "Hanoi"
@@ -988,7 +1003,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
             now_time = time.time()
 
-            # 1. Collect Hardware Metrics
+            # 1. Collect Hardware Metrics (CPU, RAM, Net, Disks)
             try:
                 curr_net = psutil.net_io_counters()
                 dt = now_time - self.last_time
@@ -1002,7 +1017,25 @@ class SmartDeskStudioProApp(ctk.CTk):
                 cpu_pct = int(psutil.cpu_percent(interval=None))
                 ram_pct = int(psutil.virtual_memory().percent)
 
-                payload = {"cpu": cpu_pct, "ram": ram_pct, "net_down": down_speed, "net_up": up_speed}
+                # Collect Fixed Disk Drives (C:, D:, E:...)
+                disks_info = []
+                try:
+                    for part in psutil.disk_partitions(all=False):
+                        if 'fixed' in part.opts or ('cdrom' not in part.opts and part.fstype):
+                            try:
+                                usage = psutil.disk_usage(part.mountpoint)
+                                dname = part.device.replace(":\\", "").replace(":", "").upper()
+                                disks_info.append({"name": dname, "used": int(usage.percent)})
+                            except Exception: pass
+                except Exception: pass
+
+                payload = {
+                    "cpu": cpu_pct,
+                    "ram": ram_pct,
+                    "net_down": down_speed,
+                    "net_up": up_speed,
+                    "disks": disks_info[:4]
+                }
 
                 # MERGE PENDING USER CONTROL COMMANDS INTO TELEMETRY JSON PACKET
                 if self.pending_control:
@@ -1064,7 +1097,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                         ser.write((json.dumps(payload) + "\n").encode('utf-8'))
                         ser.flush()
 
-                        # Read response from CYD if present
+                        # Read response state from CYD if present
                         if ser.in_waiting > 0:
                             raw_lines = ser.read_all().decode('utf-8', errors='ignore').split('\n')
                             for line in raw_lines:
@@ -1072,8 +1105,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                                 if line.startswith("STATE:"):
                                     try:
                                         sdata = json.loads(line[6:])
-                                        p_idx = sdata.get("page", 0)
-                                        self.after(0, lambda p=p_idx: self._sync_page_from_cyd(p))
+                                        self.after(0, lambda sd=sdata: self._sync_state_from_cyd(sd))
                                     except Exception: pass
 
                     connected_usb = True
