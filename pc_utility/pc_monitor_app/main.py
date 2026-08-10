@@ -609,7 +609,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ico_lbl.pack(side="left", padx=(0, 4))
 
             title_lbl = ctk.CTkLabel(title_row, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
-            title_lbl.pack(side="left")
+            title_lbl.pack(side="left", pady=(3, 0))
 
             sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w")
             sub_lbl.pack(anchor="w", pady=0)
@@ -747,7 +747,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
         self.toggle_alm_btn = ctk.CTkButton(
-            alm_row1, text="🔕 Alarm Off", width=115, fg_color="#7F1D1D", hover_color="#991B1B",
+            alm_row1, text="🔔 Alarm Off", width=115, fg_color="#7F1D1D", hover_color="#991B1B",
             text_color="#FCA5A5", border_width=2, border_color="#EF4444",
             font=ctk.CTkFont(size=12, weight="bold"), command=self.toggle_alarm_state
         )
@@ -1348,7 +1348,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             else:
                 # Alarm OFF: Active Red
                 self.toggle_alm_btn.configure(
-                    text="🔕 Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
+                    text="🔔 Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
                     text_color="#FCA5A5", border_width=2, border_color="#EF4444"
                 )
 
