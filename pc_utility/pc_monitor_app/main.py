@@ -41,7 +41,7 @@ app_instance = None
 # Deduplication guard for Media commands received from both Serial + UDP
 _last_media_cmd = ""
 _last_media_cmd_time = 0.0
-_MEDIA_DEDUP_WINDOW = 0.5  # 500ms window to ignore duplicate commands
+_MEDIA_DEDUP_WINDOW = 1.5  # 1.5s window — must exceed stream_loop sleep(1) to cover Serial+UDP overlap
 
 # Windows Media Session State (populated by background poller)
 _media_session_info = {"title": "", "artist": "", "playing": False}
@@ -298,7 +298,8 @@ class SmartDeskStudioProApp(ctk.CTk):
                 print(f"[Media] Keybd Event Error: {e}")
 
     def udp_listener_loop(self):
-        """Listen for UDP Broadcast Media Control Packets on Port 8080."""
+        """Listen for UDP Broadcast Media Control Packets on Port 8080.
+        Only processes MEDIA_CMD when USB Serial is NOT connected (Serial is primary channel)."""
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -309,6 +310,9 @@ class SmartDeskStudioProApp(ctk.CTk):
                     data, _ = sock.recvfrom(1024)
                     text = data.decode('utf-8', errors='ignore').strip()
                     if text.startswith("MEDIA_CMD:"):
+                        # Skip if Serial is connected — Serial reader already handles MEDIA_CMD
+                        if active_serial_conn and active_serial_conn.is_open:
+                            continue
                         act = text[10:].strip()
                         self.after(0, lambda a=act: self.handle_media_action(a))
                 except socket.timeout:
