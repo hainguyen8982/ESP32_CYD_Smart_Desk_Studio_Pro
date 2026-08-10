@@ -838,32 +838,53 @@ class CYDMonitorApp(ctk.CTk):
             connected_wifi = False
             active_wifi_ip = ""
 
-            # 2. USB Serial Auto Connection (instant non-resetting connection)
-            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 2.0):
+            # 2. USB Serial Auto Connection (Instant non-resetting connection with Bluetooth Filtering)
+            if (ser is None or not ser.is_open) and (now_time - last_port_scan > 1.5):
                 last_port_scan = now_time
                 try:
-                    ports = list(serial.tools.list_ports.comports())
-                    for p in ports:
-                        p_dev = str(p.device).upper()
-                        p_desc = str(p.description).upper()
-                        # Connect to any COM port on Windows (COM2..COM99) or matching USB serial chips
-                        if ("COM" in p_dev and p_dev != "COM1") or "CH340" in p_desc or "CP210" in p_desc or "USB" in p_desc or "UART" in p_desc or "SERIAL" in p_desc:
-                            try:
-                                s = serial.Serial()
-                                s.port = p.device
-                                s.baudrate = 115200
-                                s.dtr = False
-                                s.rts = False
-                                s.timeout = 0.1
-                                s.open()
-                                ser = s
-                                global active_serial_conn
-                                active_serial_conn = ser
-                                ser_port = p.device
-                                print(f"[USB Serial]: Connected successfully on {p.device}")
-                                break
-                            except Exception:
-                                pass
+                    # 2A. Fast Cache Try First (< 5ms)
+                    if hasattr(self, 'cached_com_port') and self.cached_com_port:
+                        try:
+                            s = serial.Serial()
+                            s.port = self.cached_com_port
+                            s.baudrate = 115200
+                            s.dtr = False; s.rts = False; s.timeout = 0.05
+                            s.open()
+                            ser = s
+                            global active_serial_conn
+                            active_serial_conn = ser
+                            ser_port = self.cached_com_port
+                        except Exception:
+                            self.cached_com_port = ""
+
+                    # 2B. Scan Ports with Instant Bluetooth Filtering
+                    if ser is None or not ser.is_open:
+                        ports = list(serial.tools.list_ports.comports())
+                        for p in ports:
+                            p_dev = str(p.device).upper()
+                            p_desc = str(p.description).upper()
+                            p_hwid = str(getattr(p, 'hwid', '')).upper()
+
+                            # SKIP Bluetooth Virtual COM Ports (prevents 2-3s Windows freezing)
+                            if "BLUETOOTH" in p_desc or "BTHENUM" in p_hwid or "BLUETOOTH" in p_hwid:
+                                continue
+
+                            # Connect to CYD USB Serial ports (CP2102, CH340, USB Serial, UART)
+                            if ("COM" in p_dev and p_dev != "COM1") or any(k in p_desc for k in ["CH340", "CP210", "USB", "UART", "SERIAL"]):
+                                try:
+                                    s = serial.Serial()
+                                    s.port = p.device
+                                    s.baudrate = 115200
+                                    s.dtr = False; s.rts = False; s.timeout = 0.05
+                                    s.open()
+                                    ser = s
+                                    active_serial_conn = ser
+                                    ser_port = p.device
+                                    self.cached_com_port = p.device
+                                    print(f"[USB Serial]: Instant Connected on {p.device}")
+                                    break
+                                except Exception:
+                                    pass
                 except Exception:
                     ser = None
 

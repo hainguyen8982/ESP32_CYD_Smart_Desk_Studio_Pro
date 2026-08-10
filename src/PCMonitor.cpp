@@ -38,6 +38,15 @@ void PCMonitor::update() {
             return;
         }
 
+        if (line.startsWith("SKIN_JSON:")) {
+            String payload = line.substring(10);
+            if (g_skinMgr.parseAndSaveSkinJSON(payload)) {
+                Serial.println("SKIN_SYNC_SUCCESS");
+                display.refreshDisplay();
+            }
+            return;
+        }
+
         if (line.startsWith("{") && line.endsWith("}")) {
             parseJsonData(line.c_str());
         }

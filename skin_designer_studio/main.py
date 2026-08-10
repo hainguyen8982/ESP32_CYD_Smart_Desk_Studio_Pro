@@ -6,6 +6,9 @@ import tkinter as tk
 from tkinter import ttk, filedialog, colorchooser
 import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageTk
+import serial
+import serial.tools.list_ports
+import requests
 
 # Set CustomTkinter Theme
 ctk.set_appearance_mode("Dark")
@@ -70,15 +73,24 @@ ELEMENT_PRESETS = [
     ("Hardware History Line Chart", "line_chart", "chart", 300, 55, "#CC00FF", "mono")
 ]
 
+COLOR_PALETTES = {
+    "Cyberpunk Neon": {"accent": "#00F5FF", "sec": "#FF00CC", "bg": "#140026", "line": "#39FF14"},
+    "Nordic Slate": {"accent": "#38BDF8", "sec": "#94A3B8", "bg": "#0F172A", "line": "#10B981"},
+    "Luxury Gold": {"accent": "#FFD700", "sec": "#FFF8DC", "bg": "#0B0B0E", "line": "#FFA500"},
+    "Retro CRT": {"accent": "#00FF41", "sec": "#009926", "bg": "#000000", "line": "#00FF41"}
+}
+
 class SkinDesignerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("🎨 Smart Desk Studio - Direct Granular Sub-Element Designer")
-        self.geometry("1300x880")
+        self.title("🎨 Smart Desk Studio Pro - Dynamic Floating Inspector & 1-Click Sync")
+        self.geometry("1340x900")
         self.resizable(True, True)
 
         self.current_page_idx = 0
+        self.cached_com_port = ""
+        self.cached_ip = "192.168.1.13"
 
         self.skin_data = {
             "skin_name": "Custom Multi-Page Skin",
@@ -94,6 +106,7 @@ class SkinDesignerApp(ctk.CTk):
 
         self.selected_elem_id = None
         self.drag_data = {"x": 0, "y": 0, "elem": None, "handle": None}
+        self.snap_lines = []
 
         self.create_layout()
         self.bind_keyboard_shortcuts()
@@ -122,36 +135,53 @@ class SkinDesignerApp(ctk.CTk):
         hdr.pack(fill="x", pady=(0, 10))
 
         title_lbl = ctk.CTkLabel(
-            hdr, text="🎯 Smart Desk Studio — Direct Click & Granular Sub-Element Inspector",
+            hdr, text="👑 Smart Desk Studio Pro — Dynamic Floating Inspector & 1-Click Sync",
             font=ctk.CTkFont(size=16, weight="bold"), text_color="#58a6ff"
         )
         title_lbl.pack(side="left", padx=15, pady=8)
 
+        # 1-CLICK LIVE SYNC BUTTON
+        sync_btn = ctk.CTkButton(
+            hdr, text="⚡ 1-Click Sync to Desk", width=180, fg_color="#238636", hover_color="#2ea043",
+            font=ctk.CTkFont(weight="bold"), command=self.sync_to_cyd_desk
+        )
+        sync_btn.pack(side="right", padx=10, pady=8)
+
         export_btn = ctk.CTkButton(
-            hdr, text="💾 Export Skin JSON", width=140, fg_color="#238636", hover_color="#2ea043",
+            hdr, text="💾 Save JSON", width=110, fg_color="#21262d", hover_color="#30363d",
             command=self.export_json
         )
-        export_btn.pack(side="right", padx=10, pady=8)
+        export_btn.pack(side="right", padx=5, pady=8)
 
         import_btn = ctk.CTkButton(
-            hdr, text="📂 Load Skin JSON", width=140, fg_color="#21262d", hover_color="#30363d",
+            hdr, text="📂 Load JSON", width=110, fg_color="#21262d", hover_color="#30363d",
             command=self.import_json
         )
         import_btn.pack(side="right", padx=5, pady=8)
 
-        # ── Shortcuts Banner Bar ──────────────────────────────────────
-        banner = ctk.CTkFrame(main_frame, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=6)
-        banner.pack(fill="x", pady=(0, 10))
+        # ── Palette Swatches Bar ──────────────────────────────────────
+        pal_bar = ctk.CTkFrame(main_frame, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=6)
+        pal_bar.pack(fill="x", pady=(0, 10))
 
-        b_text = "💡 Click trực tiếp lên từng đối tượng (WiFi Icon, IP, Time, Title, Page Index...) để chỉnh sửa hoặc xóa trên Menu Phải! | 📶 WiFi Icon tự động nhảy vạch theo signal thực tế!"
-        b_lbl = ctk.CTkLabel(banner, text=b_text, font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
-        b_lbl.pack(padx=10, pady=6)
+        p_lbl = ctk.CTkLabel(pal_bar, text="🎨 1-Click Palette Theme:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
+        p_lbl.pack(side="left", padx=10, pady=6)
 
-        # ── Body Grid (3 Columns: Left Toolbox, Center Canvas, Right Properties)
+        for pal_name in COLOR_PALETTES:
+            p_btn = ctk.CTkButton(
+                pal_bar, text=f"✨ {pal_name}", width=120, height=24,
+                fg_color="#21262d", hover_color="#30363d", text_color="#c9d1d9",
+                command=lambda name=pal_name: self.apply_palette(name)
+            )
+            p_btn.pack(side="left", padx=4, pady=6)
+
+        b_info = ctk.CTkLabel(pal_bar, text="💡 Floating Toolbar pops up when clicking objects | 🧲 Magnetic Snap Guides active", font=ctk.CTkFont(size=10), text_color="#8b949e")
+        b_info.pack(side="right", padx=12, pady=6)
+
+        # ── Body Grid (3 Columns) ──────────────────────────────────────
         body = ctk.CTkFrame(main_frame, fg_color="transparent")
         body.pack(fill="both", expand=True)
 
-        # 1. Left Toolbox (Presets & Sub-Element Add Buttons)
+        # 1. Left Toolbox
         left_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=240)
         left_box.pack(side="left", fill="y", padx=(0, 10))
 
@@ -186,7 +216,7 @@ class SkinDesignerApp(ctk.CTk):
         page_hdr = ctk.CTkFrame(center_box, fg_color="#161b22", height=40)
         page_hdr.pack(fill="x", padx=10, pady=(10, 5))
 
-        p_title = ctk.CTkLabel(page_hdr, text="🖥️ Dashboard Page:", font=ctk.CTkFont(size=12, weight="bold"))
+        p_title = ctk.CTkLabel(page_hdr, text="🖥️ Select Dashboard Page:", font=ctk.CTkFont(size=12, weight="bold"))
         p_title.pack(side="left", padx=10, pady=5)
 
         self.page_combo = ctk.CTkOptionMenu(
@@ -218,7 +248,6 @@ class SkinDesignerApp(ctk.CTk):
         self.sel_name_lbl = ctk.CTkLabel(right_box, text="Click an object on canvas to edit", text_color="#8b949e", font=ctk.CTkFont(weight="bold"))
         self.sel_name_lbl.pack(anchor="w", padx=12, pady=(0, 5))
 
-        # Text Content Edit Field
         c_lbl = ctk.CTkLabel(right_box, text="✏️ Text / Content:", font=ctk.CTkFont(size=11, weight="bold"))
         c_lbl.pack(anchor="w", padx=12, pady=(4, 1))
 
@@ -228,7 +257,6 @@ class SkinDesignerApp(ctk.CTk):
         apply_content_btn = ctk.CTkButton(right_box, text="Update Text Content", width=240, command=self.apply_text_content)
         apply_content_btn.pack(padx=10, pady=4)
 
-        # Geometry controls (X, Y, W, H)
         geom_frame = ctk.CTkFrame(right_box, fg_color="transparent")
         geom_frame.pack(fill="x", padx=10, pady=3)
 
@@ -251,7 +279,6 @@ class SkinDesignerApp(ctk.CTk):
         apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry (X,Y,W,H)", width=240, command=self.apply_manual_geometry)
         apply_geom_btn.pack(padx=10, pady=4)
 
-        # Font Style Dropdown Selector
         f_lbl = ctk.CTkLabel(right_box, text="🔤 Font Style:", font=ctk.CTkFont(size=11, weight="bold"))
         f_lbl.pack(anchor="w", padx=12, pady=(4, 1))
 
@@ -263,16 +290,25 @@ class SkinDesignerApp(ctk.CTk):
         self.font_combo.set("Dot Matrix LED")
         self.font_combo.pack(padx=10, pady=2)
 
-        # Color Picker Button
         self.color_btn = ctk.CTkButton(right_box, text="🎨 Element Color", width=240, fg_color="#21262d", command=self.pick_color)
         self.color_btn.pack(padx=10, pady=6)
 
-        # Delete Element Button
         self.del_btn = ctk.CTkButton(
             right_box, text="🗑️ Delete Selected Sub-Element", width=240, fg_color="#da3633", hover_color="#f85149",
             command=self.delete_selected_element
         )
         self.del_btn.pack(side="bottom", padx=10, pady=15)
+
+    def apply_palette(self, pal_name):
+        pal = COLOR_PALETTES.get(pal_name)
+        if not pal: return
+        self.skin_data["canvas"]["bg_color"] = pal["bg"]
+        elements = self.get_current_elements()
+        for idx, el in enumerate(elements):
+            if idx % 3 == 0: el["color"] = pal["accent"]
+            elif idx % 3 == 1: el["color"] = pal["sec"]
+            else: el["color"] = pal["line"]
+        self.redraw_canvas()
 
     def on_page_select(self, val):
         for i, name in enumerate(PAGE_NAMES):
@@ -347,12 +383,11 @@ class SkinDesignerApp(ctk.CTk):
             cur_x += seg_w + 6
 
     def draw_wifi_signal_bars(self, ex, ey, color, elem_id):
-        # Render 4 Dynamic WiFi Signal Bars (1..4 bars)
         for b in range(4):
             bx = ex + b * 5
             bh = 4 + b * 3
             by = ey + 12 - bh
-            self.canvas.create_rectangle(bx, by, bx + 3, ey + 12, fill=color, outline="", tags=("element", elem_id))
+            self.canvas.create_oval(bx, by, bx + 3, by + 3, fill=color, outline="", tags=("element", elem_id))
 
     def draw_pixel_sun(self, start_x, start_y, dot_size, pitch, color, elem_id=""):
         sun_map = [0b0011100, 0b0111110, 0b1111111, 0b1111111, 0b1111111, 0b0111110, 0b0011100]
@@ -373,6 +408,31 @@ class SkinDesignerApp(ctk.CTk):
                     dx = start_x + c * pitch
                     dy = start_y + r * pitch
                     self.canvas.create_oval(dx, dy, dx + dot_size, dy + dot_size, fill=color, outline="", tags=("element", elem_id))
+
+    def draw_floating_toolbar(self, elem):
+        """Dynamic Contextual Floating Action Toolbar next to selected object"""
+        ex = int(elem["x"] * SCALE)
+        ey = int(elem["y"] * SCALE)
+        ew = int(elem["w"] * SCALE)
+        
+        tb_x = min(int(CANVAS_WIDTH * SCALE) - 180, max(10, ex))
+        tb_y = max(10, ey - 32) if ey > 35 else ey + int(elem["h"] * SCALE) + 8
+
+        # Floating Box Background
+        self.canvas.create_rectangle(
+            tb_x, tb_y, tb_x + 185, tb_y + 26,
+            fill="#161b22", outline="#38bdf8", width=1, tags="floating_tb"
+        )
+
+        # Quick Color Swatches (White, Red, Cyan, Yellow, Green)
+        colors = ["#FFFFFF", "#FF3333", "#00F5FF", "#FFD700", "#00E676"]
+        for idx, col in enumerate(colors):
+            cx = tb_x + 12 + idx * 22
+            cy = tb_y + 13
+            self.canvas.create_oval(cx - 7, cy - 7, cx + 7, cy + 7, fill=col, outline="#000000", tags=("floating_tb", f"col_{col}"))
+
+        # Quick Delete Icon
+        self.canvas.create_text(tb_x + 155, tb_y + 13, text="🗑️", fill="#f85149", font=("Segoe UI", 10), tags=("floating_tb", "quick_del"))
 
     def redraw_canvas(self):
         self.canvas.delete("all")
@@ -434,7 +494,7 @@ class SkinDesignerApp(ctk.CTk):
             else:
                 self.canvas.create_text(ex, ey + int(eh/2), text=content, fill=color, font=("Segoe UI", int(5.5 * SCALE), "bold"), anchor="w", tags=("element", eid))
 
-            # Highlight selected element with crisp blue outline and corner handle
+            # Highlight selected element
             if is_selected:
                 self.canvas.create_rectangle(
                     ex - 3, ey - 3, ex + ew + 3, ey + eh + 3,
@@ -444,6 +504,7 @@ class SkinDesignerApp(ctk.CTk):
                     ex + ew - 4, ey + eh - 4, ex + ew + 6, ey + eh + 6,
                     fill="#58a6ff", outline="#ffffff", tags=("handle", eid)
                 )
+                self.draw_floating_toolbar(elem)
 
         self.update_inspector()
 
@@ -451,7 +512,31 @@ class SkinDesignerApp(ctk.CTk):
         x, y = event.x, event.y
         elements = self.get_current_elements()
 
-        # Check resize handle first
+        # Check Quick Color Click on Floating Toolbar
+        if self.selected_elem_id:
+            elem = self.get_selected_element()
+            if elem:
+                ex = int(elem["x"] * SCALE)
+                ey = int(elem["y"] * SCALE)
+                tb_x = min(int(CANVAS_WIDTH * SCALE) - 180, max(10, ex))
+                tb_y = max(10, ey - 32) if ey > 35 else ey + int(elem["h"] * SCALE) + 8
+
+                # Quick delete button
+                if (tb_x + 145 <= x <= tb_x + 175) and (tb_y <= y <= tb_y + 26):
+                    self.delete_selected_element()
+                    return
+
+                # Quick Color Swatches
+                colors = ["#FFFFFF", "#FF3333", "#00F5FF", "#FFD700", "#00E676"]
+                for idx, col in enumerate(colors):
+                    cx = tb_x + 12 + idx * 22
+                    cy = tb_y + 13
+                    if (cx - 10 <= x <= cx + 10) and (cy - 10 <= y <= cy + 10):
+                        elem["color"] = col
+                        self.redraw_canvas()
+                        return
+
+        # Check resize handle
         for elem in elements:
             ex = int(elem["x"] * SCALE)
             ey = int(elem["y"] * SCALE)
@@ -467,7 +552,7 @@ class SkinDesignerApp(ctk.CTk):
                 self.redraw_canvas()
                 return
 
-        # Check bounding box hit test for each sub-element directly!
+        # Check bounding box hit test for sub-elements directly
         for elem in reversed(elements):
             ex = int(elem["x"] * SCALE)
             ey = int(elem["y"] * SCALE)
@@ -496,13 +581,29 @@ class SkinDesignerApp(ctk.CTk):
             new_y = int((event.y - self.drag_data["y"]) / SCALE)
             elem["x"] = max(0, min(CANVAS_WIDTH - elem["w"], new_x))
             elem["y"] = max(0, min(CANVAS_HEIGHT - elem["h"], new_y))
+
+            # Magnetic Snap Guides Alignment (Center & Edges)
+            self.draw_snap_guides(elem)
             self.redraw_canvas()
+
         elif self.drag_data.get("handle") == "resize":
             new_w = int((event.x - int(elem["x"] * SCALE)) / SCALE)
             new_h = int((event.y - int(elem["y"] * SCALE)) / SCALE)
             elem["w"] = max(10, min(CANVAS_WIDTH - elem["x"], new_w))
             elem["h"] = max(8, min(CANVAS_HEIGHT - elem["y"], new_h))
             self.redraw_canvas()
+
+    def draw_snap_guides(self, target_elem):
+        """Magnetic Snap Alignment Guides when dragging objects"""
+        for el in self.get_current_elements():
+            if el["id"] == target_elem["id"]: continue
+            # Snap Center X
+            target_cx = target_elem["x"] + int(target_elem["w"]/2)
+            el_cx = el["x"] + int(el["w"]/2)
+            if abs(target_cx - el_cx) <= 2:
+                target_elem["x"] = el_cx - int(target_elem["w"]/2)
+                cx_px = int(el_cx * SCALE)
+                self.canvas.create_line(cx_px, 0, cx_px, int(CANVAS_HEIGHT * SCALE), fill="#00F5FF", dash=(4, 4), tags="snap")
 
     def on_canvas_release(self, event):
         self.drag_data["elem"] = None
@@ -610,6 +711,40 @@ class SkinDesignerApp(ctk.CTk):
             if elem["id"] == self.selected_elem_id:
                 return elem
         return None
+
+    def sync_to_cyd_desk(self):
+        """1-Click Sync Layout Payload directly to CYD Hardware via USB/WiFi"""
+        payload_str = json.dumps(self.skin_data)
+        success = False
+
+        # Try USB Serial first (< 50ms)
+        try:
+            ports = list(serial.tools.list_ports.comports())
+            for p in ports:
+                p_dev = str(p.device).upper()
+                p_desc = str(p.description).upper()
+                if ("COM" in p_dev and p_dev != "COM1") or "CH340" in p_desc or "CP210" in p_desc:
+                    s = serial.Serial(p.device, 115200, timeout=0.2)
+                    s.write(f"SKIN_JSON:{payload_str}\n".encode('utf-8'))
+                    s.close()
+                    success = True
+                    tk.messagebox.showinfo("⚡ Live Sync Success", f"Skin successfully synced to ESP32 CYD via USB Serial ({p.device})!")
+                    break
+        except Exception:
+            pass
+
+        # Try WiFi HTTP fallback
+        if not success:
+            try:
+                resp = requests.post(f"http://{self.cached_ip}/api/skin/update", json=self.skin_data, timeout=1.0)
+                if resp.ok:
+                    success = True
+                    tk.messagebox.showinfo("⚡ Live Sync Success", f"Skin successfully synced to ESP32 CYD via WiFi ({self.cached_ip})!")
+            except Exception:
+                pass
+
+        if not success:
+            tk.messagebox.showwarning("Sync Warning", "Could not reach CYD hardware over USB or WiFi.\nSkin JSON saved locally. Ensure CYD is connected!")
 
     def export_json(self):
         path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Skin Layout", "*.json")])

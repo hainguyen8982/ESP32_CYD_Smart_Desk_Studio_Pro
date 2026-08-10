@@ -7,6 +7,7 @@
 #include "PCMonitor.h"
 #include "DeskUtilities.h"
 #include "Theme.h"
+#include "DynamicSkinManager.h"
 #include <time.h>
 
 // BOOT button (GPIO 0) long-press tracking
@@ -26,6 +27,7 @@ void setup() {
     touch.begin();
     pcMonitor.begin();
     deskUtils.begin();
+    g_skinMgr.begin();
 
     // BOOT button as input (has external pull-up on CYD boards)
     pinMode(PIN_BOOT_BTN, INPUT_PULLUP);
