@@ -1,0 +1,48 @@
+{
+  "skin_name": "Luxury Gold & Finance",
+  "author": "Smart Desk Studio",
+  "version": "1.0",
+  "canvas": {
+    "width": 320,
+    "height": 240,
+    "bg_color": "#0B0B0E"
+  },
+  "widgets": [
+    {
+      "id": "w_clock",
+      "name": "Digital Clock & Lunar Date",
+      "type": "clock",
+      "x": 10,
+      "y": 10,
+      "w": 300,
+      "h": 50,
+      "bg_color": "#1A1812",
+      "accent_color": "#FFD700",
+      "text_color": "#FFF8DC"
+    },
+    {
+      "id": "w_gold_sjc",
+      "name": "SJC Gold Price & XAUUSD",
+      "type": "gold_sjc",
+      "x": 10,
+      "y": 70,
+      "w": 300,
+      "h": 80,
+      "bg_color": "#1A1812",
+      "accent_color": "#FFD700",
+      "text_color": "#FFF8DC"
+    },
+    {
+      "id": "w_chart",
+      "name": "Gold 7-Day Trend Chart",
+      "type": "line_chart",
+      "x": 10,
+      "y": 160,
+      "w": 300,
+      "h": 70,
+      "bg_color": "#1A1812",
+      "accent_color": "#FFA500",
+      "text_color": "#FFF8DC"
+    }
+  ]
+}

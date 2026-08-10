@@ -1,0 +1,60 @@
+{
+  "skin_name": "Nordic Minimalist Studio",
+  "author": "Smart Desk Studio",
+  "version": "1.0",
+  "canvas": {
+    "width": 320,
+    "height": 240,
+    "bg_color": "#0F172A"
+  },
+  "widgets": [
+    {
+      "id": "w_clock",
+      "name": "Digital Clock & Lunar Date",
+      "type": "clock",
+      "x": 10,
+      "y": 10,
+      "w": 190,
+      "h": 70,
+      "bg_color": "#1E293B",
+      "accent_color": "#38BDF8",
+      "text_color": "#F8FAFC"
+    },
+    {
+      "id": "w_weather",
+      "name": "Weather City & Forecast",
+      "type": "weather",
+      "x": 210,
+      "y": 10,
+      "w": 100,
+      "h": 70,
+      "bg_color": "#1E293B",
+      "accent_color": "#F59E0B",
+      "text_color": "#F8FAFC"
+    },
+    {
+      "id": "w_cpu_gauge",
+      "name": "CPU Arc Gauge",
+      "type": "gauge_cpu",
+      "x": 10,
+      "y": 90,
+      "w": 145,
+      "h": 140,
+      "bg_color": "#1E293B",
+      "accent_color": "#10B981",
+      "text_color": "#F8FAFC"
+    },
+    {
+      "id": "w_ram_gauge",
+      "name": "RAM Load Meter",
+      "type": "gauge_ram",
+      "x": 165,
+      "y": 90,
+      "w": 145,
+      "h": 140,
+      "bg_color": "#1E293B",
+      "accent_color": "#6366F1",
+      "text_color": "#F8FAFC"
+    }
+  ]
+}
