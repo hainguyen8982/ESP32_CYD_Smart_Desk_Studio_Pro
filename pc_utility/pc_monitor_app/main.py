@@ -724,17 +724,17 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.alarm_m_combo = ctk.CTkOptionMenu(alm_row1, values=mins, width=65)
         self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 15))
 
-        set_alm_btn = ctk.CTkButton(
+        self.set_alm_btn = ctk.CTkButton(
             alm_row1, text="⏰ Set Alarm", width=115, fg_color="#FB7185", hover_color="#E11D48",
             font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
         )
-        set_alm_btn.pack(side="left", padx=(0, 8))
+        self.set_alm_btn.pack(side="left", padx=(0, 8))
 
-        off_alm_btn = ctk.CTkButton(
-            alm_row1, text="🔕 Alarm Off", width=115, fg_color="#374151", hover_color="#4B5563",
-            text_color="#F85149", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm_off
+        self.off_alm_btn = ctk.CTkButton(
+            alm_row1, text="Off Alarm", width=115, fg_color="#374151", hover_color="#4B5563",
+            text_color="#94A3B8", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm_off
         )
-        off_alm_btn.pack(side="left")
+        self.off_alm_btn.pack(side="left")
 
         # Row 2: Full-width Memo / Note text input field
         alm_row2 = ctk.CTkFrame(alm_frame, fg_color="transparent")
@@ -1298,6 +1298,15 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.city_search_entry.delete(0, 'end')
         self.city_search_entry.insert(0, vn_name)
 
+    def _highlight_alarm_buttons(self, enabled):
+        if hasattr(self, 'set_alm_btn') and hasattr(self, 'off_alm_btn'):
+            if enabled:
+                self.set_alm_btn.configure(fg_color="#FB7185", text_color="#FFFFFF", border_width=2, border_color="#FDA4AF")
+                self.off_alm_btn.configure(fg_color="#1E293B", text_color="#64748B", border_width=1, border_color="#334155")
+            else:
+                self.off_alm_btn.configure(fg_color="#7F1D1D", text_color="#FCA5A5", border_width=2, border_color="#EF4444")
+                self.set_alm_btn.configure(fg_color="#1E293B", text_color="#64748B", border_width=1, border_color="#334155")
+
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
         if time.time() - self.last_user_action_time < 2.5:
@@ -1335,6 +1344,11 @@ class SmartDeskStudioProApp(ctk.CTk):
         if cur2 and hasattr(self, 'cur2_combo'):
             self.cur2_combo.set(cur2)
 
+        # Sync alarm status from CYD
+        alarm_en = sdata.get("alarm_en", None)
+        if alarm_en is not None:
+            self._highlight_alarm_buttons(bool(alarm_en))
+
     def apply_city(self):
         self.last_user_action_time = time.time()
         sel = self.city_search_entry.get().strip() if hasattr(self, 'city_search_entry') else ""
@@ -1367,6 +1381,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.pending_control["alarm_enable"] = True
             if safe_note:
                 self.pending_control["alarm_note"] = safe_note
+            self._highlight_alarm_buttons(True)
             self.status_lbl.configure(text=f"✅ Alarm Clock set for {ah:02d}:{am:02d}" + (f" ({safe_note})" if safe_note else ""), text_color="#39FF14")
         except Exception as e:
             print(f"[Alarm] Error: {e}")
@@ -1374,6 +1389,7 @@ class SmartDeskStudioProApp(ctk.CTk):
     def apply_alarm_off(self):
         self.last_user_action_time = time.time()
         self.pending_control["alarm_enable"] = False
+        self._highlight_alarm_buttons(False)
         self.status_lbl.configure(text="🔕 Alarm Clock Disabled", text_color="#F85149")
 
     def _update_telemetry_ui(self, c, r, d, u):

@@ -201,11 +201,14 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
 
     lastDataTime = millis();
     // Send current state back to PC app for bidirectional sync
-    Serial.printf("STATE:{\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\"}\n",
+    Serial.printf("STATE:{\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\",\"alarm_en\":%s,\"alarm_h\":%d,\"alarm_m\":%d}\n",
                   display.getCurrentPage(),
                   getCurrentThemePresetName(),
                   network.getWeather().city,
                   network.getExchange().cur1Code,
-                  network.getExchange().cur2Code);
+                  network.getExchange().cur2Code,
+                  deskUtils.isAlarmEnabled() ? "true" : "false",
+                  deskUtils.getAlarmHour(),
+                  deskUtils.getAlarmMinute());
     return true;
 }
