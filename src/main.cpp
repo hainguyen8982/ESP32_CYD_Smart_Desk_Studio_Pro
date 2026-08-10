@@ -280,24 +280,30 @@ void loop() {
                     display.nextPage();
                 } else if (evt.y >= 48 && evt.y <= 130) {
                     if (evt.x >= 34 && evt.x <= 110) {
+                        display.setTouchedMediaBtn(1);
                         network.triggerMediaAction("prev");
                         hardware.playBeep(1200, 40);
                     } else if (evt.x >= 117 && evt.x <= 203) {
+                        display.setTouchedMediaBtn(2);
                         display.togglePlayState();
                         network.triggerMediaAction("play_pause");
                         hardware.playBeep(1500, 40);
                     } else if (evt.x >= 210 && evt.x <= 286) {
+                        display.setTouchedMediaBtn(3);
                         network.triggerMediaAction("next");
                         hardware.playBeep(1200, 40);
                     }
                 } else if (evt.y >= 134 && evt.y <= 220) {
                     if (evt.x >= 34 && evt.x <= 110) {
+                        display.setTouchedMediaBtn(4);
                         network.triggerMediaAction("vol_down");
                         hardware.playBeep(900, 40);
                     } else if (evt.x >= 117 && evt.x <= 203) {
+                        display.setTouchedMediaBtn(5);
                         network.triggerMediaAction("skip_ad");
                         hardware.playBeep(1800, 50);
                     } else if (evt.x >= 210 && evt.x <= 286) {
+                        display.setTouchedMediaBtn(6);
                         network.triggerMediaAction("vol_up");
                         hardware.playBeep(1400, 40);
                     }
@@ -319,15 +325,12 @@ void loop() {
                     }
                 } else if (display.getSettingsTab() == 0 && evt.y >= 60 && evt.y <= 225) {
                     if (evt.y >= 60 && evt.y <= 84) {
-                        touch.startCalibration();
-                        Serial.println("[Touch] Settings -> Calibrate Touch");
-                    } else if (evt.y >= 86 && evt.y <= 110) {
                         hardware.setAutoBrightnessEnabled(!hardware.isAutoBrightnessEnabled());
                         if (!hardware.isAutoBrightnessEnabled()) hardware.setBacklight(85);
                         hardware.playBeep(1200, 30);
                         Serial.printf("[Touch] Settings -> Auto Brightness: %s\n",
                                       hardware.isAutoBrightnessEnabled() ? "ON" : "OFF");
-                    } else if (evt.y >= 112 && evt.y <= 136) {
+                    } else if (evt.y >= 86 && evt.y <= 110) {
                         display.openDetailModal(MODAL_BEEP_VOLUME);
                         hardware.playBeep(1400, 40);
                         Serial.println("[Touch] Settings -> Opened Beep Volume Modal");

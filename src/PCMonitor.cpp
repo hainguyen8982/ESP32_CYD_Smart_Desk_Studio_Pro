@@ -1,6 +1,7 @@
 #include "PCMonitor.h"
 #include "DisplayManager.h"
 #include "NetworkManager.h"
+#include "DeskUtilities.h"
 #include "Theme.h"
 #include "DynamicSkinManager.h"
 #include <Preferences.h>
@@ -120,6 +121,13 @@ bool PCMonitor::parseJsonData(const char* jsonStr) {
         if (c) {
             network.setCity(c);
         }
+    }
+
+    if (!doc["alarm_h"].isNull() && !doc["alarm_m"].isNull()) {
+        uint8_t ah = doc["alarm_h"].as<uint8_t>();
+        uint8_t am = doc["alarm_m"].as<uint8_t>();
+        bool en = doc["alarm_enable"] | true;
+        deskUtils.setAlarm(ah, am, en);
     }
 
     if (!doc["cur1"].isNull() || !doc["cur2"].isNull()) {

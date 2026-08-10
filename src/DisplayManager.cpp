@@ -57,7 +57,7 @@ static uint16_t getPageAccent(uint8_t page) {
 //  CONSTRUCTOR / BEGIN / NAVIGATION / UPDATE
 // ─────────────────────────────────────────────────────────────────────
 DisplayManager::DisplayManager()
-    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), isMediaPlaying(false), lastLocalMediaToggle(0), settingsTab(0), lastRenderTime(0), spriteReady(false) {}
+    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), isMediaPlaying(false), lastLocalMediaToggle(0), touchedMediaBtn(0), lastMediaTouchTime(0), settingsTab(0), lastRenderTime(0), spriteReady(false) {}
 
 void DisplayManager::begin() {
     loadTheme(); // Load saved theme from NVS or default Ocean Dark
@@ -1495,20 +1495,9 @@ void DisplayManager::renderPage7_Settings() {
         int y = 61;
         int itemH = 26;
 
-        // 1. Calibrate Touch
+        // 1. Auto Brightness
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
-        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
-        spr.setTextColor(C_YELLOW, C_CARD);
-        spr.setTextDatum(ML_DATUM);
-        spr.drawString("Calibrate Touch", 42, y + 11, 2);
-        spr.setTextColor(C_DIM, C_CARD);
-        spr.setTextDatum(MR_DATUM);
-        spr.drawString(touch.isCalibrated() ? "OK" : "Not Set", 278, y + 11, 2);
-        y += itemH;
-
-        // 2. Auto Brightness
-        spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
-        spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
+        spr.drawRoundRect(34, y, 252, 23, 4, C_CYAN);
         spr.setTextColor(C_CYAN, C_CARD);
         spr.setTextDatum(ML_DATUM);
         spr.drawString("Auto Brightness", 42, y + 11, 2);
@@ -1633,86 +1622,101 @@ void DisplayManager::renderPage6_MediaControl() {
     spr.drawString("<", 16, 140, 2);
     spr.drawString(">", 304, 140, 2);
 
+    // Touch feedback helper
+    bool isTouchActive = (millis() - lastMediaTouchTime < 350);
+
     // ── Row 1: Track Controls (y = 65..137, height 72px) ───────────────
     // 1. PREV
-    spr.fillRoundRect(34, 65, 76, 72, 8, C_CARD);
-    spr.drawRoundRect(34, 65, 76, 72, 8, C_TRACE);
+    bool btn1Touch = isTouchActive && (touchedMediaBtn == 1);
+    spr.fillRoundRect(34, 65, 76, 72, 8, btn1Touch ? C_CYAN : C_CARD);
+    spr.drawRoundRect(34, 65, 76, 72, 8, btn1Touch ? C_WHITE : C_TRACE);
     int cx1 = 72, cy1 = 93;
-    spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, C_CYAN);
-    spr.fillTriangle(cx1 + 8, cy1 - 10, cx1 + 8, cy1 + 10, cx1 - 4, cy1, C_CYAN);
+    uint16_t fg1 = btn1Touch ? C_BG : C_CYAN;
+    spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, fg1);
+    spr.fillTriangle(cx1 + 8, cy1 - 10, cx1 + 8, cy1 + 10, cx1 - 4, cy1, fg1);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_CYAN, C_CARD);
+    spr.setTextColor(fg1, btn1Touch ? C_CYAN : C_CARD);
     spr.drawString("PREV", cx1, 131, 2);
 
     // 2. PLAY / PAUSE (Dynamic Hero Center Button: x = 117..203)
-    spr.fillRoundRect(117, 65, 86, 72, 8, C_CARD);
-    spr.drawRoundRect(117, 65, 86, 72, 8, C_GREEN);
+    bool btn2Touch = isTouchActive && (touchedMediaBtn == 2);
+    spr.fillRoundRect(117, 65, 86, 72, 8, btn2Touch ? C_GREEN : C_CARD);
+    spr.drawRoundRect(117, 65, 86, 72, 8, btn2Touch ? C_WHITE : C_GREEN);
     int cx2 = 160, cy2 = 93;
+    uint16_t fg2 = btn2Touch ? C_BG : C_GREEN;
     if (!isMediaPlaying) {
-        spr.fillTriangle(cx2 - 8, cy2 - 12, cx2 - 8, cy2 + 12, cx2 + 10, cy2, C_GREEN);
+        spr.fillTriangle(cx2 - 8, cy2 - 12, cx2 - 8, cy2 + 12, cx2 + 10, cy2, fg2);
         spr.setTextDatum(BC_DATUM);
-        spr.setTextColor(C_GREEN, C_CARD);
+        spr.setTextColor(fg2, btn2Touch ? C_GREEN : C_CARD);
         spr.drawString("PLAY", cx2, 131, 2);
     } else {
-        spr.fillRoundRect(cx2 - 8, cy2 - 11, 6, 22, 2, C_GREEN);
-        spr.fillRoundRect(cx2 + 3, cy2 - 11, 6, 22, 2, C_GREEN);
+        spr.fillRoundRect(cx2 - 8, cy2 - 11, 6, 22, 2, fg2);
+        spr.fillRoundRect(cx2 + 3, cy2 - 11, 6, 22, 2, fg2);
         spr.setTextDatum(BC_DATUM);
-        spr.setTextColor(C_GREEN, C_CARD);
+        spr.setTextColor(fg2, btn2Touch ? C_GREEN : C_CARD);
         spr.drawString("PAUSE", cx2, 131, 2);
     }
 
     // 3. NEXT
-    spr.fillRoundRect(210, 65, 76, 72, 8, C_CARD);
-    spr.drawRoundRect(210, 65, 76, 72, 8, C_TRACE);
+    bool btn3Touch = isTouchActive && (touchedMediaBtn == 3);
+    spr.fillRoundRect(210, 65, 76, 72, 8, btn3Touch ? C_CYAN : C_CARD);
+    spr.drawRoundRect(210, 65, 76, 72, 8, btn3Touch ? C_WHITE : C_TRACE);
     int cx3 = 248, cy3 = 93;
-    spr.fillTriangle(cx3 - 8, cy3 - 10, cx3 - 8, cy3 + 10, cx3 + 4, cy3, C_CYAN);
-    spr.fillRect(cx3 + 6, cy3 - 10, 4, 20, C_CYAN);
+    uint16_t fg3 = btn3Touch ? C_BG : C_CYAN;
+    spr.fillTriangle(cx3 - 8, cy3 - 10, cx3 - 8, cy3 + 10, cx3 + 4, cy3, fg3);
+    spr.fillRect(cx3 + 6, cy3 - 10, 4, 20, fg3);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_CYAN, C_CARD);
+    spr.setTextColor(fg3, btn3Touch ? C_CYAN : C_CARD);
     spr.drawString("NEXT", cx3, 131, 2);
 
     // ── Row 2: Volume & Ad Controls (y = 145..217, height 72px) ────────
     // 4. VOL -
-    spr.fillRoundRect(34, 145, 76, 72, 8, C_CARD);
-    spr.drawRoundRect(34, 145, 76, 72, 8, C_TRACE);
+    bool btn4Touch = isTouchActive && (touchedMediaBtn == 4);
+    spr.fillRoundRect(34, 145, 76, 72, 8, btn4Touch ? C_YELLOW : C_CARD);
+    spr.drawRoundRect(34, 145, 76, 72, 8, btn4Touch ? C_WHITE : C_TRACE);
     int cx4 = 72, cy4 = 171;
-    spr.fillRoundRect(cx4 - 18, cy4 - 7, 7, 14, 2, C_YELLOW);
-    spr.fillTriangle(cx4 - 10, cy4 - 7, cx4 - 2, cy4 - 14, cx4 - 10, cy4 + 7, C_YELLOW);
-    spr.fillTriangle(cx4 - 10, cy4 + 7, cx4 - 2, cy4 + 14, cx4 - 2, cy4 - 14, C_YELLOW);
+    uint16_t fg4 = btn4Touch ? C_BG : C_YELLOW;
+    spr.fillRoundRect(cx4 - 18, cy4 - 7, 7, 14, 2, fg4);
+    spr.fillTriangle(cx4 - 10, cy4 - 7, cx4 - 2, cy4 - 14, cx4 - 10, cy4 + 7, fg4);
+    spr.fillTriangle(cx4 - 10, cy4 + 7, cx4 - 2, cy4 + 14, cx4 - 2, cy4 - 14, fg4);
     int arcX4 = cx4 + 5;
-    spr.drawCircle(arcX4, cy4, 7, C_YELLOW);
-    spr.drawCircle(arcX4, cy4, 8, C_YELLOW);
-    spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, C_CARD);
+    spr.drawCircle(arcX4, cy4, 7, fg4);
+    spr.drawCircle(arcX4, cy4, 8, fg4);
+    spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, btn4Touch ? C_YELLOW : C_CARD);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.setTextColor(fg4, btn4Touch ? C_YELLOW : C_CARD);
     spr.drawString("VOL -", cx4, 211, 2);
 
     // 5. SKIP AD
-    spr.fillRoundRect(117, 145, 86, 72, 8, C_CARD);
-    spr.drawRoundRect(117, 145, 86, 72, 8, C_ORANGE);
+    bool btn5Touch = isTouchActive && (touchedMediaBtn == 5);
+    spr.fillRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_ORANGE : C_CARD);
+    spr.drawRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_WHITE : C_ORANGE);
     int cx5 = 160, cy5 = 171;
-    spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, C_ORANGE);
-    spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, C_ORANGE);
-    spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, C_ORANGE);
+    uint16_t fg5 = btn5Touch ? C_BG : C_ORANGE;
+    spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, fg5);
+    spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, fg5);
+    spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, fg5);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_ORANGE, C_CARD);
+    spr.setTextColor(fg5, btn5Touch ? C_ORANGE : C_CARD);
     spr.drawString("SKIP AD", cx5, 211, 1);
 
     // 6. VOL +
-    spr.fillRoundRect(210, 145, 76, 72, 8, C_CARD);
-    spr.drawRoundRect(210, 145, 76, 72, 8, C_TRACE);
+    bool btn6Touch = isTouchActive && (touchedMediaBtn == 6);
+    spr.fillRoundRect(210, 145, 76, 72, 8, btn6Touch ? C_YELLOW : C_CARD);
+    spr.drawRoundRect(210, 145, 76, 72, 8, btn6Touch ? C_WHITE : C_TRACE);
     int cx6 = 248, cy6 = 171;
-    spr.fillRoundRect(cx6 - 20, cy6 - 7, 7, 14, 2, C_YELLOW);
-    spr.fillTriangle(cx6 - 12, cy6 - 7, cx6 - 4, cy6 - 14, cx6 - 12, cy6 + 7, C_YELLOW);
-    spr.fillTriangle(cx6 - 12, cy6 + 7, cx6 - 4, cy6 + 14, cx6 - 4, cy6 - 14, C_YELLOW);
+    uint16_t fg6 = btn6Touch ? C_BG : C_YELLOW;
+    spr.fillRoundRect(cx6 - 20, cy6 - 7, 7, 14, 2, fg6);
+    spr.fillTriangle(cx6 - 12, cy6 - 7, cx6 - 4, cy6 - 14, cx6 - 12, cy6 + 7, fg6);
+    spr.fillTriangle(cx6 - 12, cy6 + 7, cx6 - 4, cy6 + 14, cx6 - 4, cy6 - 14, fg6);
     int arcX6 = cx6 + 3;
-    spr.drawCircle(arcX6, cy6, 7, C_YELLOW);
-    spr.drawCircle(arcX6, cy6, 8, C_YELLOW);
-    spr.drawCircle(arcX6, cy6, 12, C_YELLOW);
-    spr.drawCircle(arcX6, cy6, 13, C_YELLOW);
-    spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, C_CARD);
+    spr.drawCircle(arcX6, cy6, 7, fg6);
+    spr.drawCircle(arcX6, cy6, 8, fg6);
+    spr.drawCircle(arcX6, cy6, 12, fg6);
+    spr.drawCircle(arcX6, cy6, 13, fg6);
+    spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, btn6Touch ? C_YELLOW : C_CARD);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(C_YELLOW, C_CARD);
+    spr.setTextColor(fg6, btn6Touch ? C_YELLOW : C_CARD);
     spr.drawString("VOL +", cx6, 211, 2);
 }
 

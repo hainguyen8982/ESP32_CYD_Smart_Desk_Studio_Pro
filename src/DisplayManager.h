@@ -70,6 +70,10 @@ public:
         if (title && strlen(title) > 0) snprintf(mediaTitle, sizeof(mediaTitle), "%s", title);
         if (artist && strlen(artist) > 0) snprintf(mediaArtist, sizeof(mediaArtist), "%s", artist);
     }
+    void setTouchedMediaBtn(uint8_t btnId) {
+        touchedMediaBtn = btnId;
+        lastMediaTouchTime = millis();
+    }
 
     // App Launcher Overlay Menu Mode
     void openAppLauncher() { isAppLauncherOpen = true; }
@@ -146,6 +150,8 @@ private:
     int16_t     calendarMonthOffset;
     bool        isMediaPlaying;
     unsigned long lastLocalMediaToggle;  // debounce remote state after local toggle
+    uint8_t     touchedMediaBtn;         // 1=PREV, 2=PLAY/PAUSE, 3=NEXT, 4=VOL-, 5=SKIP_AD, 6=VOL+
+    unsigned long lastMediaTouchTime;    // timestamp for touch visual feedback
     char        mediaTitle[64];
     char        mediaArtist[64];
     int         marqueeOffset;

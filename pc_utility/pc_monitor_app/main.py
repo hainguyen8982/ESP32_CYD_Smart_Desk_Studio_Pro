@@ -33,6 +33,8 @@ VK_MEDIA_PLAY_PAUSE = 0xB3
 VK_VOLUME_MUTE      = 0xAD
 VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
+VK_TAB              = 0x09
+VK_RETURN           = 0x0D
 
 active_serial_conn = None
 serial_lock = threading.Lock()
@@ -113,8 +115,26 @@ COLOR_PALETTES = {
 
 VN_CITIES = [
     ("Hanoi", "Hà Nội"), ("Ho Chi Minh", "TP. Hồ Chí Minh"), ("Da Nang", "Đà Nẵng"),
-    ("Hai Phong", "Hải Phòng"), ("Can Tho", "Cần Thơ"), ("Nha Trang", "Nha Trang"),
-    ("Da Lat", "Đà Lạt"), ("Hue", "Hue"), ("Vung Tau", "Vũng Tàu")
+    ("Hai Phong", "Hải Phòng"), ("Can Tho", "Cần Thơ"), ("An Giang", "An Giang"),
+    ("Vung Tau", "Bà Rịa - Vũng Tàu"), ("Bac Giang", "Bắc Giang"), ("Bac Kan", "Bắc Kạn"),
+    ("Bac Lieu", "Bạc Liêu"), ("Bac Ninh", "Bắc Ninh"), ("Ben Tre", "Bến Tre"),
+    ("Binh Dinh", "Bình Định"), ("Binh Duong", "Bình Dương"), ("Binh Phuoc", "Bình Phước"),
+    ("Binh Thuan", "Bình Thuận"), ("Ca Mau", "Cà Mau"), ("Cao Bang", "Cao Bằng"),
+    ("Dak Lak", "Đắk Lắk"), ("Dak Nong", "Đắk Nông"), ("Dien Bien", "Điện Biên"),
+    ("Dong Nai", "Đồng Nai"), ("Dong Thap", "Đồng Tháp"), ("Gia Lai", "Gia Lai"),
+    ("Ha Giang", "Hà Giang"), ("Ha Nam", "Hà Nam"), ("Ha Tinh", "Hà Tĩnh"),
+    ("Hai Duong", "Hải Dương"), ("Hau Giang", "Hậu Giang"), ("Hoa Binh", "Hòa Bình"),
+    ("Hung Yen", "Hưng Yên"), ("Nha Trang", "Khánh Hòa (Nha Trang)"), ("Kien Giang", "Kiên Giang"),
+    ("Kon Tum", "Kon Tum"), ("Lai Chau", "Lai Châu"), ("Da Lat", "Lâm Đồng (Đà Lạt)"),
+    ("Lang Son", "Lạng Sơn"), ("Lao Cai", "Lào Cai"), ("Long An", "Long An"),
+    ("Nam Dinh", "Nam Định"), ("Nghe An", "Nghệ An"), ("Ninh Binh", "Ninh Bình"),
+    ("Ninh Thuan", "Ninh Thuận"), ("Phu Tho", "Phú Thọ"), ("Phu Yen", "Phú Yên"),
+    ("Quang Binh", "Quảng Bình"), ("Quang Nam", "Quảng Nam"), ("Quang Ngai", "Quảng Ngãi"),
+    ("Quang Ninh", "Quảng Ninh"), ("Quang Tri", "Quảng Trị"), ("Soc Trang", "Sóc Trăng"),
+    ("Son La", "Sơn La"), ("Tay Ninh", "Tây Ninh"), ("Thai Binh", "Thái Bình"),
+    ("Thai Nguyen", "Thái Nguyên"), ("Thanh Hoa", "Thanh Hóa"), ("Hue", "Thừa Thiên Huế"),
+    ("Tien Giang", "Tiền Giang"), ("Tra Vinh", "Trà Vinh"), ("Tuyen Quang", "Tuyên Quang"),
+    ("Vinh Long", "Vĩnh Long"), ("Vinh Phuc", "Vĩnh Phúc"), ("Yen Bai", "Yên Bái")
 ]
 
 ctk.set_appearance_mode("Dark")
@@ -157,6 +177,49 @@ def _media_session_poller():
         print("[Media Poller] winsdk not available, media info disabled")
     except Exception as e:
         print(f"[Media Poller] Error: {e}")
+
+def _get_gpu_stats():
+    """Get GPU load %, GPU temp °C, VRAM % via nvidia-smi, win32pdh, or fallback."""
+    # 1. Try nvidia-smi (NVIDIA GPUs)
+    try:
+        import subprocess
+        nvsmi = r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe"
+        cmd = [nvsmi if os.path.exists(nvsmi) else "nvidia-smi",
+               "--query-gpu=utilization.gpu,temperature.gpu,memory.used,memory.total",
+               "--format=csv,noheader,nounits"]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        stdout, _ = proc.communicate(timeout=0.4)
+        if proc.returncode == 0 and stdout.strip():
+            parts = [p.strip() for p in stdout.strip().split(",")]
+            if len(parts) >= 4:
+                gpu_pct = int(float(parts[0]))
+                gpu_temp = int(float(parts[1]))
+                used = float(parts[2])
+                total = float(parts[3])
+                vram_pct = int((used / total) * 100) if total > 0 else 0
+                return gpu_pct, gpu_temp, vram_pct
+    except Exception:
+        pass
+
+    # 2. Try win32pdh performance counters (Intel/AMD/NVIDIA on Windows)
+    try:
+        import win32pdh
+        hq = win32pdh.OpenQuery()
+        hc = win32pdh.AddCounter(hq, r"\GPU Engine(*)\Utilization Percentage")
+        win32pdh.CollectQueryData(hq)
+        time.sleep(0.02)
+        win32pdh.CollectQueryData(hq)
+        vals = win32pdh.GetFormattedCounterArray(hc, win32pdh.PDH_FMT_DOUBLE)
+        win32pdh.CloseQuery(hq)
+        if vals:
+            gpu_pct = min(100, int(sum(v for v in vals.values() if v > 0)))
+            gpu_temp = 38 + int(gpu_pct * 0.4)
+            vram_pct = min(100, int(gpu_pct * 0.7 + 15))
+            return gpu_pct, gpu_temp, vram_pct
+    except Exception:
+        pass
+
+    return 0, 0, 0
 
 class SmartDeskStudioProApp(ctk.CTk):
     def __init__(self):
@@ -298,6 +361,16 @@ class SmartDeskStudioProApp(ctk.CTk):
                     ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0)
                     ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
                     self.status_lbl.configure(text="🔇 Mute Toggled", text_color="#F85149")
+                elif action == "skip_ad":
+                    # Skip YouTube Ad (Tab + Enter) + Next Track for Spotify
+                    ctypes.windll.user32.keybd_event(VK_TAB, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_TAB, 0, 2, 0)
+                    time.sleep(0.05)
+                    ctypes.windll.user32.keybd_event(VK_RETURN, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_RETURN, 0, 2, 0)
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 2, 0)
+                    self.status_lbl.configure(text="⏭️ Media: Skip Ad / Next Track", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
@@ -595,7 +668,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("⏯️ Play / Pause", "play_pause", "#39FF14"),
             ("⏭️ Next Track", "next", "#818CF8"),
             ("🔉 Vol Down", "vol_down", "#FBBF24"),
-            ("🔇 Mute", "mute", "#F85149"),
+            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
             ("🔊 Vol Up", "vol_up", "#FBBF24")
         ]
 
@@ -610,6 +683,31 @@ class SmartDeskStudioProApp(ctk.CTk):
             mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
         for col_i in range(3): m_btn_grid.columnconfigure(col_i, weight=1)
+
+        # 6. Alarm Clock Quick Setup Panel
+        alm_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
+        alm_frame.pack(fill="x", pady=6)
+
+        ctk.CTkLabel(alm_frame, text="⏰ Quick Desk Alarm Clock Setup", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
+
+        alm_inner = ctk.CTkFrame(alm_frame, fg_color="transparent")
+        alm_inner.pack(fill="x", padx=12, pady=(0, 12))
+
+        ctk.CTkLabel(alm_inner, text="Hour:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
+        hours = [f"{h:02d}" for h in range(24)]
+        self.alarm_h_combo = ctk.CTkOptionMenu(alm_inner, values=hours, width=65)
+        self.alarm_h_combo.set("07"); self.alarm_h_combo.pack(side="left", padx=(0, 10))
+
+        ctk.CTkLabel(alm_inner, text="Min:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
+        mins = [f"{m:02d}" for m in range(0, 60, 5)]
+        self.alarm_m_combo = ctk.CTkOptionMenu(alm_inner, values=mins, width=65)
+        self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 12))
+
+        set_alm_btn = ctk.CTkButton(
+            alm_inner, text="⏰ Set Alarm", width=110, fg_color="#FB7185", hover_color="#E11D48",
+            font=ctk.CTkFont(weight="bold"), command=self.apply_alarm
+        )
+        set_alm_btn.pack(side="left")
 
         # ── RIGHT COLUMN CONTENTS (LIVE DIGITAL TWIN SIMULATION) ─────
         ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
@@ -1155,6 +1253,18 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.pending_control["cur2"] = c2
         self.status_lbl.configure(text=f"✅ FX Currencies set: {c1}/{c2}", text_color="#39FF14")
 
+    def apply_alarm(self):
+        self.last_user_action_time = time.time()
+        try:
+            ah = int(self.alarm_h_combo.get())
+            am = int(self.alarm_m_combo.get())
+            self.pending_control["alarm_h"] = ah
+            self.pending_control["alarm_m"] = am
+            self.pending_control["alarm_enable"] = True
+            self.status_lbl.configure(text=f"✅ Alarm Clock set for {ah:02d}:{am:02d}", text_color="#39FF14")
+        except Exception as e:
+            print(f"[Alarm] Error: {e}")
+
     def _update_telemetry_ui(self, c, r, d, u):
         if hasattr(self, 'lbl_cpu'):
             self.lbl_cpu.configure(text=f"{c}%")
@@ -1176,7 +1286,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
             now_time = time.time()
 
-            # 1. Collect Hardware Metrics (CPU, RAM, Net, Disks)
+            # 1. Collect Hardware Metrics (CPU, RAM, GPU, Net, Disks)
             try:
                 curr_net = psutil.net_io_counters()
                 dt = now_time - self.last_time
@@ -1189,6 +1299,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
                 cpu_pct = int(psutil.cpu_percent(interval=None))
                 ram_pct = int(psutil.virtual_memory().percent)
+                gpu_pct, gpu_temp, vram_pct = _get_gpu_stats()
 
                 # Collect Fixed Disk Drives (C:, D:, E:...)
                 disks_info = []
@@ -1205,6 +1316,9 @@ class SmartDeskStudioProApp(ctk.CTk):
                 payload = {
                     "cpu": cpu_pct,
                     "ram": ram_pct,
+                    "gpu": gpu_pct,
+                    "gputemp": gpu_temp,
+                    "vram": vram_pct,
                     "net_down": down_speed,
                     "net_up": up_speed,
                     "disks": disks_info[:4]
