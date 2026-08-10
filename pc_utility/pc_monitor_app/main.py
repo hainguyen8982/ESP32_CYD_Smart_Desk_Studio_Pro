@@ -42,14 +42,14 @@ CANVAS_HEIGHT = 240
 SCALE = 2.2
 
 PAGE_ITEMS = [
-    ("P0", "🌤️ Weather Clock", "Clock, Weather, Temp & Gold Rates"),
-    ("P1", "📆 Lunar Calendar", "Solar Date, Lunar Date & Hoàng Đạo"),
-    ("P2", "📈 Finance & Gold", "SJC Gold Rates & Market Tickers"),
-    ("P3", "💻 PC Hardware", "CPU, RAM & GPU Load Gauges"),
-    ("P4", "🚀 Net & Storage", "Download/Upload Speed & Disks"),
-    ("P5", "⏳ Pomodoro Desk", "Productivity Timer & Alarm Clock"),
-    ("P6", "🎵 Media Remote", "Spotify Track Info & Volume Controls"),
-    ("P7", "⚙️ System Settings", "WiFi RSSI, IP, Brightness & Touch")
+    ("P0", "🌤️ Weather & Clock", "Realtime Clock, City Weather & SJC Gold", "#38BDF8"),
+    ("P1", "📆 Lunar Calendar", "Solar Date, Lunar Calendar & Good Hours", "#F472B6"),
+    ("P2", "📈 Finance & Trading", "SJC Gold Rates & World Stock Tickers", "#FBBF24"),
+    ("P3", "💻 PC Hardware Stats", "Realtime CPU Load, RAM & GPU Gauges", "#A855F7"),
+    ("P4", "🚀 Net & Storage Disks", "Network Speed & Disks C:/ D:/ Usage", "#34D399"),
+    ("P5", "⏳ Pomodoro Desk", "Productivity Desk Timer & Alarm Clock", "#FB7185"),
+    ("P6", "🎵 Media Remote", "Spotify Track Title, Artist & Volume", "#818CF8"),
+    ("P7", "⚙️ System Settings", "WiFi RSSI, IP, LDR Brightness & Calib", "#94A3B8")
 ]
 
 PAGE_NAMES = [f"{p[0]} • {p[1]}" for p in PAGE_ITEMS]
@@ -118,6 +118,9 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.geometry("1380x920")
         self.resizable(True, True)
 
+        # Deep Obsidian Charcoal Theme (#0b0f19)
+        self.configure(fg_color="#0b0f19")
+
         global app_instance
         app_instance = self
 
@@ -164,7 +167,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         main_container.pack(fill="both", expand=True, padx=12, pady=12)
 
         # ── Header Status Bar with Manual COM Selector ─────────────────
-        hdr = ctk.CTkFrame(main_container, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10, height=55)
+        hdr = ctk.CTkFrame(main_container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, height=55)
         hdr.pack(fill="x", pady=(0, 10))
 
         title_lbl = ctk.CTkLabel(
@@ -177,10 +180,10 @@ class SmartDeskStudioProApp(ctk.CTk):
         com_frame.pack(side="left", padx=20, pady=8)
 
         ctk.CTkLabel(com_frame, text="🔌 Port:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 5))
-        self.com_combo = ctk.CTkOptionMenu(com_frame, values=["Auto Detect"], width=130, command=self.on_com_select)
+        self.com_combo = ctk.CTkOptionMenu(com_frame, values=["Auto Detect"], width=140, command=self.on_com_select)
         self.com_combo.pack(side="left", padx=2)
 
-        ref_btn = ctk.CTkButton(com_frame, text="🔄", width=32, height=28, fg_color="#1e293b", hover_color="#334155", command=self.refresh_com_ports)
+        ref_btn = ctk.CTkButton(com_frame, text="🔄", width=32, height=28, fg_color="#1f2937", hover_color="#374151", command=self.refresh_com_ports)
         ref_btn.pack(side="left", padx=4)
 
         self.status_lbl = ctk.CTkLabel(
@@ -189,26 +192,26 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.status_lbl.pack(side="right", padx=15, pady=8)
 
         # ── Full Width Custom Tab Segmented Header ──────────────────────
-        self.tab_hdr_frame = ctk.CTkFrame(main_container, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10, height=45)
+        self.tab_hdr_frame = ctk.CTkFrame(main_container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, height=45)
         self.tab_hdr_frame.pack(fill="x", pady=(0, 8))
 
         self.tab_btn_live = ctk.CTkButton(
             self.tab_hdr_frame, text="🖥️ Live Control Center", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="#1e293b", hover_color="#334155", text_color="#38bdf8",
+            height=36, fg_color="#1f2937", hover_color="#374151", text_color="#38bdf8",
             command=lambda: self.switch_main_tab("live")
         )
         self.tab_btn_live.pack(side="left", fill="x", expand=True, padx=4, pady=4)
 
         self.tab_btn_designer = ctk.CTkButton(
             self.tab_hdr_frame, text="🎨 Skin Designer Studio", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="transparent", hover_color="#334155", text_color="#94a3b8",
+            height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
             command=lambda: self.switch_main_tab("designer")
         )
         self.tab_btn_designer.pack(side="left", fill="x", expand=True, padx=4, pady=4)
 
         self.tab_btn_settings = ctk.CTkButton(
             self.tab_hdr_frame, text="⚙️ System Settings", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="transparent", hover_color="#334155", text_color="#94a3b8",
+            height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
             command=lambda: self.switch_main_tab("settings")
         )
         self.tab_btn_settings.pack(side="left", fill="x", expand=True, padx=4, pady=4)
@@ -238,14 +241,14 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         if tab_name == "live":
             self.view_live.pack(fill="both", expand=True)
-            self.tab_btn_live.configure(fg_color="#1e293b", text_color="#38bdf8")
+            self.tab_btn_live.configure(fg_color="#1f2937", text_color="#38bdf8")
         elif tab_name == "designer":
             self.view_designer.pack(fill="both", expand=True)
-            self.tab_btn_designer.configure(fg_color="#1e293b", text_color="#38bdf8")
+            self.tab_btn_designer.configure(fg_color="#1f2937", text_color="#38bdf8")
             self.redraw_canvas()
         elif tab_name == "settings":
             self.view_settings.pack(fill="both", expand=True)
-            self.tab_btn_settings.configure(fg_color="#1e293b", text_color="#38bdf8")
+            self.tab_btn_settings.configure(fg_color="#1f2937", text_color="#38bdf8")
 
     def refresh_com_ports(self):
         ports = list(serial.tools.list_ports.comports())
@@ -270,11 +273,11 @@ class SmartDeskStudioProApp(ctk.CTk):
         col_left = ctk.CTkScrollableFrame(container, fg_color="transparent")
         col_left.pack(side="left", fill="both", expand=True, padx=(0, 8))
 
-        col_right = ctk.CTkFrame(container, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10, width=540)
+        col_right = ctk.CTkFrame(container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=540)
         col_right.pack(side="right", fill="both", expand=False, padx=(0, 0))
 
         # 1. Telemetry Cards
-        tele_frame = ctk.CTkFrame(col_left, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10)
+        tele_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         tele_frame.pack(fill="x", pady=(0, 8))
 
         ctk.CTkLabel(tele_frame, text="📊 Live PC Telemetry Metrics", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
@@ -282,42 +285,42 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_grid = ctk.CTkFrame(tele_frame, fg_color="transparent")
         m_grid.pack(fill="x", padx=10, pady=(0, 10))
 
-        cpu_box = ctk.CTkFrame(m_grid, fg_color="#020617", border_width=1, border_color="#1e293b", corner_radius=8)
+        cpu_box = ctk.CTkFrame(m_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
         cpu_box.grid(row=0, column=0, padx=4, pady=4, sticky="ew")
         ctk.CTkLabel(cpu_box, text="CPU LOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b").pack(anchor="w", padx=10, pady=(8, 0))
         self.lbl_cpu = ctk.CTkLabel(cpu_box, text="0%", font=ctk.CTkFont(size=20, weight="bold"), text_color="#00F5FF")
         self.lbl_cpu.pack(anchor="w", padx=10, pady=1)
-        self.bar_cpu = ctk.CTkProgressBar(cpu_box, height=5, progress_color="#00F5FF", fg_color="#1e293b")
+        self.bar_cpu = ctk.CTkProgressBar(cpu_box, height=5, progress_color="#00F5FF", fg_color="#1f2937")
         self.bar_cpu.set(0.0); self.bar_cpu.pack(fill="x", padx=10, pady=(0, 8))
 
-        ram_box = ctk.CTkFrame(m_grid, fg_color="#020617", border_width=1, border_color="#1e293b", corner_radius=8)
+        ram_box = ctk.CTkFrame(m_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
         ram_box.grid(row=0, column=1, padx=4, pady=4, sticky="ew")
         ctk.CTkLabel(ram_box, text="RAM LOAD", font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b").pack(anchor="w", padx=10, pady=(8, 0))
         self.lbl_ram = ctk.CTkLabel(ram_box, text="0%", font=ctk.CTkFont(size=20, weight="bold"), text_color="#AB47BC")
         self.lbl_ram.pack(anchor="w", padx=10, pady=1)
-        self.bar_ram = ctk.CTkProgressBar(ram_box, height=5, progress_color="#AB47BC", fg_color="#1e293b")
+        self.bar_ram = ctk.CTkProgressBar(ram_box, height=5, progress_color="#AB47BC", fg_color="#1f2937")
         self.bar_ram.set(0.0); self.bar_ram.pack(fill="x", padx=10, pady=(0, 8))
 
-        down_box = ctk.CTkFrame(m_grid, fg_color="#020617", border_width=1, border_color="#1e293b", corner_radius=8)
+        down_box = ctk.CTkFrame(m_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
         down_box.grid(row=0, column=2, padx=4, pady=4, sticky="ew")
         ctk.CTkLabel(down_box, text="NET DOWN", font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b").pack(anchor="w", padx=10, pady=(8, 0))
         self.lbl_net_down = ctk.CTkLabel(down_box, text="0 KB/s", font=ctk.CTkFont(size=17, weight="bold"), text_color="#00E676")
         self.lbl_net_down.pack(anchor="w", padx=10, pady=1)
-        self.bar_net_down = ctk.CTkProgressBar(down_box, height=5, progress_color="#00E676", fg_color="#1e293b")
+        self.bar_net_down = ctk.CTkProgressBar(down_box, height=5, progress_color="#00E676", fg_color="#1f2937")
         self.bar_net_down.set(0.0); self.bar_net_down.pack(fill="x", padx=10, pady=(0, 8))
 
-        up_box = ctk.CTkFrame(m_grid, fg_color="#020617", border_width=1, border_color="#1e293b", corner_radius=8)
+        up_box = ctk.CTkFrame(m_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
         up_box.grid(row=0, column=3, padx=4, pady=4, sticky="ew")
         ctk.CTkLabel(up_box, text="NET UP", font=ctk.CTkFont(size=10, weight="bold"), text_color="#64748b").pack(anchor="w", padx=10, pady=(8, 0))
         self.lbl_net_up = ctk.CTkLabel(up_box, text="0 KB/s", font=ctk.CTkFont(size=17, weight="bold"), text_color="#FFA726")
         self.lbl_net_up.pack(anchor="w", padx=10, pady=1)
-        self.bar_net_up = ctk.CTkProgressBar(up_box, height=5, progress_color="#FFA726", fg_color="#1e293b")
+        self.bar_net_up = ctk.CTkProgressBar(up_box, height=5, progress_color="#FFA726", fg_color="#1f2937")
         self.bar_net_up.set(0.0); self.bar_net_up.pack(fill="x", padx=10, pady=(0, 8))
 
         for c_i in range(4): m_grid.columnconfigure(c_i, weight=1)
 
-        # 2. Rich Page Switcher Grid (Badges + Titles + Subtitle)
-        p_frame = ctk.CTkFrame(col_left, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10)
+        # 2. Rich Page Switcher Grid (Badges + Compact Titles)
+        p_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         p_frame.pack(fill="x", pady=6)
 
         ctk.CTkLabel(p_frame, text="🖥️ Switch Dashboard Page (Pages P0 .. P7)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
@@ -328,27 +331,25 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.page_btns = []
         for pid in range(8):
             row = pid // 2; col = pid % 2
-            p_code, p_title, p_sub = PAGE_ITEMS[pid]
+            p_code, p_title, p_sub, p_color = PAGE_ITEMS[pid]
 
-            btn_box = ctk.CTkFrame(p_grid, fg_color="#020617", border_width=1, border_color="#1e293b", corner_radius=8, height=50)
-            btn_box.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+            btn_box = ctk.CTkFrame(p_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
+            btn_box.grid(row=row, column=col, padx=4, pady=3, sticky="ew")
 
-            # Click binding to box
             btn_box.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
 
-            badge_lbl = ctk.CTkLabel(btn_box, text=f" [{p_code}] ", font=ctk.CTkFont(size=11, weight="bold"), fg_color="#1e293b", text_color="#38bdf8", corner_radius=4)
-            badge_lbl.pack(side="left", padx=8, pady=8)
+            badge_lbl = ctk.CTkLabel(btn_box, text=f" {p_code} ", font=ctk.CTkFont(size=11, weight="bold"), fg_color="#1f2937", text_color=p_color, corner_radius=4)
+            badge_lbl.pack(side="left", padx=8, pady=6)
 
             txt_inner = ctk.CTkFrame(btn_box, fg_color="transparent")
-            txt_inner.pack(side="left", fill="both", expand=True, padx=4)
+            txt_inner.pack(side="left", fill="x", expand=True, padx=2, pady=4)
 
-            title_lbl = ctk.CTkLabel(txt_inner, text=p_title, font=ctk.CTkFont(size=12, weight="bold"), text_color="#f8fafc", anchor="w")
-            title_lbl.pack(anchor="w", pady=(4, 0))
+            title_lbl = ctk.CTkLabel(txt_inner, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
+            title_lbl.pack(anchor="w", pady=0)
 
-            sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=9), text_color="#64748b", anchor="w")
-            sub_lbl.pack(anchor="w", pady=(0, 4))
+            sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w")
+            sub_lbl.pack(anchor="w", pady=0)
 
-            # Bind clicks to children
             badge_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             txt_inner.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             title_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
@@ -359,7 +360,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         for col_i in range(2): p_grid.columnconfigure(col_i, weight=1)
 
         # 3. Preset Theme Switcher
-        th_frame = ctk.CTkFrame(col_left, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10)
+        th_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         th_frame.pack(fill="x", pady=6)
 
         ctk.CTkLabel(th_frame, text="🎨 Preset Firmware Theme Switcher", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
@@ -380,8 +381,8 @@ class SmartDeskStudioProApp(ctk.CTk):
             row = idx // 3; col = idx % 3
             t_btn = ctk.CTkButton(
                 th_grid, text=f"✨ {tname}", font=ctk.CTkFont(size=12, weight="bold"),
-                height=36, fg_color="#020617", hover_color="#1e293b", text_color=acc_col,
-                border_width=1, border_color="#1e293b",
+                height=36, fg_color="#030712", hover_color="#1f2937", text_color=acc_col,
+                border_width=1, border_color="#1f2937",
                 command=lambda k=tkey: self.apply_theme(k)
             )
             t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
@@ -389,7 +390,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         for col_i in range(3): th_grid.columnconfigure(col_i, weight=1)
 
         # 4. Weather Location & Currency Settings
-        w_frame = ctk.CTkFrame(col_left, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10)
+        w_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         w_frame.pack(fill="x", pady=6)
 
         ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
@@ -418,7 +419,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
         ctk.CTkLabel(col_right, text="320x240 TFT LCD • Realtime Sync Hardware Preview", font=ctk.CTkFont(size=11), text_color="#64748b").pack(anchor="w", padx=15, pady=(0, 10))
 
-        sim_canvas_frame = ctk.CTkFrame(col_right, fg_color="#000000", border_width=3, border_color="#1e293b", corner_radius=10)
+        sim_canvas_frame = ctk.CTkFrame(col_right, fg_color="#000000", border_width=3, border_color="#1f2937", corner_radius=10)
         sim_canvas_frame.pack(padx=15, pady=5)
 
         self.sim_canvas = tk.Canvas(sim_canvas_frame, width=320, height=240, bg="#000000", highlightthickness=0)
@@ -436,7 +437,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         recon_btn = ctk.CTkButton(
             act_frame, text="🔄 Force Reconnect USB/WiFi", font=ctk.CTkFont(weight="bold"),
-            height=36, fg_color="#1e293b", hover_color="#334155", text_color="#38bdf8", command=self.force_reconnect
+            height=36, fg_color="#1f2937", hover_color="#374151", text_color="#38bdf8", command=self.force_reconnect
         )
         recon_btn.pack(fill="x", pady=4)
 
@@ -446,8 +447,8 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.sim_canvas.configure(bg="#000000")
 
         pid = self.active_cyd_page
-        p_code, p_title, _ = PAGE_ITEMS[pid]
-        self.sim_canvas.create_rectangle(0, 0, 320, 20, fill="#0f172a", outline="")
+        p_code, p_title, _, _ = PAGE_ITEMS[pid]
+        self.sim_canvas.create_rectangle(0, 0, 320, 20, fill="#111827", outline="")
         self.sim_canvas.create_text(8, 10, text="RSSI -54dBm", fill="#00E676", font=("Consolas", 8), anchor="w")
         self.sim_canvas.create_text(160, 10, text=p_title, fill="#FFD700", font=("Segoe UI", 9, "bold"), anchor="center")
         self.sim_canvas.create_text(312, 10, text=f"{pid}/7", fill="#8B949E", font=("Consolas", 8), anchor="e")
@@ -459,9 +460,9 @@ class SmartDeskStudioProApp(ctk.CTk):
         elif pid == 3:
             self.sim_canvas.create_text(80, 80, text="CPU: 34%", fill="#00F5FF", font=("Consolas", 14, "bold"), anchor="center")
             self.sim_canvas.create_text(240, 80, text="RAM: 70%", fill="#AB47BC", font=("Consolas", 14, "bold"), anchor="center")
-            self.sim_canvas.create_rectangle(20, 120, 140, 140, fill="#1e293b", outline="")
+            self.sim_canvas.create_rectangle(20, 120, 140, 140, fill="#1f2937", outline="")
             self.sim_canvas.create_rectangle(20, 120, 20 + int(120*0.34), 140, fill="#00F5FF", outline="")
-            self.sim_canvas.create_rectangle(180, 120, 300, 140, fill="#1e293b", outline="")
+            self.sim_canvas.create_rectangle(180, 120, 300, 140, fill="#1f2937", outline="")
             self.sim_canvas.create_rectangle(180, 120, 180 + int(120*0.70), 140, fill="#AB47BC", outline="")
 
     # ── TAB 2: SKIN DESIGNER STUDIO ───────────────────────────────────
@@ -469,7 +470,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         body = ctk.CTkFrame(self.view_designer, fg_color="transparent")
         body.pack(fill="both", expand=True)
 
-        pal_bar = ctk.CTkFrame(body, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=8, height=45)
+        pal_bar = ctk.CTkFrame(body, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=8, height=45)
         pal_bar.pack(fill="x", pady=(0, 8))
 
         p_lbl = ctk.CTkLabel(pal_bar, text="🎨 1-Click Theme:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
@@ -478,8 +479,8 @@ class SmartDeskStudioProApp(ctk.CTk):
         for pal_name in COLOR_PALETTES:
             p_btn = ctk.CTkButton(
                 pal_bar, text=f"✨ {pal_name}", width=110, height=24,
-                fg_color="#020617", hover_color="#1e293b", text_color="#c9d1d9",
-                border_width=1, border_color="#1e293b",
+                fg_color="#030712", hover_color="#1f2937", text_color="#c9d1d9",
+                border_width=1, border_color="#1f2937",
                 command=lambda name=pal_name: self.apply_palette(name)
             )
             p_btn.pack(side="left", padx=3, pady=6)
@@ -493,7 +494,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         grid_frame = ctk.CTkFrame(body, fg_color="transparent")
         grid_frame.pack(fill="both", expand=True)
 
-        left_box = ctk.CTkFrame(grid_frame, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10, width=220)
+        left_box = ctk.CTkFrame(grid_frame, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=220)
         left_box.pack(side="left", fill="y", padx=(0, 8))
 
         w_lbl = ctk.CTkLabel(left_box, text="+ Add Sub-Elements", font=ctk.CTkFont(size=12, weight="bold"), text_color="#38bdf8")
@@ -502,18 +503,18 @@ class SmartDeskStudioProApp(ctk.CTk):
         for name, etype, content, def_w, def_h, def_col, font_st in ELEMENT_PRESETS:
             btn = ctk.CTkButton(
                 left_box, text=f"+ {name}", anchor="w",
-                fg_color="#020617", hover_color="#1e293b", text_color="#c9d1d9",
-                border_width=1, border_color="#1e293b",
+                fg_color="#030712", hover_color="#1f2937", text_color="#c9d1d9",
+                border_width=1, border_color="#1f2937",
                 command=lambda n=name, t=etype, c=content, w=def_w, h=def_h, col=def_col, f=font_st: self.add_sub_element(n, t, c, w, h, col, f)
             )
             btn.pack(fill="x", padx=8, pady=2)
 
-        center_box = ctk.CTkFrame(grid_frame, fg_color="#000000", border_width=1, border_color="#1e293b", corner_radius=10)
+        center_box = ctk.CTkFrame(grid_frame, fg_color="#000000", border_width=1, border_color="#1f2937", corner_radius=10)
         center_box.pack(side="left", fill="both", expand=True)
 
         self.canvas = tk.Canvas(
             center_box, width=int(CANVAS_WIDTH * SCALE), height=int(CANVAS_HEIGHT * SCALE),
-            bg="#000000", highlightthickness=2, highlightbackground="#1e293b"
+            bg="#000000", highlightthickness=2, highlightbackground="#1f2937"
         )
         self.canvas.pack(padx=10, pady=10)
 
@@ -521,7 +522,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
-        right_box = ctk.CTkFrame(grid_frame, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10, width=250)
+        right_box = ctk.CTkFrame(grid_frame, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=250)
         right_box.pack(side="right", fill="y", padx=(8, 0))
 
         p_lbl = ctk.CTkLabel(right_box, text="⚙️ Sub-Element Inspector", font=ctk.CTkFont(size=13, weight="bold"), text_color="#38bdf8")
@@ -563,7 +564,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         )
         self.font_combo.set("Dot Matrix LED"); self.font_combo.pack(padx=10, pady=2)
 
-        self.color_btn = ctk.CTkButton(right_box, text="Element Color", width=220, fg_color="#1e293b", command=self.pick_color)
+        self.color_btn = ctk.CTkButton(right_box, text="Element Color", width=220, fg_color="#1f2937", command=self.pick_color)
         self.color_btn.pack(padx=10, pady=4)
 
         self.del_btn = ctk.CTkButton(
@@ -577,7 +578,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         container = ctk.CTkFrame(self.view_settings, fg_color="transparent")
         container.pack(fill="both", expand=True, padx=10, pady=10)
 
-        s_frame = ctk.CTkFrame(container, fg_color="#0f172a", border_width=1, border_color="#1e293b", corner_radius=10)
+        s_frame = ctk.CTkFrame(container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         s_frame.pack(fill="x", pady=5)
 
         ctk.CTkLabel(s_frame, text="⚙️ App & Connection Settings", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=12, pady=(10, 5))
@@ -655,7 +656,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         tb_x = min(int(CANVAS_WIDTH * SCALE) - 180, max(10, ex))
         tb_y = max(10, ey - 30) if ey > 32 else ey + int(elem["h"] * SCALE) + 6
 
-        self.canvas.create_rectangle(tb_x, tb_y, tb_x + 180, tb_y + 24, fill="#0f172a", outline="#38bdf8", width=1, tags="floating_tb")
+        self.canvas.create_rectangle(tb_x, tb_y, tb_x + 180, tb_y + 24, fill="#111827", outline="#38bdf8", width=1, tags="floating_tb")
         colors = ["#FFFFFF", "#FF3333", "#00F5FF", "#FFD700", "#00E676"]
         for idx, col in enumerate(colors):
             cx = tb_x + 12 + idx * 22; cy = tb_y + 12
@@ -896,10 +897,11 @@ class SmartDeskStudioProApp(ctk.CTk):
     def switch_page(self, page_id):
         self.active_cyd_page = page_id
         for pid, btn_box in enumerate(self.page_btns):
+            p_code, p_title, p_sub, p_col = PAGE_ITEMS[pid]
             if pid == page_id:
-                btn_box.configure(fg_color="#1e293b", border_color="#38bdf8", border_width=2)
+                btn_box.configure(fg_color="#1f2937", border_color=p_col, border_width=2)
             else:
-                btn_box.configure(fg_color="#020617", border_color="#1e293b", border_width=1)
+                btn_box.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
         self.draw_sim_canvas_preview()
         _send_control_cmd({"page": page_id}, self.status_lbl, f"✅ Switched to Page {page_id}", "❌ Switch error")
 
@@ -962,24 +964,18 @@ class SmartDeskStudioProApp(ctk.CTk):
             if (ser is None or not ser.is_open) and (now_time - self.last_port_scan > 1.5):
                 self.last_port_scan = now_time
                 try:
-                    # User picked manual COM port
                     target_port = self.selected_com_port
                     if target_port != "AUTO":
                         try:
                             s = serial.Serial(target_port, 115200, timeout=0.05, dtr=False, rts=False)
                             ser = s; global active_serial_conn; active_serial_conn = ser
-                            ser_port = target_port
-                            connected_usb = True
                         except Exception: pass
 
-                    # Auto Detect logic
                     if (ser is None or not ser.is_open) and target_port == "AUTO":
                         if self.cached_com_port:
                             try:
                                 s = serial.Serial(self.cached_com_port, 115200, timeout=0.05, dtr=False, rts=False)
                                 ser = s; active_serial_conn = ser
-                                ser_port = self.cached_com_port
-                                connected_usb = True
                             except Exception: self.cached_com_port = ""
 
                         if ser is None or not ser.is_open:
@@ -995,13 +991,12 @@ class SmartDeskStudioProApp(ctk.CTk):
                                     try:
                                         s = serial.Serial(p.device, 115200, timeout=0.05, dtr=False, rts=False)
                                         ser = s; active_serial_conn = ser
-                                        ser_port = p.device
                                         self.cached_com_port = p.device
-                                        connected_usb = True
                                         break
                                     except Exception: pass
                 except Exception: ser = None
 
+            # CRITICAL FIX: Evaluate active connection status on EVERY iteration!
             if ser and ser.is_open:
                 try:
                     ser.write((json.dumps(payload) + "\n").encode('utf-8'))
@@ -1011,6 +1006,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                     try: ser.close()
                     except Exception: pass
                     ser = None
+                    connected_usb = False
 
             # Update status banner accurately
             if connected_usb:
