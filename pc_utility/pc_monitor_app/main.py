@@ -118,15 +118,12 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.geometry("1400x920")
         self.resizable(True, True)
 
-        # MAXIMIZE WINDOW ON STARTUP (User requested)
-        try:
-            if sys.platform == "win32":
-                self.state('zoomed')
-        except Exception:
-            pass
-
         # Deep Obsidian Charcoal Theme (#0b0f19)
         self.configure(fg_color="#0b0f19")
+
+        # Robust Window Maximization for CustomTkinter on Windows
+        self.after(100, lambda: self._maximize_window())
+        self.after(300, lambda: self._maximize_window())
 
         global app_instance
         app_instance = self
@@ -140,7 +137,6 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.last_net = None
         self.last_time = time.time()
         self.last_port_scan = 0
-        self.port_lock_error = False
 
         self.current_page_idx = 0
         self.selected_elem_id = None
@@ -161,6 +157,13 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
         self.stream_thread.start()
+
+    def _maximize_window(self):
+        try:
+            if sys.platform == "win32":
+                self.state('zoomed')
+        except Exception:
+            pass
 
     def bind_keyboard_shortcuts(self):
         self.bind("<Delete>", lambda e: self.delete_selected_element())
@@ -936,6 +939,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     # ── HARDWARE METRICS STREAM LOOP (< 50ms Connection) ──────────────
     def stream_loop(self):
+        global active_serial_conn
         ser = None
         while True:
             if not self.is_streaming:
@@ -963,48 +967,48 @@ class SmartDeskStudioProApp(ctk.CTk):
             except Exception:
                 time.sleep(0.5); continue
 
-            # 2. USB Serial Connection (Instant Bluetooth Filtering & Cache First)
+            # 2. USB Serial Connection
             connected_usb = False
             connected_wifi = False
             ser_port = ""
-            active_wifi_ip = ""
 
-            if (ser is None or not ser.is_open) and (now_time - self.last_port_scan > 1.5):
+            if (ser is None or not ser.is_open) and (now_time - self.last_port_scan > 1.0):
                 self.last_port_scan = now_time
-                try:
-                    target_port = self.selected_com_port
-                    if target_port != "AUTO":
-                        try:
-                            s = serial.Serial(target_port, 115200, timeout=0.05, dtr=False, rts=False)
-                            ser = s; global active_serial_conn; active_serial_conn = ser
-                        except Exception: pass
+                target_port = self.selected_com_port
 
-                    if (ser is None or not ser.is_open) and target_port == "AUTO":
-                        if self.cached_com_port:
-                            try:
-                                s = serial.Serial(self.cached_com_port, 115200, timeout=0.05, dtr=False, rts=False)
-                                ser = s; active_serial_conn = ser
-                            except Exception: self.cached_com_port = ""
+                candidate_ports = []
+                if target_port != "AUTO":
+                    candidate_ports.append(target_port)
+                else:
+                    if self.cached_com_port:
+                        candidate_ports.append(self.cached_com_port)
+                    ports = list(serial.tools.list_ports.comports())
+                    for p in ports:
+                        p_dev = str(p.device).upper()
+                        p_desc = str(p.description).upper()
+                        p_hwid = str(getattr(p, 'hwid', '')).upper()
+                        if "BLUETOOTH" in p_desc or "BTHENUM" in p_hwid: continue
+                        if ("COM" in p_dev and p_dev != "COM1") or any(k in p_desc for k in ["CH340", "CP210", "USB", "UART"]):
+                            if p.device not in candidate_ports:
+                                candidate_ports.append(p.device)
 
-                        if ser is None or not ser.is_open:
-                            ports = list(serial.tools.list_ports.comports())
-                            for p in ports:
-                                p_dev = str(p.device).upper()
-                                p_desc = str(p.description).upper()
-                                p_hwid = str(getattr(p, 'hwid', '')).upper()
+                for p_name in candidate_ports:
+                    try:
+                        s = serial.Serial()
+                        s.port = p_name
+                        s.baudrate = 115200
+                        s.timeout = 0.05
+                        s.dtr = False
+                        s.rts = False
+                        s.open()
+                        ser = s
+                        active_serial_conn = ser
+                        self.cached_com_port = p_name
+                        break
+                    except Exception:
+                        ser = None
+                        active_serial_conn = None
 
-                                if "BLUETOOTH" in p_desc or "BTHENUM" in p_hwid: continue
-
-                                if ("COM" in p_dev and p_dev != "COM1") or any(k in p_desc for k in ["CH340", "CP210", "USB", "UART"]):
-                                    try:
-                                        s = serial.Serial(p.device, 115200, timeout=0.05, dtr=False, rts=False)
-                                        ser = s; active_serial_conn = ser
-                                        self.cached_com_port = p.device
-                                        break
-                                    except Exception: pass
-                except Exception: ser = None
-
-            # CRITICAL FIX: Evaluate active connection status on EVERY iteration!
             if ser and ser.is_open:
                 try:
                     ser.write((json.dumps(payload) + "\n").encode('utf-8'))
@@ -1014,6 +1018,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                     try: ser.close()
                     except Exception: pass
                     ser = None
+                    active_serial_conn = None
                     connected_usb = False
 
             # Update status banner accurately
@@ -1022,12 +1027,12 @@ class SmartDeskStudioProApp(ctk.CTk):
                     text=f"🟢 Connected via USB ({dev})", text_color="#39FF14"
                 ))
             elif connected_wifi:
-                self.after(0, lambda ip=active_wifi_ip: self.status_lbl.configure(
+                self.after(0, lambda ip=self.esp32_ip: self.status_lbl.configure(
                     text=f"🌐 Connected via WiFi ({ip})", text_color="#00E676"
                 ))
             else:
                 self.after(0, lambda: self.status_lbl.configure(
-                    text="🟡 Standby Mode (Check Cable / COM Port)", text_color="#EAB308"
+                    text="🟡 Standby Mode (Select COM Port / Check Cable)", text_color="#EAB308"
                 ))
 
             time.sleep(1)
