@@ -362,24 +362,30 @@ class SmartDeskStudioProApp(ctk.CTk):
                     ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
                     self.status_lbl.configure(text="🔇 Mute Toggled", text_color="#F85149")
                 elif action == "skip_ad":
-                    # Multi-Phase YouTube & Spotify Ad Skip Sequence (from reference project)
-                    user32 = ctypes.windll.user32
-                    # Phase 1: Global Media Next Track (0xB0) for music apps
-                    user32.keybd_event(0xB0, 0, 0, 0)
-                    user32.keybd_event(0xB0, 0, 2, 0)
-                    time.sleep(0.03)
-                    # Phase 2: Shift + N (YouTube Native Shortcut for Next / Skip Ad)
-                    user32.keybd_event(0x10, 0, 0, 0) # Shift down
-                    user32.keybd_event(0x4E, 0, 0, 0) # N down
-                    user32.keybd_event(0x4E, 0, 2, 0) # N up
-                    user32.keybd_event(0x10, 0, 2, 0) # Shift up
-                    time.sleep(0.03)
-                    # Phase 3: 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
-                    for _ in range(5):
-                        user32.keybd_event(0x27, 0, 0, 0)
-                        user32.keybd_event(0x27, 0, 2, 0)
-                        time.sleep(0.015)
-                    self.status_lbl.configure(text="⏭️ Media: Multi-Phase Skip Ad Executed", text_color="#FFA726")
+                    def _async_skip():
+                        try:
+                            user32 = ctypes.windll.user32
+                            # Phase 1: Media Next Track
+                            user32.keybd_event(0xB0, 0, 0, 0)
+                            user32.keybd_event(0xB0, 0, 2, 0)
+                            time.sleep(0.02)
+                            # Phase 2: Shift + N (YouTube Next)
+                            user32.keybd_event(0x10, 0, 0, 0)
+                            user32.keybd_event(0x4E, 0, 0, 0)
+                            user32.keybd_event(0x4E, 0, 2, 0)
+                            user32.keybd_event(0x10, 0, 2, 0)
+                            time.sleep(0.02)
+                            # Phase 3: Tab x2 + Enter (YouTube Skip Ad Focus)
+                            for _ in range(2):
+                                user32.keybd_event(0x09, 0, 0, 0)
+                                user32.keybd_event(0x09, 0, 2, 0)
+                                time.sleep(0.02)
+                            user32.keybd_event(0x0D, 0, 0, 0)
+                            user32.keybd_event(0x0D, 0, 2, 0)
+                        except Exception as ex:
+                            print(f"[Skip Ad Async Error]: {ex}")
+                    threading.Thread(target=_async_skip, daemon=True).start()
+                    self.status_lbl.configure(text="⏭️ Media: Skip Ad Triggered (Async)", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
@@ -624,7 +630,6 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("Light Day", "light_day", "#0284C7"),
             ("Retro Green", "retro_green", "#00FF41")
         ]
-
         self.theme_btns = {}
         for idx, (tname, tkey, acc_col) in enumerate(preset_themes):
             row = idx // 3; col = idx % 3
@@ -635,7 +640,6 @@ class SmartDeskStudioProApp(ctk.CTk):
                 command=lambda k=tkey: self.apply_theme(k)
             )
             t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
-            self.theme_btns[tkey] = (t_btn, acc_col)
 
         for col_i in range(3): th_grid.columnconfigure(col_i, weight=1)
 
@@ -643,36 +647,33 @@ class SmartDeskStudioProApp(ctk.CTk):
         w_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         w_frame.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 4))
+        ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
-        # Top row: Search input + Set City button + FX Currencies
-        w_top = ctk.CTkFrame(w_frame, fg_color="transparent")
-        w_top.pack(fill="x", padx=12, pady=(0, 6))
+        # Single Clean Row: Searchable Dropdown Modal Button + Set City + FX Currencies
+        w_inner = ctk.CTkFrame(w_frame, fg_color="transparent")
+        w_inner.pack(fill="x", padx=12, pady=(0, 12))
 
-        self.city_search_entry = ctk.CTkEntry(
-            w_top, placeholder_text="🔍 Gõ tìm thành phố (VD: Đà Nẵng, Cần Thơ)...",
-            width=210
+        self.city_picker_btn = ctk.CTkButton(
+            w_inner, text="🏙️ Hà Nội  ▼", width=170, fg_color="#1f2937", hover_color="#374151",
+            text_color="#F8FAFC", border_width=1, border_color="#38bdf8",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self._open_city_picker_dialog
         )
-        self.city_search_entry.pack(side="left", padx=(0, 6))
-        self.city_search_entry.bind("<KeyRelease>", self._filter_city_list)
+        self.city_picker_btn.pack(side="left", padx=(0, 6))
+        self.selected_city_eng = "Hanoi"
+        self.selected_city_vn = "Hà Nội"
 
-        set_city_btn = ctk.CTkButton(w_top, text="🌤️ Set City", width=85, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(weight="bold"), command=self.apply_city)
-        set_city_btn.pack(side="left", padx=(0, 10))
+        set_city_btn = ctk.CTkButton(w_inner, text="🌤️ Set City", width=85, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(weight="bold"), command=self.apply_city)
+        set_city_btn.pack(side="left", padx=(0, 12))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW"]
-        self.cur1_combo = ctk.CTkOptionMenu(w_top, values=currencies, width=65)
+        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=65)
         self.cur1_combo.set("USD"); self.cur1_combo.pack(side="left", padx=(0, 4))
 
-        self.cur2_combo = ctk.CTkOptionMenu(w_top, values=currencies, width=65)
+        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=65)
         self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 6))
 
-        set_cur_btn = ctk.CTkButton(w_top, text="Set FX", width=65, command=self.apply_currencies)
+        set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=65, command=self.apply_currencies)
         set_cur_btn.pack(side="left")
-
-        # Compact Scrollable City Picker (Height 100px, 100% Mouse Wheel Scrollable)
-        self.city_scroll_frame = ctk.CTkScrollableFrame(w_frame, height=95, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=6)
-        self.city_scroll_frame.pack(fill="x", padx=12, pady=(0, 10))
-        self._populate_city_list()
 
         # 5. Media Remote PC Buttons
         m_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -681,24 +682,24 @@ class SmartDeskStudioProApp(ctk.CTk):
         ctk.CTkLabel(m_frame, text="🎵 Media Control Panel (Spotify / YouTube / Windows)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
         m_btn_grid = ctk.CTkFrame(m_frame, fg_color="transparent")
-        m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
+        m_btn_grid.pack(fill="x", padx=12, pady=(0, 12))
 
-        media_btns = [
-            ("⏮️ Prev Track", "prev", "#818CF8"),
-            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
-            ("⏭️ Next Track", "next", "#818CF8"),
-            ("🔉 Vol Down", "vol_down", "#FBBF24"),
-            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
-            ("🔊 Vol Up", "vol_up", "#FBBF24")
+        media_actions = [
+            ("⏯️ Play / Pause", "play_pause", "#0284c7", "#0369a1"),
+            ("⏭️ Next Track", "next", "#0284c7", "#0369a1"),
+            ("⏮️ Prev Track", "prev", "#0284c7", "#0369a1"),
+            ("🔊 Vol Up (+5)", "vol_up", "#059669", "#047857"),
+            ("🔉 Vol Down (-5)", "vol_down", "#059669", "#047857"),
+            ("🔇 Mute Audio", "mute", "#dc2626", "#b91c1c"),
+            ("🎬 Skip Ad (YouTube)", "skip_ad", "#d97706", "#b45309"),
         ]
 
-        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
+        for idx, (b_title, b_act, b_fg, b_hov) in enumerate(media_actions):
             row = idx // 3; col = idx % 3
             mb = ctk.CTkButton(
-                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
-                height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
-                border_width=1, border_color="#1f2937",
-                command=lambda a=m_act: self.handle_media_action(a)
+                m_btn_grid, text=b_title, font=ctk.CTkFont(size=12, weight="bold"),
+                height=36, fg_color=b_fg, hover_color=b_hov, text_color="#ffffff",
+                command=lambda a=b_act: self.handle_media_action(a)
             )
             mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
@@ -725,8 +726,8 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 15))
 
         self.set_alm_btn = ctk.CTkButton(
-            alm_row1, text="⏰ Set Alarm", width=115, fg_color="#FB7185", hover_color="#E11D48",
-            font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
+            alm_row1, text="⏰ Alarm On", width=115, fg_color="#059669", hover_color="#10B981",
+            text_color="#FFFFFF", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
         )
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
@@ -1258,54 +1259,76 @@ class SmartDeskStudioProApp(ctk.CTk):
                 else:
                     t_btn.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
-    def _populate_city_list(self, filter_text=""):
-        if not hasattr(self, 'city_scroll_frame'): return
-        for child in self.city_scroll_frame.winfo_children():
-            child.destroy()
-
-        norm_filter = remove_vietnamese_accents(filter_text.strip().lower())
-        matched = []
-        for eng, vn in VN_CITIES:
-            norm_vn = remove_vietnamese_accents(vn.lower())
-            if not norm_filter or norm_filter in norm_vn or norm_filter in eng.lower():
-                matched.append((eng, vn))
-
-        for idx, (eng, vn) in enumerate(matched):
-            row = idx // 3
-            col = idx % 3
-            btn = ctk.CTkButton(
-                self.city_scroll_frame, text=vn, font=ctk.CTkFont(size=11),
-                height=26, fg_color="#111827", hover_color="#1f2937", text_color="#e2e8f0",
-                border_width=1, border_color="#1f2937", corner_radius=5,
-                command=lambda e=eng, v=vn: self._on_city_pill_clicked(e, v)
-            )
-            btn.grid(row=row, column=col, padx=3, pady=3, sticky="ew")
-
-        for c_i in range(3):
-            self.city_scroll_frame.columnconfigure(c_i, weight=1)
-
-    def _filter_city_list(self, event=None):
+    def _open_city_picker_dialog(self):
+        """Open a sleek Searchable City Selection Modal Dialog."""
         self.last_user_action_time = time.time()
         self.city_user_modified = True
-        txt = self.city_search_entry.get()
-        self._populate_city_list(txt)
 
-    def _on_city_pill_clicked(self, eng_name, vn_name):
-        self.last_user_action_time = time.time()
-        self.city_user_modified = True
-        self.selected_city_eng = eng_name
-        self.selected_city_vn = vn_name
-        self.city_search_entry.delete(0, 'end')
-        self.city_search_entry.insert(0, vn_name)
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("🔍 Chọn Thành Phố / Tỉnh Thành")
+        dialog.geometry("380x420")
+        dialog.resizable(False, False)
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # Header label
+        ctk.CTkLabel(dialog, text="🌤️ Chọn Thành Phố Thời Tiết (63 Tỉnh Thành)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#38bdf8").pack(pady=(12, 6))
+
+        # Search Entry
+        search_entry = ctk.CTkEntry(dialog, placeholder_text="🔍 Gõ tìm nhanh (VD: Đà Nẵng, Cần Thơ, Hà Nội)...", width=340)
+        search_entry.pack(padx=15, pady=(0, 8))
+        search_entry.focus_set()
+
+        # Scrollable Frame inside modal
+        scroll_frame = ctk.CTkScrollableFrame(dialog, width=340, height=300, fg_color="#030712", border_width=1, border_color="#1f2937")
+        scroll_frame.pack(padx=15, pady=(0, 12))
+
+        def _render_dialog_list(filter_text=""):
+            for child in scroll_frame.winfo_children():
+                child.destroy()
+            norm_filter = remove_vietnamese_accents(filter_text.strip().lower())
+            matched = []
+            for eng, vn in VN_CITIES:
+                norm_vn = remove_vietnamese_accents(vn.lower())
+                if not norm_filter or norm_filter in norm_vn or norm_filter in eng.lower():
+                    matched.append((eng, vn))
+
+            for idx, (eng, vn) in enumerate(matched):
+                row = idx // 2
+                col = idx % 2
+                is_sel = (eng.lower() == getattr(self, 'selected_city_eng', '').lower())
+                bg_col = "#0284C7" if is_sel else "#111827"
+                btn = ctk.CTkButton(
+                    scroll_frame, text=vn, font=ctk.CTkFont(size=12),
+                    height=30, fg_color=bg_col, hover_color="#1f2937", text_color="#ffffff",
+                    border_width=1, border_color="#38bdf8" if is_sel else "#1f2937",
+                    command=lambda e=eng, v=vn: _choose_city(e, v)
+                )
+                btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+
+            for c_i in range(2):
+                scroll_frame.columnconfigure(c_i, weight=1)
+
+        def _choose_city(eng_name, vn_name):
+            self.selected_city_eng = eng_name
+            self.selected_city_vn = vn_name
+            if hasattr(self, 'city_picker_btn'):
+                self.city_picker_btn.configure(text=f"🏙️ {vn_name}  ▼")
+            dialog.destroy()
+
+        search_entry.bind("<KeyRelease>", lambda e: _render_dialog_list(search_entry.get()))
+        _render_dialog_list()
 
     def _highlight_alarm_buttons(self, enabled):
         if hasattr(self, 'set_alm_btn') and hasattr(self, 'off_alm_btn'):
             if enabled:
-                self.set_alm_btn.configure(fg_color="#FB7185", text_color="#FFFFFF", border_width=2, border_color="#FDA4AF")
-                self.off_alm_btn.configure(fg_color="#1E293B", text_color="#64748B", border_width=1, border_color="#334155")
+                # Alarm ON: Bright Emerald Green
+                self.set_alm_btn.configure(fg_color="#059669", hover_color="#10B981", text_color="#FFFFFF", border_width=2, border_color="#34D399")
+                self.off_alm_btn.configure(fg_color="#1E293B", hover_color="#334155", text_color="#64748B", border_width=1, border_color="#334155")
             else:
-                self.off_alm_btn.configure(fg_color="#7F1D1D", text_color="#FCA5A5", border_width=2, border_color="#EF4444")
-                self.set_alm_btn.configure(fg_color="#1E293B", text_color="#64748B", border_width=1, border_color="#334155")
+                # Alarm OFF: Active Red
+                self.off_alm_btn.configure(fg_color="#7F1D1D", hover_color="#991B1B", text_color="#FCA5A5", border_width=2, border_color="#EF4444")
+                self.set_alm_btn.configure(fg_color="#1E293B", hover_color="#334155", text_color="#64748B", border_width=1, border_color="#334155")
 
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
@@ -1325,15 +1348,16 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         # Sync city from CYD ONLY when the city reported by CYD actually changes!
         cyd_city = sdata.get("city", "")
-        if cyd_city and hasattr(self, 'city_search_entry'):
+        if cyd_city and hasattr(self, 'city_picker_btn'):
             c_val = cyd_city.strip()
             if c_val.lower() != getattr(self, 'last_cyd_city', '').lower():
                 if time.time() - self.last_user_action_time > 4.0:
                     self.last_cyd_city = c_val.lower()
                     for eng, vn in VN_CITIES:
                         if eng.lower() == c_val.lower():
-                            self.city_search_entry.delete(0, 'end')
-                            self.city_search_entry.insert(0, vn)
+                            self.selected_city_eng = eng
+                            self.selected_city_vn = vn
+                            self.city_picker_btn.configure(text=f"🏙️ {vn}  ▼")
                             break
 
         cur1 = sdata.get("cur1", "")
@@ -1351,16 +1375,11 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def apply_city(self):
         self.last_user_action_time = time.time()
-        sel = self.city_search_entry.get().strip() if hasattr(self, 'city_search_entry') else ""
         eng_city = getattr(self, 'selected_city_eng', 'Hanoi')
-        for eng, vn in VN_CITIES:
-            if vn.lower() == sel.lower() or eng.lower() == sel.lower() or remove_vietnamese_accents(vn.lower()) == remove_vietnamese_accents(sel.lower()):
-                eng_city = eng
-                sel = vn
-                break
+        vn_city = getattr(self, 'selected_city_vn', 'Hà Nội')
         self.last_cyd_city = eng_city.lower()
         self.pending_control["city"] = eng_city
-        self.status_lbl.configure(text=f"✅ Weather City set: {sel} ({eng_city})", text_color="#39FF14")
+        self.status_lbl.configure(text=f"✅ Weather City set: {vn_city} ({eng_city})", text_color="#39FF14")
 
     def apply_currencies(self):
         self.last_user_action_time = time.time()
