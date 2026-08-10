@@ -54,17 +54,17 @@ CANVAS_HEIGHT = 240
 SCALE = 2.2
 
 PAGE_ITEMS = [
-    ("P0", "⛅ Weather & Clock", "Realtime Clock, City Weather & SJC Gold", "#38BDF8"),
-    ("P1", "📆 Lunar Calendar", "Solar Date, Lunar Calendar & Good Hours", "#F472B6"),
-    ("P2", "📈 Finance & Trading", "SJC Gold Rates & World Stock Tickers", "#FBBF24"),
-    ("P3", "💻 PC Hardware Stats", "Realtime CPU Load, RAM & GPU Gauges", "#A855F7"),
-    ("P4", "🚀 Net & Storage Disks", "Network Speed & Disks C:/ D:/ Usage", "#34D399"),
-    ("P5", "⏳ Pomodoro Desk", "Productivity Desk Timer & Alarm Clock", "#FB7185"),
-    ("P6", "🎵 Media Remote", "Spotify Track Title, Artist & Volume", "#818CF8"),
-    ("P7", "⚙ System Settings", "WiFi RSSI, IP, LDR Brightness & Calib", "#94A3B8")
+    ("P0", "⛅", "Weather & Clock", "Realtime Clock, City Weather & SJC Gold", "#38BDF8"),
+    ("P1", "📅", "Lunar Calendar", "Solar Date, Lunar Calendar & Good Hours", "#F472B6"),
+    ("P2", "📈", "Finance & Trading", "SJC Gold Rates & World Stock Tickers", "#FBBF24"),
+    ("P3", "💻", "PC Hardware Stats", "Realtime CPU Load, RAM & GPU Gauges", "#A855F7"),
+    ("P4", "🚀", "Net & Storage Disks", "Network Speed & Disks C:/ D:/ Usage", "#34D399"),
+    ("P5", "⏳", "Pomodoro Desk", "Productivity Desk Timer & Alarm Clock", "#FB7185"),
+    ("P6", "🎵", "Media Remote", "Spotify Track Title, Artist & Volume", "#818CF8"),
+    ("P7", "⚙", "System Settings", "WiFi RSSI, IP, LDR Brightness & Calib", "#94A3B8")
 ]
 
-PAGE_NAMES = [f"{p[0]} • {p[1]}" for p in PAGE_ITEMS]
+PAGE_NAMES = [f"{p[0]} • {p[2]}" for p in PAGE_ITEMS]
 
 DOT_MATRIX_5X7 = {
     '0': [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
@@ -589,7 +589,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.page_btns = []
         for pid in range(8):
             row = pid // 2; col = pid % 2
-            p_code, p_title, p_sub, p_color = PAGE_ITEMS[pid]
+            p_code, p_ico, p_title, p_sub, p_color = PAGE_ITEMS[pid]
 
             btn_box = ctk.CTkFrame(p_grid, fg_color="#030712", border_width=1, border_color="#1f2937", corner_radius=8)
             btn_box.grid(row=row, column=col, padx=4, pady=3, sticky="ew")
@@ -602,14 +602,22 @@ class SmartDeskStudioProApp(ctk.CTk):
             txt_inner = ctk.CTkFrame(btn_box, fg_color="transparent")
             txt_inner.pack(side="left", fill="x", expand=True, padx=2, pady=4)
 
-            title_lbl = ctk.CTkLabel(txt_inner, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
-            title_lbl.pack(anchor="w", pady=0)
+            title_row = ctk.CTkFrame(txt_inner, fg_color="transparent")
+            title_row.pack(anchor="w", pady=0)
+
+            ico_lbl = ctk.CTkLabel(title_row, text=p_ico, font=ctk.CTkFont(size=13))
+            ico_lbl.pack(side="left", padx=(0, 4))
+
+            title_lbl = ctk.CTkLabel(title_row, text=p_title, font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
+            title_lbl.pack(side="left")
 
             sub_lbl = ctk.CTkLabel(txt_inner, text=p_sub, font=ctk.CTkFont(size=10), text_color="#94a3b8", anchor="w")
             sub_lbl.pack(anchor="w", pady=0)
 
             badge_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             txt_inner.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
+            title_row.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
+            ico_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             title_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
             sub_lbl.bind("<Button-1>", lambda e, p=pid: self.switch_page(p))
 
@@ -646,6 +654,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                 command=lambda k=tkey: self.apply_theme(k)
             )
             t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+            self.theme_btns[tkey] = (t_btn, acc_col)
 
         for col_i in range(3): th_grid.columnconfigure(col_i, weight=1)
 
@@ -702,7 +711,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
             mb = ctk.CTkButton(
-                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
+                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=13, weight="bold"),
                 height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
                 border_width=1, border_color="#1f2937",
                 command=lambda a=m_act: self.handle_media_action(a)
