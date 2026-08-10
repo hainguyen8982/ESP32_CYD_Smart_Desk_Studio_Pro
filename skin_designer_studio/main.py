@@ -53,7 +53,7 @@ class SkinDesignerApp(ctk.CTk):
         super().__init__()
 
         self.title("🎨 Smart Desk Studio - Dashboard Skin Designer & Dot Matrix Studio")
-        self.geometry("1220x800")
+        self.geometry("1240x820")
         self.resizable(True, True)
 
         self.skin_data = {
@@ -68,7 +68,25 @@ class SkinDesignerApp(ctk.CTk):
         self.drag_data = {"x": 0, "y": 0, "widget": None, "handle": None}
 
         self.create_layout()
+        self.bind_keyboard_shortcuts()
         self.load_preset("Retro Dot Matrix LED Clock")
+
+    def bind_keyboard_shortcuts(self):
+        # Delete / Backspace shortcuts to delete selected widget
+        self.bind("<Delete>", lambda e: self.delete_selected_widget())
+        self.bind("<BackSpace>", lambda e: self.delete_selected_widget())
+
+        # Arrow key shortcuts for 1px fine-grained movement
+        self.bind("<Up>", lambda e: self.nudge_selected_widget(0, -1))
+        self.bind("<Down>", lambda e: self.nudge_selected_widget(0, 1))
+        self.bind("<Left>", lambda e: self.nudge_selected_widget(-1, 0))
+        self.bind("<Right>", lambda e: self.nudge_selected_widget(1, 0))
+
+        # Shift + Arrow key shortcuts for 5px fast movement
+        self.bind("<Shift-Up>", lambda e: self.nudge_selected_widget(0, -5))
+        self.bind("<Shift-Down>", lambda e: self.nudge_selected_widget(0, 5))
+        self.bind("<Shift-Left>", lambda e: self.nudge_selected_widget(-5, 0))
+        self.bind("<Shift-Right>", lambda e: self.nudge_selected_widget(5, 0))
 
     def create_layout(self):
         # ── Main Container ─────────────────────────────────────────────
@@ -96,6 +114,14 @@ class SkinDesignerApp(ctk.CTk):
             command=self.import_json
         )
         import_btn.pack(side="right", padx=5, pady=8)
+
+        # ── Shortcuts Banner Bar ──────────────────────────────────────
+        banner = ctk.CTkFrame(main_frame, fg_color="#0d1117", border_width=1, border_color="#30363d", corner_radius=6)
+        banner.pack(fill="x", pady=(0, 10))
+
+        b_text = "💡 Phím Tắt:  🖱️ Click chọn  |  🖱️ Kéo di chuyển  |  🔲 Kéo núm vuông góc dưới để Resize  |  ⬅️⬆️➡️⬇️ Mũi Tên: Vi chỉnh 1px (Shift + Mũi tên: 5px)  |  ⌨️ Delete/Backspace: Xóa Widget"
+        b_lbl = ctk.CTkLabel(banner, text=b_text, font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
+        b_lbl.pack(padx=10, pady=6)
 
         # ── Body Grid (3 Columns: Left Toolbox, Center Canvas, Right Properties)
         body = ctk.CTkFrame(main_frame, fg_color="transparent")
@@ -134,7 +160,7 @@ class SkinDesignerApp(ctk.CTk):
         center_box.pack(side="left", fill="both", expand=True)
 
         c_info = ctk.CTkLabel(
-            center_box, text="📺 Interactive Canvas (Scaled 2.5x - 320x240 TFT Ratio) | Drag to move, grab corner to resize",
+            center_box, text="📺 Canvas 320x240 Pixel-Perfect (Scaled 2.5x) | Click Widget & Dùng 4 phím Mũi Tên để di chuyển từng 1px",
             font=ctk.CTkFont(size=12), text_color="#8b949e"
         )
         c_info.pack(pady=(8, 2))
@@ -208,7 +234,7 @@ class SkinDesignerApp(ctk.CTk):
 
         # Delete Widget
         self.del_btn = ctk.CTkButton(
-            right_box, text="🗑️ Delete Widget", width=210, fg_color="#da3633", hover_color="#f85149",
+            right_box, text="🗑️ Delete Widget (Del)", width=210, fg_color="#da3633", hover_color="#f85149",
             command=self.delete_selected_widget
         )
         self.del_btn.pack(side="bottom", padx=10, pady=15)
@@ -437,6 +463,14 @@ class SkinDesignerApp(ctk.CTk):
     def on_canvas_release(self, event):
         self.drag_data["widget"] = None
         self.drag_data["handle"] = None
+
+    def nudge_selected_widget(self, dx, dy):
+        """Keyboard arrow key pixel nudging (1px or 5px)"""
+        w = self.get_selected_widget()
+        if w:
+            w["x"] = max(0, min(CANVAS_WIDTH - w["w"], w["x"] + dx))
+            w["y"] = max(0, min(CANVAS_HEIGHT - w["h"], w["y"] + dy))
+            self.redraw_canvas()
 
     def update_inspector(self):
         w = self.get_selected_widget()
