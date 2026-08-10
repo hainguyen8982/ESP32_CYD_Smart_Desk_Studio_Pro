@@ -32,6 +32,8 @@ public:
     bool isAlarmRinging() const { return alarmRinging; }
     void dismissAlarm();
     void checkAlarm(uint8_t currentHour, uint8_t currentMinute, uint8_t currentSecond);
+    void setAlarmNote(const char* note);
+    const char* getAlarmNote() const { return alarmNote; }
 
     // Desk Note
     void setNoteText(const char* note);
@@ -51,6 +53,7 @@ private:
     uint8_t alarmMinute;
     bool alarmEnabled;
     bool alarmRinging;
+    char alarmNote[64];
 
     // Desk Note internal
     char noteText[128];

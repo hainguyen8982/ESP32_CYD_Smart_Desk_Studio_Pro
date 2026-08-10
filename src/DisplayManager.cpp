@@ -143,6 +143,33 @@ void DisplayManager::update() {
             default: renderPage0_WeatherClock();    break;
         }
     }
+
+    // Alarm Ringing Pop-up Modal Overlay
+    if (deskUtils.isAlarmRinging()) {
+        uint16_t flashColor = (millis() / 300) % 2 ? C_RED : C_YELLOW;
+        spr.fillRoundRect(20, 45, 280, 150, 10, C_CARD);
+        spr.drawRoundRect(20, 45, 280, 150, 10, flashColor);
+        spr.drawRoundRect(21, 46, 278, 148, 10, flashColor);
+
+        iconBell(160, 68, flashColor);
+
+        spr.setTextDatum(MC_DATUM);
+        spr.setTextColor(flashColor, C_CARD);
+        spr.drawString("ALARM CLOCK!", 160, 95, 2);
+
+        const char* note = deskUtils.getAlarmNote();
+        if (note && strlen(note) > 0) {
+            spr.setTextColor(C_WHITE, C_CARD);
+            spr.drawString(note, 160, 125, 2);
+        } else {
+            spr.setTextColor(C_CYAN, C_CARD);
+            spr.drawString("WAKE UP ALARM!", 160, 125, 2);
+        }
+
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.drawString("[ Tap screen to dismiss ]", 160, 165, 1);
+    }
+
     spr.pushSprite(0, 0);
 }
 

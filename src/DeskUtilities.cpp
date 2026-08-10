@@ -14,6 +14,7 @@ DeskUtilities::DeskUtilities()
       alarmMinute(0),
       alarmEnabled(false),
       alarmRinging(false) {
+    alarmNote[0] = '\0';
     snprintf(noteText, sizeof(noteText), "Work hard, stay focused!");
 }
 
@@ -117,5 +118,13 @@ void DeskUtilities::dismissAlarm() {
 void DeskUtilities::setNoteText(const char* note) {
     if (note) {
         snprintf(noteText, sizeof(noteText), "%s", note);
+    }
+}
+
+void DeskUtilities::setAlarmNote(const char* note) {
+    if (note) {
+        snprintf(alarmNote, sizeof(alarmNote), "%s", note);
+    } else {
+        alarmNote[0] = '\0';
     }
 }

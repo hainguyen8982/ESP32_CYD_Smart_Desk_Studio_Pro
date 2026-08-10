@@ -616,6 +616,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("Retro Green", "retro_green", "#00FF41")
         ]
 
+        self.theme_btns = {}
         for idx, (tname, tkey, acc_col) in enumerate(preset_themes):
             row = idx // 3; col = idx % 3
             t_btn = ctk.CTkButton(
@@ -625,6 +626,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                 command=lambda k=tkey: self.apply_theme(k)
             )
             t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+            self.theme_btns[tkey] = (t_btn, acc_col)
 
         for col_i in range(3): th_grid.columnconfigure(col_i, weight=1)
 
@@ -638,20 +640,20 @@ class SmartDeskStudioProApp(ctk.CTk):
         w_inner.pack(fill="x", padx=12, pady=(0, 12))
 
         city_names = [c[1] for c in VN_CITIES]
-        self.city_combo = ctk.CTkOptionMenu(w_inner, values=city_names, width=150)
+        self.city_combo = ctk.CTkComboBox(w_inner, values=city_names, width=170, command=lambda _: setattr(self, 'last_user_action_time', time.time()))
         self.city_combo.set("Hà Nội"); self.city_combo.pack(side="left", padx=(0, 6))
 
-        set_city_btn = ctk.CTkButton(w_inner, text="Set City", width=80, command=self.apply_city)
-        set_city_btn.pack(side="left", padx=(0, 15))
+        set_city_btn = ctk.CTkButton(w_inner, text="Set City", width=75, command=self.apply_city)
+        set_city_btn.pack(side="left", padx=(0, 12))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW"]
-        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
+        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=70)
         self.cur1_combo.set("USD"); self.cur1_combo.pack(side="left", padx=(0, 4))
 
-        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
-        self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 8))
+        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=70)
+        self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 6))
 
-        set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=80, command=self.apply_currencies)
+        set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=75, command=self.apply_currencies)
         set_cur_btn.pack(side="left")
 
         # 5. Media Remote PC Buttons
@@ -688,26 +690,35 @@ class SmartDeskStudioProApp(ctk.CTk):
         alm_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         alm_frame.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(alm_frame, text="⏰ Quick Desk Alarm Clock Setup", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
+        ctk.CTkLabel(alm_frame, text="⏰ Quick Desk Alarm Clock Setup & Memo", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
         alm_inner = ctk.CTkFrame(alm_frame, fg_color="transparent")
         alm_inner.pack(fill="x", padx=12, pady=(0, 12))
 
-        ctk.CTkLabel(alm_inner, text="Hour:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(alm_inner, text="Hour:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 2))
         hours = [f"{h:02d}" for h in range(24)]
-        self.alarm_h_combo = ctk.CTkOptionMenu(alm_inner, values=hours, width=65)
-        self.alarm_h_combo.set("07"); self.alarm_h_combo.pack(side="left", padx=(0, 10))
+        self.alarm_h_combo = ctk.CTkOptionMenu(alm_inner, values=hours, width=60)
+        self.alarm_h_combo.set("07"); self.alarm_h_combo.pack(side="left", padx=(0, 6))
 
-        ctk.CTkLabel(alm_inner, text="Min:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(alm_inner, text="Min:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 2))
         mins = [f"{m:02d}" for m in range(0, 60, 5)]
-        self.alarm_m_combo = ctk.CTkOptionMenu(alm_inner, values=mins, width=65)
-        self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 12))
+        self.alarm_m_combo = ctk.CTkOptionMenu(alm_inner, values=mins, width=60)
+        self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 8))
+
+        self.alarm_note_entry = ctk.CTkEntry(alm_inner, placeholder_text="Ghi chú nhắc nhở (VD: Hop team)...", width=160)
+        self.alarm_note_entry.pack(side="left", padx=(0, 8))
 
         set_alm_btn = ctk.CTkButton(
-            alm_inner, text="⏰ Set Alarm", width=110, fg_color="#FB7185", hover_color="#E11D48",
+            alm_inner, text="⏰ Set", width=65, fg_color="#FB7185", hover_color="#E11D48",
             font=ctk.CTkFont(weight="bold"), command=self.apply_alarm
         )
-        set_alm_btn.pack(side="left")
+        set_alm_btn.pack(side="left", padx=(0, 4))
+
+        off_alm_btn = ctk.CTkButton(
+            alm_inner, text="🔕 Off", width=55, fg_color="#374151", hover_color="#4B5563",
+            text_color="#F85149", font=ctk.CTkFont(weight="bold"), command=self.apply_alarm_off
+        )
+        off_alm_btn.pack(side="left")
 
         # ── RIGHT COLUMN CONTENTS (LIVE DIGITAL TWIN SIMULATION) ─────
         ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
@@ -1194,7 +1205,9 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def apply_theme(self, theme_key):
         self.last_user_action_time = time.time()
+        self.active_cyd_theme = theme_key
         self.pending_control["preset"] = theme_key
+        self._highlight_theme_button(theme_key)
         self.status_lbl.configure(text=f"✅ Theme set: {theme_key}", text_color="#39FF14")
 
     def switch_page(self, page_id):
@@ -1213,6 +1226,14 @@ class SmartDeskStudioProApp(ctk.CTk):
             else:
                 btn_box.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
+    def _highlight_theme_button(self, theme_key):
+        if hasattr(self, 'theme_btns'):
+            for tk, (t_btn, acc_c) in self.theme_btns.items():
+                if tk == theme_key:
+                    t_btn.configure(fg_color="#1f2937", border_color=acc_c, border_width=2)
+                else:
+                    t_btn.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
+
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
         if time.time() - self.last_user_action_time < 2.5:
@@ -1223,6 +1244,11 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.active_cyd_page = page_id
             self._highlight_page_button(page_id)
             self.draw_sim_canvas_preview()
+
+        cyd_theme = sdata.get("theme", "")
+        if cyd_theme and getattr(self, 'active_cyd_theme', '') != cyd_theme:
+            self.active_cyd_theme = cyd_theme
+            self._highlight_theme_button(cyd_theme)
 
         cyd_city = sdata.get("city", "")
         if cyd_city and hasattr(self, 'city_combo'):
@@ -1258,12 +1284,21 @@ class SmartDeskStudioProApp(ctk.CTk):
         try:
             ah = int(self.alarm_h_combo.get())
             am = int(self.alarm_m_combo.get())
+            raw_note = self.alarm_note_entry.get().strip() if hasattr(self, 'alarm_note_entry') else ""
+            safe_note = remove_vietnamese_accents(raw_note)[:60] if raw_note else ""
             self.pending_control["alarm_h"] = ah
             self.pending_control["alarm_m"] = am
             self.pending_control["alarm_enable"] = True
-            self.status_lbl.configure(text=f"✅ Alarm Clock set for {ah:02d}:{am:02d}", text_color="#39FF14")
+            if safe_note:
+                self.pending_control["alarm_note"] = safe_note
+            self.status_lbl.configure(text=f"✅ Alarm Clock set for {ah:02d}:{am:02d}" + (f" ({safe_note})" if safe_note else ""), text_color="#39FF14")
         except Exception as e:
             print(f"[Alarm] Error: {e}")
+
+    def apply_alarm_off(self):
+        self.last_user_action_time = time.time()
+        self.pending_control["alarm_enable"] = False
+        self.status_lbl.configure(text="🔕 Alarm Clock Disabled", text_color="#F85149")
 
     def _update_telemetry_ui(self, c, r, d, u):
         if hasattr(self, 'lbl_cpu'):
