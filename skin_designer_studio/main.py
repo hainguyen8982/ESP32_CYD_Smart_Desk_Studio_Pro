@@ -17,9 +17,31 @@ SCALE = 2.5  # 2.5x Display scale for crisp PC editing (800x600 canvas)
 
 PRESET_DIR = os.path.join(os.path.dirname(__file__), "preset_skins")
 
+# 5x7 Dot Matrix Character Bitmaps
+DOT_MATRIX_5X7 = {
+    '0': [0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110],
+    '1': [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
+    '2': [0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111],
+    '3': [0b11111, 0b00010, 0b00100, 0b00010, 0b00001, 0b10001, 0b01110],
+    '4': [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
+    '5': [0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110],
+    '6': [0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
+    '7': [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
+    '8': [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
+    '9': [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100],
+    ':': [0b00000, 0b01100, 0b01100, 0b00000, 0b01100, 0b01100, 0b00000],
+    'A': [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
+    'P': [0b11110, 0b10001, 0b10001, 0b11110, 0b10000, 0b10000, 0b10000],
+    'M': [0b10001, 0b11011, 0b10101, 0b10001, 0b10001, 0b10001, 0b10001],
+    ' ': [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000]
+}
+
 WIDGET_TYPES = [
     ("Digital Clock & Lunar", "clock", 180, 65),
     ("Weather City & Forecast", "weather", 110, 65),
+    ("Dot Matrix Morning Clock", "clock_dot_matrix", 290, 85),
+    ("Dot Matrix Evening Clock", "clock_dot_matrix_evening", 290, 85),
+    ("Dot Matrix Red Line Divider", "dot_matrix_divider", 290, 10),
     ("CPU Arc Gauge", "gauge_cpu", 145, 80),
     ("RAM Load Meter", "gauge_ram", 145, 80),
     ("SJC Gold & XAUUSD", "gold_sjc", 300, 80),
@@ -30,8 +52,8 @@ class SkinDesignerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("🎨 Smart Desk Studio - Dashboard Skin Designer (Drag & Drop)")
-        self.geometry("1180x760")
+        self.title("🎨 Smart Desk Studio - Dashboard Skin Designer & Dot Matrix Studio")
+        self.geometry("1220x800")
         self.resizable(True, True)
 
         self.skin_data = {
@@ -46,7 +68,7 @@ class SkinDesignerApp(ctk.CTk):
         self.drag_data = {"x": 0, "y": 0, "widget": None, "handle": None}
 
         self.create_layout()
-        self.load_preset("Cyberpunk Neon HUD")
+        self.load_preset("Retro Dot Matrix LED Clock")
 
     def create_layout(self):
         # ── Main Container ─────────────────────────────────────────────
@@ -58,7 +80,7 @@ class SkinDesignerApp(ctk.CTk):
         hdr.pack(fill="x", pady=(0, 10))
 
         title_lbl = ctk.CTkLabel(
-            hdr, text="🎨 Smart Desk Studio — Interactive Layout & Skin Designer (320x240)",
+            hdr, text="🎨 Smart Desk Studio — Layout & Dot Matrix LED Designer (320x240)",
             font=ctk.CTkFont(size=16, weight="bold"), text_color="#58a6ff"
         )
         title_lbl.pack(side="left", padx=15, pady=8)
@@ -80,7 +102,7 @@ class SkinDesignerApp(ctk.CTk):
         body.pack(fill="both", expand=True)
 
         # 1. Left Toolbox (Presets & Widget Library)
-        left_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=220)
+        left_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=230)
         left_box.pack(side="left", fill="y", padx=(0, 10))
 
         t_lbl = ctk.CTkLabel(left_box, text="📦 Preset Skins", font=ctk.CTkFont(size=14, weight="bold"))
@@ -88,10 +110,10 @@ class SkinDesignerApp(ctk.CTk):
 
         self.preset_combo = ctk.CTkOptionMenu(
             left_box,
-            values=["Cyberpunk Neon HUD", "Nordic Minimalist Studio", "Luxury Gold & Finance"],
+            values=["Retro Dot Matrix LED Clock", "Cyberpunk Neon HUD", "Nordic Minimalist Studio", "Luxury Gold & Finance"],
             command=self.load_preset
         )
-        self.preset_combo.set("Cyberpunk Neon HUD")
+        self.preset_combo.set("Retro Dot Matrix LED Clock")
         self.preset_combo.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkFrame(left_box, fg_color="#30363d", height=1).pack(fill="x", padx=10, pady=10)
@@ -130,7 +152,7 @@ class SkinDesignerApp(ctk.CTk):
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
         # 3. Right Properties Panel
-        right_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=240)
+        right_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=250)
         right_box.pack(side="right", fill="y", padx=(10, 0))
 
         p_lbl = ctk.CTkLabel(right_box, text="⚙️ Widget Inspector", font=ctk.CTkFont(size=14, weight="bold"))
@@ -159,33 +181,46 @@ class SkinDesignerApp(ctk.CTk):
         self.entry_h = ctk.CTkEntry(geom_frame, width=60)
         self.entry_h.grid(row=1, column=3, padx=2, pady=2)
 
-        apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry", width=200, command=self.apply_manual_geometry)
-        apply_geom_btn.pack(padx=10, pady=8)
+        apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry", width=210, command=self.apply_manual_geometry)
+        apply_geom_btn.pack(padx=10, pady=6)
+
+        # Font Style Dropdown Selector
+        f_lbl = ctk.CTkLabel(right_box, text="🔤 Font & Display Style", font=ctk.CTkFont(size=12, weight="bold"))
+        f_lbl.pack(anchor="w", padx=12, pady=(8, 2))
+
+        self.font_combo = ctk.CTkOptionMenu(
+            right_box,
+            values=["Dot Matrix LED", "Default Sans", "7-Segment Digital", "Monospace Code"],
+            command=self.on_font_change, width=210
+        )
+        self.font_combo.set("Dot Matrix LED")
+        self.font_combo.pack(padx=10, pady=4)
 
         # Color Pickers
         col_frame = ctk.CTkFrame(right_box, fg_color="transparent")
         col_frame.pack(fill="x", padx=10, pady=5)
 
-        self.bg_col_btn = ctk.CTkButton(col_frame, text="Card BG Color", width=200, fg_color="#21262d", command=self.pick_bg_color)
+        self.bg_col_btn = ctk.CTkButton(col_frame, text="Card BG Color", width=210, fg_color="#21262d", command=self.pick_bg_color)
         self.bg_col_btn.pack(pady=4)
 
-        self.accent_col_btn = ctk.CTkButton(col_frame, text="Accent Color", width=200, fg_color="#21262d", command=self.pick_accent_color)
+        self.accent_col_btn = ctk.CTkButton(col_frame, text="LED Dot / Accent Color", width=210, fg_color="#21262d", command=self.pick_accent_color)
         self.accent_col_btn.pack(pady=4)
 
         # Delete Widget
         self.del_btn = ctk.CTkButton(
-            right_box, text="🗑️ Delete Widget", width=200, fg_color="#da3633", hover_color="#f85149",
+            right_box, text="🗑️ Delete Widget", width=210, fg_color="#da3633", hover_color="#f85149",
             command=self.delete_selected_widget
         )
         self.del_btn.pack(side="bottom", padx=10, pady=15)
 
     def load_preset(self, preset_name):
         filename_map = {
+            "Retro Dot Matrix LED Clock": "dot_matrix_led.json",
             "Cyberpunk Neon HUD": "cyberpunk_neon.json",
             "Nordic Minimalist Studio": "nordic_minimalist.json",
             "Luxury Gold & Finance": "luxury_gold.json"
         }
-        fname = filename_map.get(preset_name, "cyberpunk_neon.json")
+        fname = filename_map.get(preset_name, "dot_matrix_led.json")
         path = os.path.join(PRESET_DIR, fname)
         if os.path.exists(path):
             try:
@@ -196,16 +231,75 @@ class SkinDesignerApp(ctk.CTk):
             except Exception as e:
                 print(f"Error loading preset: {e}")
 
+    def draw_dot_matrix_text(self, text, start_x, start_y, dot_size, pitch, on_color, off_color="#121212", wid_tag=""):
+        cur_x = start_x
+        for ch in text.upper():
+            bm = DOT_MATRIX_5X7.get(ch, DOT_MATRIX_5X7.get(' '))
+            for row in range(7):
+                row_bits = bm[row]
+                for col in range(5):
+                    is_on = (row_bits >> (4 - col)) & 1
+                    dx = cur_x + col * pitch
+                    dy = start_y + row * pitch
+                    col_fill = on_color if is_on else off_color
+                    self.canvas.create_oval(
+                        dx, dy, dx + dot_size, dy + dot_size,
+                        fill=col_fill, outline="", tags=("widget", wid_tag)
+                    )
+            cur_x += 6 * pitch  # Advance 5 dots + 1 space
+
+    def draw_pixel_sun(self, start_x, start_y, dot_size, pitch, color, wid_tag=""):
+        # 7x7 Pixel Art Sun
+        sun_map = [
+            0b0011100,
+            0b0111110,
+            0b1111111,
+            0b1111111,
+            0b1111111,
+            0b0111110,
+            0b0011100
+        ]
+        for r in range(7):
+            bits = sun_map[r]
+            for c in range(7):
+                if (bits >> (6 - c)) & 1:
+                    dx = start_x + c * pitch
+                    dy = start_y + r * pitch
+                    self.canvas.create_oval(
+                        dx, dy, dx + dot_size, dy + dot_size,
+                        fill=color, outline="", tags=("widget", wid_tag)
+                    )
+
+    def draw_pixel_sunrise(self, start_x, start_y, dot_size, pitch, color, wid_tag=""):
+        # Half Sun + Horizon Line
+        sun_map = [
+            0b0011100,
+            0b0111110,
+            0b1111111,
+            0b0000000,
+            0b1111111
+        ]
+        for r in range(5):
+            bits = sun_map[r]
+            for c in range(7):
+                if (bits >> (6 - c)) & 1:
+                    dx = start_x + c * pitch
+                    dy = start_y + r * pitch
+                    self.canvas.create_oval(
+                        dx, dy, dx + dot_size, dy + dot_size,
+                        fill=color, outline="", tags=("widget", wid_tag)
+                    )
+
     def redraw_canvas(self):
         self.canvas.delete("all")
         bg_col = self.skin_data.get("canvas", {}).get("bg_color", "#000000")
         self.canvas.configure(bg=bg_col)
 
-        # Draw subtle 10px grid lines
+        # Draw subtle grid lines
         for x in range(0, int(CANVAS_WIDTH * SCALE), int(20 * SCALE)):
-            self.canvas.create_line(x, 0, x, int(CANVAS_HEIGHT * SCALE), fill="#161b22", dash=(2, 4))
+            self.canvas.create_line(x, 0, x, int(CANVAS_HEIGHT * SCALE), fill="#141418", dash=(2, 4))
         for y in range(0, int(CANVAS_HEIGHT * SCALE), int(20 * SCALE)):
-            self.canvas.create_line(0, y, int(CANVAS_WIDTH * SCALE), y, fill="#161b22", dash=(2, 4))
+            self.canvas.create_line(0, y, int(CANVAS_WIDTH * SCALE), y, fill="#141418", dash=(2, 4))
 
         # Render Widgets
         for w in self.skin_data.get("widgets", []):
@@ -216,42 +310,63 @@ class SkinDesignerApp(ctk.CTk):
             wid = w["id"]
 
             is_selected = (wid == self.selected_widget_id)
-            outline_col = "#58a6ff" if is_selected else "#30363d"
+            outline_col = "#58a6ff" if is_selected else "#222222"
             outline_w = 3 if is_selected else 1
 
-            # Card BG
-            card_bg = w.get("bg_color", "#161b22")
-            accent = w.get("accent_color", "#00D4FF")
+            # Card BG & Accent
+            card_bg = w.get("bg_color", "#0C0C0C")
+            accent = w.get("accent_color", "#FFFFFF")
+            font_style = w.get("font_style", "dot_matrix")
 
             # Draw Card Rectangle
             self.canvas.create_rectangle(wx, wy, wx + ww, wy + wh, fill=card_bg, outline=outline_col, width=outline_w, tags=("widget", wid))
 
             # Widget Visual Simulation Mockup
             wtype = w.get("type", "")
-            if wtype == "clock":
-                self.canvas.create_text(wx + 15, wy + 20, text="14:35:08", fill=accent, font=("Consolas", int(14 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 15, wy + 42, text="Thứ Hai, 10/08 • 18/07 Âm", fill="#8b949e", font=("Segoe UI", int(5 * SCALE)), anchor="w", tags=("widget", wid))
-            elif wtype == "weather":
-                self.canvas.create_text(wx + 10, wy + 18, text="🌤️ 28°C", fill=accent, font=("Segoe UI", int(9 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 10, wy + 42, text="Hà Nội | Hum:80%", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE)), anchor="w", tags=("widget", wid))
-            elif wtype == "gauge_cpu":
-                self.canvas.create_text(wx + 10, wy + 15, text="CPU LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 10, wy + 45, text="42%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_arc(wx + ww - 50, wy + 15, wx + ww - 10, wy + 55, start=0, extent=240, outline=accent, width=4, style="arc", tags=("widget", wid))
-            elif wtype == "gauge_ram":
-                self.canvas.create_text(wx + 10, wy + 15, text="RAM LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 10, wy + 45, text="68%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_rectangle(wx + 70, wy + 40, wx + ww - 15, wy + 50, fill="#21262d", outline="", tags=("widget", wid))
-                self.canvas.create_rectangle(wx + 70, wy + 40, wx + 70 + int((ww - 85) * 0.68), wy + 50, fill=accent, outline="", tags=("widget", wid))
-            elif wtype == "gold_sjc":
-                self.canvas.create_text(wx + 15, wy + 20, text="SJC GOLD: 137.5M / 141.5M (+0.5M)", fill=accent, font=("Segoe UI", int(6.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 15, wy + 45, text="XAUUSD Spot: $4,064.00/oz", fill="#8b949e", font=("Segoe UI", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
-            elif wtype == "line_chart":
-                self.canvas.create_text(wx + 10, wy + 12, text="REALTIME HARDWARE TREND", fill="#8b949e", font=("Segoe UI", int(4 * SCALE)), anchor="w", tags=("widget", wid))
-                # Sample trendline
-                pts = [(wx + 10, wy + wh - 10), (wx + 40, wy + wh - 25), (wx + 80, wy + wh - 15), (wx + 130, wy + wh - 35), (wx + 180, wy + wh - 20), (wx + ww - 10, wy + wh - 30)]
-                for i in range(len(pts) - 1):
-                    self.canvas.create_line(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1], fill=accent, width=2, tags=("widget", wid))
+
+            if wtype in ["clock_dot_matrix", "clock_dot_matrix_evening"] or font_style == "dot_matrix":
+                if wtype == "clock_dot_matrix":
+                    # Sun + 4:40 AM
+                    self.draw_pixel_sun(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FFCC00", wid_tag=wid)
+                    self.draw_dot_matrix_text("4:40 AM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                elif wtype == "clock_dot_matrix_evening":
+                    # Sunrise + 7:32 PM
+                    self.draw_pixel_sunrise(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FF9900", wid_tag=wid)
+                    self.draw_dot_matrix_text("7:32 PM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                elif wtype == "dot_matrix_divider":
+                    # Row of glowing LED dots
+                    line_y = wy + int(wh / 2) - 2
+                    for dx in range(wx + 10, wx + ww - 10, 8):
+                        self.canvas.create_oval(dx, line_y, dx + 5, line_y + 5, fill=accent, outline="", tags=("widget", wid))
+                elif wtype == "clock":
+                    self.draw_dot_matrix_text("14:35:08", wx + 15, wy + 15, dot_size=4, pitch=6, on_color=accent, off_color="#181818", wid_tag=wid)
+                else:
+                    self.canvas.create_text(wx + 15, wy + 20, text=w.get("name", ""), fill=accent, font=("Consolas", int(10 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+            else:
+                # Standard Vector / Sans Rendering
+                if wtype == "clock":
+                    self.canvas.create_text(wx + 15, wy + 20, text="14:35:08", fill=accent, font=("Consolas", int(14 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 15, wy + 42, text="Thứ Hai, 10/08 • 18/07 Âm", fill="#8b949e", font=("Segoe UI", int(5 * SCALE)), anchor="w", tags=("widget", wid))
+                elif wtype == "weather":
+                    self.canvas.create_text(wx + 10, wy + 18, text="🌤️ 28°C", fill=accent, font=("Segoe UI", int(9 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 42, text="Hà Nội | Hum:80%", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE)), anchor="w", tags=("widget", wid))
+                elif wtype == "gauge_cpu":
+                    self.canvas.create_text(wx + 10, wy + 15, text="CPU LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 45, text="42%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_arc(wx + ww - 50, wy + 15, wx + ww - 10, wy + 55, start=0, extent=240, outline=accent, width=4, style="arc", tags=("widget", wid))
+                elif wtype == "gauge_ram":
+                    self.canvas.create_text(wx + 10, wy + 15, text="RAM LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 45, text="68%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_rectangle(wx + 70, wy + 40, wx + ww - 15, wy + 50, fill="#21262d", outline="", tags=("widget", wid))
+                    self.canvas.create_rectangle(wx + 70, wy + 40, wx + 70 + int((ww - 85) * 0.68), wy + 50, fill=accent, outline="", tags=("widget", wid))
+                elif wtype == "gold_sjc":
+                    self.canvas.create_text(wx + 15, wy + 20, text="SJC GOLD: 137.5M / 141.5M (+0.5M)", fill=accent, font=("Segoe UI", int(6.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 15, wy + 45, text="XAUUSD Spot: $4,064.00/oz", fill="#8b949e", font=("Segoe UI", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
+                elif wtype == "line_chart":
+                    self.canvas.create_text(wx + 10, wy + 12, text="REALTIME HARDWARE TREND", fill="#8b949e", font=("Segoe UI", int(4 * SCALE)), anchor="w", tags=("widget", wid))
+                    pts = [(wx + 10, wy + wh - 10), (wx + 40, wy + wh - 25), (wx + 80, wy + wh - 15), (wx + 130, wy + wh - 35), (wx + 180, wy + wh - 20), (wx + ww - 10, wy + wh - 30)]
+                    for i in range(len(pts) - 1):
+                        self.canvas.create_line(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1], fill=accent, width=2, tags=("widget", wid))
 
             # Resize Handle (bottom-right corner)
             if is_selected:
@@ -331,6 +446,16 @@ class SkinDesignerApp(ctk.CTk):
             self.entry_y.delete(0, tk.END); self.entry_y.insert(0, str(w["y"]))
             self.entry_w.delete(0, tk.END); self.entry_w.insert(0, str(w["w"]))
             self.entry_h.delete(0, tk.END); self.entry_h.insert(0, str(w["h"]))
+
+            font_val_map = {
+                "dot_matrix": "Dot Matrix LED",
+                "default": "Default Sans",
+                "segment7": "7-Segment Digital",
+                "mono": "Monospace Code"
+            }
+            cur_font = w.get("font_style", "dot_matrix" if "dot_matrix" in w.get("type","") else "default")
+            self.font_combo.set(font_val_map.get(cur_font, "Dot Matrix LED"))
+
             self.bg_col_btn.configure(fg_color=w.get("bg_color", "#161b22"))
             self.accent_col_btn.configure(fg_color=w.get("accent_color", "#00D4FF"))
         else:
@@ -339,6 +464,18 @@ class SkinDesignerApp(ctk.CTk):
             self.entry_y.delete(0, tk.END)
             self.entry_w.delete(0, tk.END)
             self.entry_h.delete(0, tk.END)
+
+    def on_font_change(self, val):
+        w = self.get_selected_widget()
+        if w:
+            font_key_map = {
+                "Dot Matrix LED": "dot_matrix",
+                "Default Sans": "default",
+                "7-Segment Digital": "segment7",
+                "Monospace Code": "mono"
+            }
+            w["font_style"] = font_key_map.get(val, "dot_matrix")
+            self.redraw_canvas()
 
     def apply_manual_geometry(self):
         w = self.get_selected_widget()
@@ -363,23 +500,25 @@ class SkinDesignerApp(ctk.CTk):
     def pick_accent_color(self):
         w = self.get_selected_widget()
         if w:
-            color = colorchooser.askcolor(title="Choose Accent Color", color=w.get("accent_color", "#00D4FF"))[1]
+            color = colorchooser.askcolor(title="Choose Accent / LED Dot Color", color=w.get("accent_color", "#00D4FF"))[1]
             if color:
                 w["accent_color"] = color
                 self.redraw_canvas()
 
     def add_widget(self, name, wtype, def_w, def_h):
         new_id = f"w_{len(self.skin_data['widgets']) + 1}_{wtype}"
+        is_matrix = ("dot_matrix" in wtype)
         new_w = {
             "id": new_id,
             "name": name,
             "type": wtype,
+            "font_style": "dot_matrix" if is_matrix else "default",
             "x": 20,
             "y": 20,
             "w": def_w,
             "h": def_h,
-            "bg_color": "#161b22",
-            "accent_color": "#00D4FF",
+            "bg_color": "#0C0C0C" if is_matrix else "#161b22",
+            "accent_color": "#FF3333" if wtype == "dot_matrix_divider" else ("#FFFFFF" if is_matrix else "#00D4FF"),
             "text_color": "#FFFFFF"
         }
         self.skin_data["widgets"].append(new_w)

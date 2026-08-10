@@ -1,0 +1,51 @@
+{
+  "skin_name": "Retro Dot Matrix LED Clock",
+  "author": "Smart Desk Studio",
+  "version": "1.0",
+  "canvas": {
+    "width": 320,
+    "height": 240,
+    "bg_color": "#050505"
+  },
+  "widgets": [
+    {
+      "id": "w_matrix_clock1",
+      "name": "Dot Matrix Morning Clock",
+      "type": "clock_dot_matrix",
+      "font_style": "dot_matrix",
+      "x": 15,
+      "y": 20,
+      "w": 290,
+      "h": 85,
+      "bg_color": "#0C0C0C",
+      "accent_color": "#FFFFFF",
+      "text_color": "#FFD700"
+    },
+    {
+      "id": "w_matrix_divider",
+      "name": "Dot Matrix Red Line Divider",
+      "type": "dot_matrix_divider",
+      "font_style": "dot_matrix",
+      "x": 15,
+      "y": 115,
+      "w": 290,
+      "h": 10,
+      "bg_color": "#0C0C0C",
+      "accent_color": "#FF3333",
+      "text_color": "#FF3333"
+    },
+    {
+      "id": "w_matrix_clock2",
+      "name": "Dot Matrix Evening Clock",
+      "type": "clock_dot_matrix_evening",
+      "font_style": "dot_matrix",
+      "x": 15,
+      "y": 135,
+      "w": 290,
+      "h": 85,
+      "bg_color": "#0C0C0C",
+      "accent_color": "#FFFFFF",
+      "text_color": "#FFA500"
+    }
+  ]
+}
