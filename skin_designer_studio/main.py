@@ -55,6 +55,7 @@ SEGMENT7_MASKS = {
 }
 
 WIDGET_TYPES = [
+    ("System Status Header Strip", "status_bar", 320, 18),
     ("Digital Clock & Lunar", "clock", 180, 65),
     ("Weather City & Forecast", "weather", 110, 65),
     ("Dot Matrix Morning Clock", "clock_dot_matrix", 290, 85),
@@ -337,11 +338,9 @@ class SkinDesignerApp(ctk.CTk):
             cur_x += 6 * pitch
 
     def draw_7segment_text(self, text, start_x, start_y, seg_w, seg_h, color, wid_tag=""):
-        """Draw 7-segment digital display numbers"""
         cur_x = start_x
         for ch in text:
             if ch == ':':
-                # Draw Colon Dots
                 self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.3), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.3) + 4, fill=color, outline="", tags=("widget", wid_tag))
                 self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.7), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.7) + 4, fill=color, outline="", tags=("widget", wid_tag))
                 cur_x += int(seg_w * 0.5)
@@ -349,22 +348,14 @@ class SkinDesignerApp(ctk.CTk):
 
             mask = SEGMENT7_MASKS.get(ch, 0x00)
             off_col = "#151820"
-            t = 4  # thickness
+            t = 4
 
-            # Segments: a (top), b (top-right), c (bot-right), d (bot), e (bot-left), f (top-left), g (center)
-            # a: top horizontal
             self.canvas.create_rectangle(cur_x + t, start_y, cur_x + seg_w - t, start_y + t, fill=color if (mask & 0x01) else off_col, outline="", tags=("widget", wid_tag))
-            # b: top right
             self.canvas.create_rectangle(cur_x + seg_w - t, start_y + t, cur_x + seg_w, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x02) else off_col, outline="", tags=("widget", wid_tag))
-            # c: bot right
             self.canvas.create_rectangle(cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), cur_x + seg_w, start_y + seg_h - t, fill=color if (mask & 0x04) else off_col, outline="", tags=("widget", wid_tag))
-            # d: bot horizontal
             self.canvas.create_rectangle(cur_x + t, start_y + seg_h - t, cur_x + seg_w - t, start_y + seg_h, fill=color if (mask & 0x08) else off_col, outline="", tags=("widget", wid_tag))
-            # e: bot left
             self.canvas.create_rectangle(cur_x, start_y + int(seg_h/2) + int(t/2), cur_x + t, start_y + seg_h - t, fill=color if (mask & 0x10) else off_col, outline="", tags=("widget", wid_tag))
-            # f: top left
             self.canvas.create_rectangle(cur_x, start_y + t, cur_x + t, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x20) else off_col, outline="", tags=("widget", wid_tag))
-            # g: center horizontal
             self.canvas.create_rectangle(cur_x + t, start_y + int(seg_h/2) - int(t/2), cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), fill=color if (mask & 0x40) else off_col, outline="", tags=("widget", wid_tag))
 
             cur_x += seg_w + 6
@@ -432,7 +423,13 @@ class SkinDesignerApp(ctk.CTk):
             # Widget Visual Simulation Mockup
             wtype = w.get("type", "")
 
-            if font_style == "segment7":
+            if wtype == "status_bar":
+                # System Status Header Strip
+                self.canvas.create_text(wx + 10, wy + int(wh/2), text="📶 WiFi: 192.168.1.13", fill="#00E676", font=("Segoe UI", int(4 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                self.canvas.create_text(wx + int(ww/2), wy + int(wh/2), text=f"PAGE {self.current_page_idx}/7", fill="#58a6ff", font=("Segoe UI", int(4 * SCALE), "bold"), anchor="center", tags=("widget", wid))
+                self.canvas.create_text(wx + ww - 10, wy + int(wh/2), text="⏰ NTP  ☀️ 85%", fill="#8b949e", font=("Segoe UI", int(4 * SCALE)), anchor="e", tags=("widget", wid))
+
+            elif font_style == "segment7":
                 # 7-Segment Digital Font
                 if wtype in ["clock", "clock_dot_matrix", "clock_dot_matrix_evening"]:
                     self.draw_7segment_text("14:35:08", wx + 15, wy + 15, seg_w=18, seg_h=36, color=accent, wid_tag=wid)
@@ -548,7 +545,7 @@ class SkinDesignerApp(ctk.CTk):
             new_w = int((event.x - int(w["x"] * SCALE)) / SCALE)
             new_h = int((event.y - int(w["y"] * SCALE)) / SCALE)
             w["w"] = max(40, min(CANVAS_WIDTH - w["x"], new_w))
-            w["h"] = max(30, min(CANVAS_HEIGHT - w["y"], new_h))
+            w["h"] = max(18, min(CANVAS_HEIGHT - w["y"], new_h))
             self.redraw_canvas()
 
     def on_canvas_release(self, event):
@@ -638,12 +635,12 @@ class SkinDesignerApp(ctk.CTk):
             "name": name,
             "type": wtype,
             "font_style": "dot_matrix" if is_matrix else "default",
-            "x": 20,
-            "y": 20,
+            "x": 0 if wtype == "status_bar" else 20,
+            "y": 0 if wtype == "status_bar" else 20,
             "w": def_w,
             "h": def_h,
-            "bg_color": "#0C0C0C" if is_matrix else "#161b22",
-            "accent_color": "#FF3333" if wtype == "dot_matrix_divider" else ("#FFFFFF" if is_matrix else "#00D4FF"),
+            "bg_color": "#000000" if wtype == "status_bar" else ("#0C0C0C" if is_matrix else "#161b22"),
+            "accent_color": "#00E676" if wtype == "status_bar" else ("#FF3333" if wtype == "dot_matrix_divider" else ("#FFFFFF" if is_matrix else "#00D4FF")),
             "text_color": "#FFFFFF"
         }
         widgets.append(new_w)
