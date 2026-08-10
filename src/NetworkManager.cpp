@@ -257,7 +257,7 @@ void NetworkManager::setupWebRoutes() {
         }
     });
 
-    // Main Dark-Mode Mobile Web Dashboard UI (Glassmorphism & Client-Side Vietnamese Accent Normalizer)
+    // Main Dark-Mode Mobile Web Dashboard UI (Glassmorphism, 63 VN Cities & Realtime State Sync)
     server.on("/", HTTP_GET, [this](AsyncWebServerRequest *request) {
         String html = "<!DOCTYPE html><html lang='vi'><head><meta charset='UTF-8'>"
                       "<meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no'>"
@@ -281,6 +281,7 @@ void NetworkManager::setupWebRoutes() {
                       ".grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}"
                       ".grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}"
                       ".theme-btn{background:#030712;border:1px solid var(--border);border-radius:10px;padding:12px 8px;color:#fff;font-size:12px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:0.2s}"
+                      ".theme-btn.active{border-color:var(--accent);box-shadow:0 0 10px rgba(57,255,20,0.3)}"
                       ".theme-btn:active{transform:scale(0.96)}"
                       ".theme-dot{width:16px;height:16px;border-radius:50%;display:inline-block}"
                       ".btn-primary{width:100%;background:#0284c7;color:#fff;border:none;padding:12px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}"
@@ -293,7 +294,7 @@ void NetworkManager::setupWebRoutes() {
                       "<div class='app'>"
                       "<div class='header'>"
                       "<h1>🖥️ CYD Smart Desk Assistant</h1>"
-                      "<p>IP: <span class='badge'>" + WiFi.localIP().toString() + "</span> | Signal: <span class='badge'>" + String(WiFi.RSSI()) + " dBm</span></p>"
+                      "<p>IP: <span class='badge' id='ipLbl'>" + WiFi.localIP().toString() + "</span> | Signal: <span class='badge' id='rssiLbl'>" + String(WiFi.RSSI()) + " dBm</span></p>"
                       "</div>"
                       "<div class='nav'>"
                       "<button class='tab-btn active' onclick='switchTab(0)'>🎨 Themes & Weather</button>"
@@ -305,34 +306,24 @@ void NetworkManager::setupWebRoutes() {
                       "<div class='card'>"
                       "<div class='card-title'>🎨 Theme Presets (Đổi Màu Tức Thì)</div>"
                       "<div class='grid-3'>"
-                      "<button class='theme-btn' onclick=\"setTheme('ocean_dark')\"><span class='theme-dot' style='background:#38bdf8'></span>Ocean</button>"
-                      "<button class='theme-btn' onclick=\"setTheme('cyberpunk')\"><span class='theme-dot' style='background:#ff00cc'></span>Cyberpunk</button>"
-                      "<button class='theme-btn' onclick=\"setTheme('forest')\"><span class='theme-dot' style='background:#10b981'></span>Forest</button>"
-                      "<button class='theme-btn' onclick=\"setTheme('cherry')\"><span class='theme-dot' style='background:#f472b6'></span>Cherry</button>"
-                      "<button class='theme-btn' onclick=\"setTheme('light_day')\"><span class='theme-dot' style='background:#0284c7'></span>Light Day</button>"
-                      "<button class='theme-btn' onclick=\"setTheme('retro_green')\"><span class='theme-dot' style='background:#00ff41'></span>Retro</button>"
+                      "<button class='theme-btn' id='th_ocean_dark' onclick=\"setTheme('ocean_dark')\"><span class='theme-dot' style='background:#38bdf8'></span>Ocean</button>"
+                      "<button class='theme-btn' id='th_cyberpunk' onclick=\"setTheme('cyberpunk')\"><span class='theme-dot' style='background:#ff00cc'></span>Cyberpunk</button>"
+                      "<button class='theme-btn' id='th_forest' onclick=\"setTheme('forest')\"><span class='theme-dot' style='background:#10b981'></span>Forest</button>"
+                      "<button class='theme-btn' id='th_cherry' onclick=\"setTheme('cherry')\"><span class='theme-dot' style='background:#f472b6'></span>Cherry</button>"
+                      "<button class='theme-btn' id='th_light_day' onclick=\"setTheme('light_day')\"><span class='theme-dot' style='background:#0284c7'></span>Light Day</button>"
+                      "<button class='theme-btn' id='th_retro_green' onclick=\"setTheme('retro_green')\"><span class='theme-dot' style='background:#00ff41'></span>Retro</button>"
                       "</div></div>"
                       "<div class='card'>"
                       "<div class='card-title'>🌤️ Thành Phố Thời Tiết (63 Tỉnh Thành)</div>"
-                      "<select class='select-box' id='citySelect'>"
-                      "<option value='Hanoi'>Hà Nội</option>"
-                      "<option value='Ho Chi Minh'>TP. Hồ Chí Minh</option>"
-                      "<option value='Da Nang'>Đà Nẵng</option>"
-                      "<option value='Hai Phong'>Hải Phòng</option>"
-                      "<option value='Can Tho'>Cần Thơ</option>"
-                      "<option value='Nha Trang'>Nha Trang</option>"
-                      "<option value='Da Lat'>Đà Lạt</option>"
-                      "<option value='Hue'>Huế</option>"
-                      "<option value='Vung Tau'>Vũng Tàu</option>"
-                      "<option value='Phu Quoc'>Phú Quốc</option>"
-                      "</select>"
+                      "<input type='text' class='input-box' id='citySearch' placeholder='🔍 Gõ tìm nhanh (VD: Hà Nội, Đà Nẵng, Phú Quốc)...' onkeyup='filterCityList()'>"
+                      "<select class='select-box' id='citySelect' style='margin-top:8px'></select>"
                       "<button class='btn-primary' onclick='applyCity()'>🌤️ Cập Nhật Thời Tiết</button>"
                       "</div>"
                       "<div class='card'>"
                       "<div class='card-title'>💱 Tỉ Giá Ngoại Tệ</div>"
                       "<div class='grid-2'>"
-                      "<div><label>Ngoại tệ 1:</label><select class='select-box' id='cur1'><option value='USD'>USD</option><option value='EUR'>EUR</option><option value='JPY'>JPY</option><option value='GBP'>GBP</option></select></div>"
-                      "<div><label>Ngoại tệ 2:</label><select class='select-box' id='cur2'><option value='EUR'>EUR</option><option value='USD'>USD</option><option value='JPY'>JPY</option><option value='CNY'>CNY</option></select></div>"
+                      "<div><label>Ngoại tệ 1:</label><select class='select-box' id='cur1'><option value='USD'>USD</option><option value='EUR'>EUR</option><option value='JPY'>JPY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='CNY'>CNY</option><option value='KRW'>KRW</option></select></div>"
+                      "<div><label>Ngoại tệ 2:</label><select class='select-box' id='cur2'><option value='EUR'>EUR</option><option value='USD'>USD</option><option value='JPY'>JPY</option><option value='CNY'>CNY</option><option value='GBP'>GBP</option><option value='AUD'>AUD</option><option value='SGD'>SGD</option><option value='KRW'>KRW</option></select></div>"
                       "</div>"
                       "<button class='btn-primary' onclick='applyFX()'>💱 Cập Nhật Tỉ Giá</button>"
                       "</div></div>"
@@ -368,15 +359,21 @@ void NetworkManager::setupWebRoutes() {
                       "</div></div>"
                       "<div class='toast' id='toast'>✅ Đã cập nhật thành công!</div>"
                       "<script>"
+                      "var vnCities=[['Hanoi','Hà Nội'],['Ho Chi Minh','TP. Hồ Chí Minh'],['Da Nang','Đà Nẵng'],['Hai Phong','Hải Phòng'],['Can Tho','Cần Thơ'],['An Giang','An Giang'],['Vung Tau','Bà Rịa - Vũng Tàu'],['Bac Giang','Bắc Giang'],['Bac Kan','Bắc Kạn'],['Bac Lieu','Bạc Liêu'],['Bac Ninh','Bắc Ninh'],['Ben Tre','Bến Tre'],['Quy Nhon','Bình Định'],['Binh Duong','Bình Dương'],['Binh Phuoc','Bình Phước'],['Phan Thiet','Bình Thuận'],['Ca Mau','Cà Mau'],['Cao Bang','Cao Bằng'],['Buon Ma Thuot','Đắk Lắk'],['Dak Nong','Đắk Nông'],['Dien Bien','Điện Biên'],['Bien Hoa','Đồng Nai'],['Dong Thap','Đồng Tháp'],['Pleiku','Gia Lai'],['Ha Giang','Hà Giang'],['Ha Nam','Hà Nam'],['Ha Tinh','Hà Tĩnh'],['Hai Duong','Hải Dương'],['Hau Giang','Hậu Giang'],['Hoa Binh','Hòa Bình'],['Hung Yen','Hưng Yên'],['Nha Trang','Khánh Hòa'],['Rach Gia','Kiên Giang'],['Phu Quoc','Phú Quốc'],['Kon Tum','Kon Tum'],['Lai Chau','Lai Châu'],['Da Lat','Lâm Đồng'],['Lang Son','Lạng Sơn'],['Sapa','Lào Cai (Sa Pa)'],['Long An','Long An'],['Nam Dinh','Nam Định'],['Vinh','Nghệ An'],['Ninh Binh','Ninh Bình'],['Phan Rang','Ninh Thuận'],['Viet Tri','Phú Thọ'],['Tuy Hoa','Phú Yên'],['Dong Hoi','Quảng Bình'],['Hoi An','Quảng Nam (Hội An)'],['Quang Ngai','Quảng Ngãi'],['Ha Long','Quảng Ninh (Hạ Long)'],['Quang Tri','Quảng Trị'],['Soc Trang','Sóc Trăng'],['Son La','Sơn La'],['Tay Ninh','Tây Ninh'],['Thai Binh','Thái Bình'],['Thai Nguyen','Thái Nguyên'],['Thanh Hoa','Thanh Hóa'],['Hue','Thừa Thiên Huế'],['My Tho','Tiền Giang'],['Tra Vinh','Trà Vinh'],['Tuyen Quang','Tuyên Quang'],['Vinh Long','Vĩnh Long'],['Vinh Yen','Vĩnh Phúc'],['Yen Bai','Yên Bái']];"
+                      "function renderCityOptions(q){var s=document.getElementById('citySelect');var curVal=s.value;s.innerHTML='';q=sanitizeVN(q.toLowerCase());for(var i=0;i<vnCities.length;i++){var eng=vnCities[i][0];var vn=vnCities[i][1];if(!q||sanitizeVN(eng.toLowerCase()).indexOf(q)>=0||sanitizeVN(vn.toLowerCase()).indexOf(q)>=0){var o=document.createElement('option');o.value=eng;o.innerText=vn+' ('+eng+')';if(eng===curVal)o.selected=true;s.appendChild(o);}}}"
+                      "function filterCityList(){renderCityOptions(document.getElementById('citySearch').value);}"
                       "function sanitizeVN(s){if(!s)return '';return s.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D');}"
                       "function showToast(m){var t=document.getElementById('toast');t.innerText=m;t.style.display='block';setTimeout(function(){t.style.display='none';},2000);}"
                       "function switchTab(idx){var b=document.querySelectorAll('.tab-btn');var t=document.querySelectorAll('.tab-content');for(var i=0;i<b.length;i++){b[i].classList.remove('active');t[i].classList.remove('active');}b[idx].classList.add('active');t[idx].classList.add('active');}"
-                      "function setTheme(k){fetch('/api/theme',{method:'POST',body:JSON.stringify({preset:k})}).then(function(){showToast('🎨 Đã đổi Theme: '+k);});}"
+                      "function highlightTheme(k){var btns=document.querySelectorAll('.theme-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('active');var target=document.getElementById('th_'+k);if(target)target.classList.add('active');}"
+                      "function setTheme(k){highlightTheme(k);fetch('/api/theme',{method:'POST',body:JSON.stringify({preset:k})}).then(function(){showToast('🎨 Đã đổi Theme: '+k);});}"
                       "function applyCity(){var c=document.getElementById('citySelect').value;fetch('/api/weather/city?name='+encodeURIComponent(c)).then(function(){showToast('🌤️ Đã đổi thành phố: '+c);});}"
                       "function applyFX(){var c1=document.getElementById('cur1').value;var c2=document.getElementById('cur2').value;fetch('/api/exchange?cur1='+c1+'&cur2='+c2).then(function(){showToast('💱 Đã đổi tỉ giá: '+c1+' / '+c2);});}"
                       "function applyAlarm(e){var h=document.getElementById('almH').value;var m=document.getElementById('almM').value;var n=sanitizeVN(document.getElementById('almNote').value);fetch('/api/alarm?h='+h+'&m='+m+'&e='+e+'&memo='+encodeURIComponent(n)).then(function(){showToast(e?'⏰ Đã bật báo thức '+h+':'+m:'🔕 Đã tắt báo thức');});}"
                       "var hS=document.getElementById('almH');for(var h=0;h<24;h++){var o=document.createElement('option');o.value=h;o.innerText=(h<10?'0':'')+h+' Giờ';hS.appendChild(o);}"
                       "var mS=document.getElementById('almM');for(var m=0;m<60;m+=5){var o=document.createElement('option');o.value=m;o.innerText=(m<10?'0':'')+m+' Phút';mS.appendChild(o);}"
+                      "function syncDeviceState(){fetch('/api/state').then(function(r){return r.json();}).then(function(d){if(d.theme)highlightTheme(d.theme);if(d.city){var s=document.getElementById('citySelect');s.value=d.city;}if(d.cur1)document.getElementById('cur1').value=d.cur1;if(d.cur2)document.getElementById('cur2').value=d.cur2;if(d.alarm_h!==undefined)document.getElementById('almH').value=d.alarm_h;if(d.alarm_m!==undefined)document.getElementById('almM').value=d.alarm_m;if(d.alarm_memo!==undefined)document.getElementById('almNote').value=d.alarm_memo;if(d.ip){document.getElementById('ipLbl').innerText=d.ip;}if(d.rssi){document.getElementById('rssiLbl').innerText=d.rssi+' dBm';}}).catch(function(){});}"
+                      "window.onload=function(){renderCityOptions('');syncDeviceState();};"
                       "</script></div></body></html>";
         request->send(200, "text/html", html);
     });
@@ -392,6 +389,26 @@ void NetworkManager::setupWebRoutes() {
             }
         }
         request->send(400, "application/json", "{\"status\":\"error\"}");
+    });
+
+    // Realtime Device State Sync API for Mobile Web Server UI
+    server.on("/api/state", HTTP_GET, [this](AsyncWebServerRequest *request) {
+        char respBuf[512];
+        snprintf(respBuf, sizeof(respBuf),
+                 "{\"status\":\"ok\",\"page\":%d,\"theme\":\"%s\",\"city\":\"%s\",\"cur1\":\"%s\",\"cur2\":\"%s\","
+                 "\"alarm_enabled\":%s,\"alarm_h\":%d,\"alarm_m\":%d,\"alarm_memo\":\"%s\",\"ip\":\"%s\",\"rssi\":%d}",
+                 display.getCurrentPage(),
+                 getCurrentThemePresetName(),
+                 weather.city,
+                 exchange.cur1Code,
+                 exchange.cur2Code,
+                 deskUtils.isAlarmEnabled() ? "true" : "false",
+                 deskUtils.getAlarmHour(),
+                 deskUtils.getAlarmMinute(),
+                 deskUtils.getAlarmNote(),
+                 WiFi.localIP().toString().c_str(),
+                 WiFi.RSSI());
+        sendCORSResponse(request, 200, respBuf);
     });
 
     // PC Monitor HTTP POST Receiver (supports both /api/pc and /api/pc_status)
