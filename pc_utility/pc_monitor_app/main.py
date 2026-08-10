@@ -141,6 +141,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.last_net = None
         self.last_time = time.time()
         self.last_port_scan = 0
+        self.last_user_action_time = 0
 
         # Thread-safe control dictionary for merging commands into Serial JSON stream
         self.pending_control = {}
@@ -180,6 +181,11 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.destroy()
         except Exception:
             pass
+        if sys.platform == "win32":
+            try:
+                ctypes.windll.kernel32.ExitProcess(0)
+            except Exception:
+                pass
         os._exit(0)
 
     def _maximize_window(self):
@@ -930,10 +936,12 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.status_lbl.configure(text="● Scanning USB/WiFi ports...", text_color="#EAB308")
 
     def apply_theme(self, theme_key):
+        self.last_user_action_time = time.time()
         self.pending_control["preset"] = theme_key
         self.status_lbl.configure(text=f"✅ Theme set: {theme_key}", text_color="#39FF14")
 
     def switch_page(self, page_id):
+        self.last_user_action_time = time.time()
         self.active_cyd_page = page_id
         self.pending_control["page"] = page_id
         self._highlight_page_button(page_id)
@@ -949,6 +957,10 @@ class SmartDeskStudioProApp(ctk.CTk):
                 btn_box.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
     def _sync_state_from_cyd(self, sdata):
+        # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
+        if time.time() - self.last_user_action_time < 2.5:
+            return
+
         page_id = sdata.get("page", 0)
         if page_id != self.active_cyd_page:
             self.active_cyd_page = page_id
@@ -970,6 +982,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.cur2_combo.set(cur2)
 
     def apply_city(self):
+        self.last_user_action_time = time.time()
         sel = self.city_combo.get(); eng_city = "Hanoi"
         for eng, vn in VN_CITIES:
             if vn == sel: eng_city = eng; break
@@ -977,6 +990,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.status_lbl.configure(text=f"✅ Weather City set: {sel}", text_color="#39FF14")
 
     def apply_currencies(self):
+        self.last_user_action_time = time.time()
         c1 = self.cur1_combo.get(); c2 = self.cur2_combo.get()
         self.pending_control["cur1"] = c1
         self.pending_control["cur2"] = c2
