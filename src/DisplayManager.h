@@ -81,9 +81,11 @@ public:
     void toggleAppLauncher() { isAppLauncherOpen = !isAppLauncherOpen; }
     bool isAppLauncherActive() const { return isAppLauncherOpen; }
 
-    // Settings Tab State (0 = System, 1 = Themes)
+    // Settings Tab State (0 = System, 1 = Themes, 2 = Web QR Config)
     uint8_t getSettingsTab() const { return settingsTab; }
     void setSettingsTab(uint8_t tab) { settingsTab = tab; }
+
+    void drawQRCode(const char* url, int x, int y, int scale = 3);
 
 private:
     // ── Page renderers ───────────────────────────────────────

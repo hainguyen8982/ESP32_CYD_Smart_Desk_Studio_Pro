@@ -316,11 +316,14 @@ void loop() {
                 } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {
                     display.nextPage();
                 } else if (evt.y >= 33 && evt.y <= 59) {
-                    if (evt.x >= 34 && evt.x <= 155) {
+                    if (evt.x >= 34 && evt.x <= 112) {
                         display.setSettingsTab(0);
                         hardware.playBeep(1200, 30);
-                    } else if (evt.x >= 165 && evt.x <= 286) {
+                    } else if (evt.x >= 120 && evt.x <= 198) {
                         display.setSettingsTab(1);
+                        hardware.playBeep(1200, 30);
+                    } else if (evt.x >= 206 && evt.x <= 284) {
+                        display.setSettingsTab(2);
                         hardware.playBeep(1200, 30);
                     }
                 } else if (display.getSettingsTab() == 0 && evt.y >= 60 && evt.y <= 225) {

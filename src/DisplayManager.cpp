@@ -11,6 +11,7 @@
 #include "vn_lunar.h"
 #include "Theme.h"
 #include <time.h>
+#include <qrcode.h>
 
 extern const GFXfont FreeSansBold9pt7b;
 
@@ -1488,8 +1489,24 @@ void DisplayManager::renderAppLauncherOverlay() {
     }
 }
 
+void DisplayManager::drawQRCode(const char* url, int x, int y, int scale) {
+    if (!url || url[0] == '\0') return;
+    QRCode qrcode;
+    uint8_t qrcodeData[qrcode_getBufferSize(3)];
+    qrcode_initText(&qrcode, qrcodeData, 3, ECC_LOW, url);
+
+    int size = qrcode.size * scale;
+    spr.fillRect(x - 4, y - 4, size + 8, size + 8, C_WHITE);
+    for (uint8_t qy = 0; qy < qrcode.size; qy++) {
+        for (uint8_t qx = 0; qx < qrcode.size; qx++) {
+            uint16_t color = qrcode_getModule(&qrcode, qx, qy) ? C_BG : C_WHITE;
+            spr.fillRect(x + qx * scale, y + qy * scale, scale, scale, color);
+        }
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════
-//  PAGE 7 — Settings Page (ALWAYS LAST FEATURE PAGE)
+//  PAGE 7 — Settings Page (SYSTEM / THEMES / WEB QR CONFIG)
 // ═══════════════════════════════════════════════════════════════════════
 void DisplayManager::renderPage7_Settings() {
     // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
@@ -1498,27 +1515,36 @@ void DisplayManager::renderPage7_Settings() {
     spr.drawString("<", 16, 126, 2);
     spr.drawString(">", 304, 126, 2);
 
-    // ── Top Sub-Tab Navigation Header (Shifted down 5px: y = 35..57) ─────
-    // Tab 0: SYSTEM (x = 34..155)
+    // ── Top Sub-Tab Navigation Header (3 Equal Tabs: y = 35..57) ─────
+    // Tab 0: SYSTEM (x = 34..112)
     uint16_t t0_bg = (settingsTab == 0) ? C_CYAN : C_CARD;
     uint16_t t0_fg = (settingsTab == 0) ? C_BG : C_DIM;
-    spr.fillRoundRect(34, 35, 121, 22, 5, t0_bg);
-    spr.drawRoundRect(34, 35, 121, 22, 5, C_TRACE);
+    spr.fillRoundRect(34, 35, 78, 22, 5, t0_bg);
+    spr.drawRoundRect(34, 35, 78, 22, 5, C_TRACE);
     spr.setTextColor(t0_fg, t0_bg);
     spr.setTextDatum(MC_DATUM);
-    spr.drawString("SYSTEM", 94, 46, 2);
+    spr.drawString("SYSTEM", 73, 46, 2);
 
-    // Tab 1: THEMES (x = 165..286)
+    // Tab 1: THEMES (x = 120..198)
     uint16_t t1_bg = (settingsTab == 1) ? C_PURPLE : C_CARD;
     uint16_t t1_fg = (settingsTab == 1) ? C_BG : C_DIM;
-    spr.fillRoundRect(165, 35, 121, 22, 5, t1_bg);
-    spr.drawRoundRect(165, 35, 121, 22, 5, C_TRACE);
+    spr.fillRoundRect(120, 35, 78, 22, 5, t1_bg);
+    spr.drawRoundRect(120, 35, 78, 22, 5, C_TRACE);
     spr.setTextColor(t1_fg, t1_bg);
     spr.setTextDatum(MC_DATUM);
-    spr.drawString("THEMES", 225, 46, 2);
+    spr.drawString("THEMES", 159, 46, 2);
+
+    // Tab 2: WEB QR (x = 206..284)
+    uint16_t t2_bg = (settingsTab == 2) ? C_GREEN : C_CARD;
+    uint16_t t2_fg = (settingsTab == 2) ? C_BG : C_DIM;
+    spr.fillRoundRect(206, 35, 78, 22, 5, t2_bg);
+    spr.drawRoundRect(206, 35, 78, 22, 5, C_TRACE);
+    spr.setTextColor(t2_fg, t2_bg);
+    spr.setTextDatum(MC_DATUM);
+    spr.drawString("WEB QR", 245, 46, 2);
 
     if (settingsTab == 0) {
-        // ── TAB 0: SYSTEM SETTINGS (Shifted down 5px: start y = 61) ───────
+        // ── TAB 0: SYSTEM SETTINGS ───────────────────────────────────────
         int y = 61;
         int itemH = 26;
 
@@ -1533,7 +1559,7 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(hardware.isAutoBrightnessEnabled() ? "ON" : "OFF", 278, y + 11, 2);
         y += itemH;
 
-        // 3. Touch Beep Volume
+        // 2. Touch Beep Volume
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_GREEN, C_CARD);
@@ -1547,7 +1573,7 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(volBuf, 278, y + 11, 2);
         y += itemH;
 
-        // 4. WiFi SSID
+        // 3. WiFi SSID
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_GREEN, C_CARD);
@@ -1558,7 +1584,7 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(WiFi.isConnected() ? WiFi.SSID().c_str() : "N/A", 278, y + 11, 2);
         y += itemH;
 
-        // 5. IP Address
+        // 4. IP Address
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_GREEN, C_CARD);
@@ -1569,7 +1595,7 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString(WiFi.isConnected() ? WiFi.localIP().toString().c_str() : "N/A", 278, y + 11, 2);
         y += itemH;
 
-        // 6. Firmware Version
+        // 5. Firmware Version
         spr.fillRoundRect(34, y, 252, 23, 4, C_CARD);
         spr.drawRoundRect(34, y, 252, 23, 4, C_TRACE);
         spr.setTextColor(C_PURPLE, C_CARD);
@@ -1579,8 +1605,8 @@ void DisplayManager::renderPage7_Settings() {
         spr.setTextDatum(MR_DATUM);
         spr.drawString("v2.5.0", 278, y + 11, 2);
 
-    } else {
-        // ── TAB 1: THEME PRESET SELECTOR (Shifted down 5px: start by = 63) ──
+    } else if (settingsTab == 1) {
+        // ── TAB 1: THEME PRESET SELECTOR ──────────────────────────────────
         const char* themes[6] = { "Ocean Dark", "Cyberpunk", "Forest", "Cherry", "Light Day", "Retro Green" };
         const char* currentP = getCurrentThemePresetName();
 
@@ -1600,6 +1626,31 @@ void DisplayManager::renderPage7_Settings() {
             spr.setTextColor(textC, C_CARD);
             spr.drawString(themes[i], bx + 60, by + 23, 2);
         }
+    } else {
+        // ── TAB 2: WEB QR CODE & NFC MOBILE CONFIG ASSISTANT ──────────────
+        spr.fillRoundRect(34, 61, 252, 168, 8, C_CARD);
+        spr.drawRoundRect(34, 61, 252, 168, 8, C_GREEN);
+
+        spr.setTextDatum(TC_DATUM);
+        spr.setTextColor(C_GREEN, C_CARD);
+        spr.drawString("MOBILE WEB CONFIG ASSISTANT", 160, 66, 2);
+
+        char qrUrl[64];
+        if (WiFi.isConnected()) {
+            snprintf(qrUrl, sizeof(qrUrl), "http://%s/", WiFi.localIP().toString().c_str());
+        } else {
+            snprintf(qrUrl, sizeof(qrUrl), "http://smartdesk.local/");
+        }
+
+        // Draw 2D QR Code centered at (160, 135)
+        drawQRCode(qrUrl, 117, 88, 3);
+
+        spr.setTextDatum(BC_DATUM);
+        spr.setTextColor(C_CYAN, C_CARD);
+        spr.drawString("Quet QR / Cham NFC de cai dat", 160, 208, 2);
+
+        spr.setTextColor(C_DIM, C_CARD);
+        spr.drawString(qrUrl, 160, 224, 1);
     }
 }
 
