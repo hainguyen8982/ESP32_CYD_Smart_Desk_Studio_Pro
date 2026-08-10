@@ -793,10 +793,11 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.sim_canvas.configure(bg="#000000")
 
         pid = self.active_cyd_page
-        p_code, p_title, _, _ = PAGE_ITEMS[pid]
+        p_code, p_ico, p_title, p_sub, p_col = PAGE_ITEMS[pid]
+        full_title = f"{p_ico} {p_title}"
         self.sim_canvas.create_rectangle(0, 0, 320, 20, fill="#111827", outline="")
         self.sim_canvas.create_text(8, 10, text="RSSI -54dBm", fill="#00E676", font=("Consolas", 8), anchor="w")
-        self.sim_canvas.create_text(160, 10, text=p_title, fill="#FFD700", font=("Segoe UI", 9, "bold"), anchor="center")
+        self.sim_canvas.create_text(160, 10, text=full_title, fill="#FFD700", font=("Segoe UI", 9, "bold"), anchor="center")
         self.sim_canvas.create_text(312, 10, text=f"{pid}/7", fill="#8B949E", font=("Consolas", 8), anchor="e")
 
         if pid == 0:
