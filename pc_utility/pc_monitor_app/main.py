@@ -166,6 +166,10 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
         self.stream_thread.start()
 
+        # Start UDP Listener thread for WiFi Media Remote Commands (Port 8080)
+        self.udp_thread = threading.Thread(target=self.udp_listener_loop, daemon=True)
+        self.udp_thread.start()
+
     def on_app_close(self):
         """Clean shutdown handler: close Serial port & terminate process immediately."""
         self.is_streaming = False
@@ -202,6 +206,58 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.bind("<Down>", lambda e: self.nudge_selected_element(0, 1))
         self.bind("<Left>", lambda e: self.nudge_selected_element(-1, 0))
         self.bind("<Right>", lambda e: self.nudge_selected_element(1, 0))
+
+    def handle_media_action(self, action):
+        """Execute Windows Virtual Key Event for Media Control (Spotify, YouTube, Media Players)."""
+        if sys.platform == "win32":
+            try:
+                if action == "play_pause":
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_PLAY_PAUSE, 0, 2, 0)
+                    self.status_lbl.configure(text="🎵 Media: Play / Pause Toggled", text_color="#38bdf8")
+                elif action == "next":
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_NEXT_TRACK, 0, 2, 0)
+                    self.status_lbl.configure(text="🎵 Media: Next Track ⏭️", text_color="#38bdf8")
+                elif action == "prev":
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_PREV_TRACK, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_MEDIA_PREV_TRACK, 0, 2, 0)
+                    self.status_lbl.configure(text="🎵 Media: Prev Track ⏮️", text_color="#38bdf8")
+                elif action == "vol_up":
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_UP, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_UP, 0, 2, 0)
+                    self.status_lbl.configure(text="🔊 Volume Up ⬆️", text_color="#39FF14")
+                elif action == "vol_down":
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_DOWN, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_DOWN, 0, 2, 0)
+                    self.status_lbl.configure(text="🔉 Volume Down ⬇️", text_color="#39FF14")
+                elif action == "mute":
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 0, 0)
+                    ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
+                    self.status_lbl.configure(text="🔇 Mute Toggled", text_color="#F85149")
+            except Exception as e:
+                print(f"[Media] Keybd Event Error: {e}")
+
+    def udp_listener_loop(self):
+        """Listen for UDP Broadcast Media Control Packets on Port 8080."""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(('', 8080))
+            sock.settimeout(1.0)
+            while self.is_streaming:
+                try:
+                    data, _ = sock.recvfrom(1024)
+                    text = data.decode('utf-8', errors='ignore').strip()
+                    if text.startswith("MEDIA_CMD:"):
+                        act = text[10:].strip()
+                        self.after(0, lambda a=act: self.handle_media_action(a))
+                except socket.timeout:
+                    continue
+                except Exception:
+                    time.sleep(0.5)
+        except Exception as e:
+            print(f"[UDP] Listener start error: {e}")
 
     def create_unified_ui(self):
         main_container = ctk.CTkFrame(self, fg_color="transparent")
@@ -458,6 +514,36 @@ class SmartDeskStudioProApp(ctk.CTk):
         set_cur_btn = ctk.CTkButton(w_inner, text="Set FX", width=80, command=self.apply_currencies)
         set_cur_btn.pack(side="left")
 
+        # 5. Media Remote PC Buttons
+        m_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
+        m_frame.pack(fill="x", pady=6)
+
+        ctk.CTkLabel(m_frame, text="🎵 Media Control Panel (Spotify / YouTube / Windows)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
+
+        m_btn_grid = ctk.CTkFrame(m_frame, fg_color="transparent")
+        m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
+
+        media_btns = [
+            ("⏮️ Prev Track", "prev", "#818CF8"),
+            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
+            ("⏭️ Next Track", "next", "#818CF8"),
+            ("🔉 Vol Down", "vol_down", "#FBBF24"),
+            ("🔇 Mute", "mute", "#F85149"),
+            ("🔊 Vol Up", "vol_up", "#FBBF24")
+        ]
+
+        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
+            row = idx // 3; col = idx % 3
+            mb = ctk.CTkButton(
+                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
+                height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
+                border_width=1, border_color="#1f2937",
+                command=lambda a=m_act: self.handle_media_action(a)
+            )
+            mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+
+        for col_i in range(3): m_btn_grid.columnconfigure(col_i, weight=1)
+
         # ── RIGHT COLUMN CONTENTS (LIVE DIGITAL TWIN SIMULATION) ─────
         ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
         ctk.CTkLabel(col_right, text="320x240 TFT LCD • Realtime Sync Hardware Preview", font=ctk.CTkFont(size=11), text_color="#64748b").pack(anchor="w", padx=15, pady=(0, 10))
@@ -507,6 +593,12 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.sim_canvas.create_rectangle(20, 120, 20 + int(120*0.34), 140, fill="#00F5FF", outline="")
             self.sim_canvas.create_rectangle(180, 120, 300, 140, fill="#1f2937", outline="")
             self.sim_canvas.create_rectangle(180, 120, 180 + int(120*0.70), 140, fill="#AB47BC", outline="")
+        elif pid == 6:
+            self.sim_canvas.create_text(160, 70, text="🎵 Windows Media Remote", fill="#818CF8", font=("Segoe UI", 13, "bold"), anchor="center")
+            self.sim_canvas.create_text(160, 105, text="Spotify / YouTube / Media Player", fill="#94A3B8", font=("Segoe UI", 10), anchor="center")
+            self.sim_canvas.create_text(80, 160, text="⏮️ PREV", fill="#818CF8", font=("Segoe UI", 11, "bold"), anchor="center")
+            self.sim_canvas.create_text(160, 160, text="⏯️ PAUSE", fill="#39FF14", font=("Segoe UI", 11, "bold"), anchor="center")
+            self.sim_canvas.create_text(240, 160, text="⏭️ NEXT", fill="#818CF8", font=("Segoe UI", 11, "bold"), anchor="center")
 
     # ── TAB 2: SKIN DESIGNER STUDIO ───────────────────────────────────
     def build_tab_designer(self):
@@ -1111,7 +1203,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                         ser.write((json.dumps(payload) + "\n").encode('utf-8'))
                         ser.flush()
 
-                        # Read response state from CYD if present
+                        # Read response state or Media commands from CYD over Serial
                         if ser.in_waiting > 0:
                             raw_lines = ser.read_all().decode('utf-8', errors='ignore').split('\n')
                             for line in raw_lines:
@@ -1121,6 +1213,9 @@ class SmartDeskStudioProApp(ctk.CTk):
                                         sdata = json.loads(line[6:])
                                         self.after(0, lambda sd=sdata: self._sync_state_from_cyd(sd))
                                     except Exception: pass
+                                elif line.startswith("MEDIA_CMD:"):
+                                    cmd_act = line[10:].strip()
+                                    self.after(0, lambda act=cmd_act: self.handle_media_action(act))
 
                     connected_usb = True
                     ser_port = ser.port
