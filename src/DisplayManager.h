@@ -20,6 +20,7 @@ public:
     DisplayManager();
     void begin();
     void update();
+    void refreshDisplay() { update(); }
     void setCurrentPage(uint8_t page);
     uint8_t getCurrentPage() const { return currentPage; }
     void nextPage();

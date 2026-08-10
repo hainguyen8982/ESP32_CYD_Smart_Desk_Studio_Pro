@@ -25,7 +25,7 @@ uint16_t DynamicSkinManager::parseHexColor(const char* hexStr) {
 }
 
 bool DynamicSkinManager::parseAndSaveSkinJSON(const String& jsonPayload) {
-    DynamicJsonDocument doc(16384);
+    JsonDocument doc;
     DeserializationError err = deserializeJson(doc, jsonPayload);
     if (err) {
         Serial.printf("[SkinMgr] JSON Parse Error: %s\n", err.c_str());
@@ -108,13 +108,11 @@ void DynamicSkinManager::renderCurrentPageSkin(TFT_eSPI& tft, uint8_t currentPag
 }
 
 void DynamicSkinManager::drawDotMatrixText(TFT_eSPI& tft, const String& text, uint16_t x, uint16_t y, uint16_t color) {
-    // Renders dot-matrix text on TFT
     tft.setTextColor(color, _bgColor);
     tft.drawString(text, x, y, 2);
 }
 
 void DynamicSkinManager::draw7SegmentText(TFT_eSPI& tft, const String& text, uint16_t x, uint16_t y, uint16_t color) {
-    // Renders 7-segment digital font on TFT
     tft.setTextColor(color, _bgColor);
     tft.drawString(text, x, y, 4);
 }

@@ -6,6 +6,9 @@
 #include <TFT_eSPI.h>
 #include <FS.h>
 #include <LittleFS.h>
+#include <vector>
+
+using fs::File;
 
 struct DynamicElement {
     String id;
@@ -34,7 +37,6 @@ private:
     bool _isSkinLoaded;
     String _skinName;
     uint16_t _bgColor;
-    // Map page_index (0..7) to list of elements
     std::vector<DynamicElement> _pageElements[8];
 
     uint16_t parseHexColor(const char* hexStr);

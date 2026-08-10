@@ -5,6 +5,7 @@
 #include "Theme.h"
 #include "DisplayManager.h"
 #include "TouchManager.h"
+#include "DynamicSkinManager.h"
 #include <ESPmDNS.h>
 
 extern DisplayManager display;

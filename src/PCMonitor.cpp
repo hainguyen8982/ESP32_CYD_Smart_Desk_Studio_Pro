@@ -2,6 +2,7 @@
 #include "DisplayManager.h"
 #include "NetworkManager.h"
 #include "Theme.h"
+#include "DynamicSkinManager.h"
 #include <Preferences.h>
 
 PCMonitor pcMonitor;
