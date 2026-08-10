@@ -686,39 +686,45 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         for col_i in range(3): m_btn_grid.columnconfigure(col_i, weight=1)
 
-        # 6. Alarm Clock Quick Setup Panel
+        # 6. Alarm Clock Quick Setup & Memo Panel (Spacious 2-Row Layout)
         alm_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         alm_frame.pack(fill="x", pady=6)
 
         ctk.CTkLabel(alm_frame, text="⏰ Quick Desk Alarm Clock Setup & Memo", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
-        alm_inner = ctk.CTkFrame(alm_frame, fg_color="transparent")
-        alm_inner.pack(fill="x", padx=12, pady=(0, 12))
+        # Row 1: Time Pickers & Action Buttons
+        alm_row1 = ctk.CTkFrame(alm_frame, fg_color="transparent")
+        alm_row1.pack(fill="x", padx=12, pady=(0, 6))
 
-        ctk.CTkLabel(alm_inner, text="Hour:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 2))
+        ctk.CTkLabel(alm_row1, text="Hour:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
         hours = [f"{h:02d}" for h in range(24)]
-        self.alarm_h_combo = ctk.CTkOptionMenu(alm_inner, values=hours, width=60)
-        self.alarm_h_combo.set("07"); self.alarm_h_combo.pack(side="left", padx=(0, 6))
+        self.alarm_h_combo = ctk.CTkOptionMenu(alm_row1, values=hours, width=65)
+        self.alarm_h_combo.set("07"); self.alarm_h_combo.pack(side="left", padx=(0, 10))
 
-        ctk.CTkLabel(alm_inner, text="Min:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 2))
+        ctk.CTkLabel(alm_row1, text="Min:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 4))
         mins = [f"{m:02d}" for m in range(0, 60, 5)]
-        self.alarm_m_combo = ctk.CTkOptionMenu(alm_inner, values=mins, width=60)
-        self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 8))
-
-        self.alarm_note_entry = ctk.CTkEntry(alm_inner, placeholder_text="Ghi chú nhắc nhở (VD: Hop team)...", width=160)
-        self.alarm_note_entry.pack(side="left", padx=(0, 8))
+        self.alarm_m_combo = ctk.CTkOptionMenu(alm_row1, values=mins, width=65)
+        self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 15))
 
         set_alm_btn = ctk.CTkButton(
-            alm_inner, text="⏰ Set", width=65, fg_color="#FB7185", hover_color="#E11D48",
-            font=ctk.CTkFont(weight="bold"), command=self.apply_alarm
+            alm_row1, text="⏰ Set Alarm", width=115, fg_color="#FB7185", hover_color="#E11D48",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
         )
-        set_alm_btn.pack(side="left", padx=(0, 4))
+        set_alm_btn.pack(side="left", padx=(0, 8))
 
         off_alm_btn = ctk.CTkButton(
-            alm_inner, text="🔕 Off", width=55, fg_color="#374151", hover_color="#4B5563",
-            text_color="#F85149", font=ctk.CTkFont(weight="bold"), command=self.apply_alarm_off
+            alm_row1, text="🔕 Alarm Off", width=115, fg_color="#374151", hover_color="#4B5563",
+            text_color="#F85149", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm_off
         )
         off_alm_btn.pack(side="left")
+
+        # Row 2: Full-width Memo / Note text input field
+        alm_row2 = ctk.CTkFrame(alm_frame, fg_color="transparent")
+        alm_row2.pack(fill="x", padx=12, pady=(0, 10))
+
+        ctk.CTkLabel(alm_row2, text="Memo / Ghi chú:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 8))
+        self.alarm_note_entry = ctk.CTkEntry(alm_row2, placeholder_text="Nhập ghi chú nhắc nhở khi báo thức (VD: Hop team phong 302)...")
+        self.alarm_note_entry.pack(side="left", fill="x", expand=True)
 
         # ── RIGHT COLUMN CONTENTS (LIVE DIGITAL TWIN SIMULATION) ─────
         ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
@@ -1234,6 +1240,10 @@ class SmartDeskStudioProApp(ctk.CTk):
                 else:
                     t_btn.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
+    def _on_city_selected(self, choice=None):
+        self.city_user_modified = True
+        self.last_user_action_time = time.time()
+
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
         if time.time() - self.last_user_action_time < 2.5:
@@ -1250,11 +1260,14 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.active_cyd_theme = cyd_theme
             self._highlight_theme_button(cyd_theme)
 
+        # Only sync city from CYD ONCE at initial connection (never reset user's local selection/typing)
         cyd_city = sdata.get("city", "")
-        if cyd_city and hasattr(self, 'city_combo'):
+        if cyd_city and hasattr(self, 'city_combo') and not getattr(self, 'city_user_modified', False) and not getattr(self, 'city_synced', False):
             for eng, vn in VN_CITIES:
                 if eng.lower() == cyd_city.lower():
-                    self.city_combo.set(vn); break
+                    self.city_combo.set(vn)
+                    self.city_synced = True
+                    break
 
         cur1 = sdata.get("cur1", "")
         if cur1 and hasattr(self, 'cur1_combo'):
@@ -1266,9 +1279,12 @@ class SmartDeskStudioProApp(ctk.CTk):
 
     def apply_city(self):
         self.last_user_action_time = time.time()
+        self.city_user_modified = False
+        self.city_synced = True
         sel = self.city_combo.get(); eng_city = "Hanoi"
         for eng, vn in VN_CITIES:
-            if vn == sel: eng_city = eng; break
+            if vn.lower() == sel.lower() or eng.lower() == sel.lower():
+                eng_city = eng; break
         self.pending_control["city"] = eng_city
         self.status_lbl.configure(text=f"✅ Weather City set: {sel}", text_color="#39FF14")
 
