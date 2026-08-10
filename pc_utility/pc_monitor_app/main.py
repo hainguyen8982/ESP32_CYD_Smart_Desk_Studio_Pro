@@ -115,8 +115,15 @@ class SmartDeskStudioProApp(ctk.CTk):
         super().__init__()
 
         self.title("👑 Smart Desk Studio Pro — Unified Dashboard & Skin Designer")
-        self.geometry("1380x920")
+        self.geometry("1400x920")
         self.resizable(True, True)
+
+        # MAXIMIZE WINDOW ON STARTUP (User requested)
+        try:
+            if sys.platform == "win32":
+                self.state('zoomed')
+        except Exception:
+            pass
 
         # Deep Obsidian Charcoal Theme (#0b0f19)
         self.configure(fg_color="#0b0f19")
@@ -133,6 +140,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.last_net = None
         self.last_time = time.time()
         self.last_port_scan = 0
+        self.port_lock_error = False
 
         self.current_page_idx = 0
         self.selected_elem_id = None
@@ -180,7 +188,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         com_frame.pack(side="left", padx=20, pady=8)
 
         ctk.CTkLabel(com_frame, text="🔌 Port:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 5))
-        self.com_combo = ctk.CTkOptionMenu(com_frame, values=["Auto Detect"], width=140, command=self.on_com_select)
+        self.com_combo = ctk.CTkOptionMenu(com_frame, values=["Auto Detect"], width=150, command=self.on_com_select)
         self.com_combo.pack(side="left", padx=2)
 
         ref_btn = ctk.CTkButton(com_frame, text="🔄", width=32, height=28, fg_color="#1f2937", hover_color="#374151", command=self.refresh_com_ports)
@@ -265,7 +273,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.selected_com_port = val.split(" ")[0].strip()
         self.force_reconnect()
 
-    # ── TAB 1: LIVE CONTROL CENTER (CARD BADGES & DIGITAL TWIN) ───────
+    # ── TAB 1: LIVE CONTROL CENTER ────────────────────────────────────
     def build_tab_live(self):
         container = ctk.CTkFrame(self.view_live, fg_color="transparent")
         container.pack(fill="both", expand=True)
@@ -319,7 +327,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         for c_i in range(4): m_grid.columnconfigure(c_i, weight=1)
 
-        # 2. Rich Page Switcher Grid (Badges + Compact Titles)
+        # 2. Rich Page Switcher Grid
         p_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         p_frame.pack(fill="x", pady=6)
 
