@@ -700,23 +700,34 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
         media_btns = [
-            ("⏮️ Prev Track", "prev", "#818CF8"),
-            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
-            ("⏭️ Next Track", "next", "#818CF8"),
-            ("🔊 Vol Down", "vol_down", "#FBBF24"),
-            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
-            ("🔊 Vol Up", "vol_up", "#FBBF24")
+            ("⏮️", "Prev Track", "prev", "#818CF8", 14),
+            ("⏯️", "Play / Pause", "play_pause", "#39FF14", 14),
+            ("⏭️", "Next Track", "next", "#818CF8", 14),
+            ("🔉", "Vol Down", "vol_down", "#FBBF24", 20),
+            ("⏭️", "Skip Ad", "skip_ad", "#FFA726", 14),
+            ("🔊", "Vol Up", "vol_up", "#FBBF24", 20)
         ]
 
-        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
+        for idx, (m_ico, m_txt, m_act, acc_c, ico_sz) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
-            mb = ctk.CTkButton(
-                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=13, weight="bold"),
-                height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
-                border_width=1, border_color="#1f2937",
-                command=lambda a=m_act: self.handle_media_action(a)
-            )
-            mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+            btn_frame = ctk.CTkFrame(m_btn_grid, height=38, fg_color="#030712", corner_radius=6, border_width=1, border_color="#1f2937")
+            btn_frame.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
+            
+            inner = ctk.CTkFrame(btn_frame, fg_color="transparent")
+            inner.place(relx=0.5, rely=0.5, anchor="center")
+            
+            ico_lbl = ctk.CTkLabel(inner, text=m_ico, font=ctk.CTkFont(size=ico_sz), text_color=acc_c)
+            ico_lbl.pack(side="left", padx=(0, 4))
+            
+            txt_lbl = ctk.CTkLabel(inner, text=m_txt, font=ctk.CTkFont(size=12, weight="bold"), text_color=acc_c)
+            txt_lbl.pack(side="left", pady=(2, 0))
+            
+            def _bind_btn(frame, inner_f, i_lbl, t_lbl, act):
+                for w in (frame, inner_f, i_lbl, t_lbl):
+                    w.bind("<Button-1>", lambda e, a=act: self.handle_media_action(a))
+                    w.bind("<Enter>", lambda e, f=frame: f.configure(fg_color="#1f2937"))
+                    w.bind("<Leave>", lambda e, f=frame: f.configure(fg_color="#030712"))
+            _bind_btn(btn_frame, inner, ico_lbl, txt_lbl, m_act)
 
         for col_i in range(3): m_btn_grid.columnconfigure(col_i, weight=1)
 
