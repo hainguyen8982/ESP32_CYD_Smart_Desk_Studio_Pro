@@ -679,27 +679,27 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         m_frame.pack(fill="x", pady=6)
 
-        ctk.CTkLabel(m_frame, text="🎵 Media Control Panel (Spotify / YouTube / Windows)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
+        ctk.CTkLabel(m_frame, text="🎵 Media Control Hotkeys (Bấm nhanh trên PC)", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
         m_btn_grid = ctk.CTkFrame(m_frame, fg_color="transparent")
-        m_btn_grid.pack(fill="x", padx=12, pady=(0, 12))
+        m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
-        media_actions = [
-            ("⏯️ Play / Pause", "play_pause", "#0284c7", "#0369a1"),
-            ("⏭️ Next Track", "next", "#0284c7", "#0369a1"),
-            ("⏮️ Prev Track", "prev", "#0284c7", "#0369a1"),
-            ("🔊 Vol Up (+5)", "vol_up", "#059669", "#047857"),
-            ("🔉 Vol Down (-5)", "vol_down", "#059669", "#047857"),
-            ("🔇 Mute Audio", "mute", "#dc2626", "#b91c1c"),
-            ("🎬 Skip Ad (YouTube)", "skip_ad", "#d97706", "#b45309"),
+        media_btns = [
+            ("⏮️ Prev Track", "prev", "#818CF8"),
+            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
+            ("⏭️ Next Track", "next", "#818CF8"),
+            ("🔉 Vol Down", "vol_down", "#FBBF24"),
+            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
+            ("🔊 Vol Up", "vol_up", "#FBBF24")
         ]
 
-        for idx, (b_title, b_act, b_fg, b_hov) in enumerate(media_actions):
+        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
             mb = ctk.CTkButton(
-                m_btn_grid, text=b_title, font=ctk.CTkFont(size=12, weight="bold"),
-                height=36, fg_color=b_fg, hover_color=b_hov, text_color="#ffffff",
-                command=lambda a=b_act: self.handle_media_action(a)
+                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
+                height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
+                border_width=1, border_color="#1f2937",
+                command=lambda a=m_act: self.handle_media_action(a)
             )
             mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
 
@@ -726,16 +726,17 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.alarm_m_combo.set("00"); self.alarm_m_combo.pack(side="left", padx=(0, 15))
 
         self.set_alm_btn = ctk.CTkButton(
-            alm_row1, text="⏰ Alarm On", width=115, fg_color="#059669", hover_color="#10B981",
-            text_color="#FFFFFF", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
+            alm_row1, text="⏰ Set Alarm", width=115, fg_color="#FB7185", hover_color="#E11D48",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm
         )
         self.set_alm_btn.pack(side="left", padx=(0, 8))
 
-        self.off_alm_btn = ctk.CTkButton(
-            alm_row1, text="Off Alarm", width=115, fg_color="#374151", hover_color="#4B5563",
-            text_color="#94A3B8", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_alarm_off
+        self.toggle_alm_btn = ctk.CTkButton(
+            alm_row1, text="🔕 Alarm Off", width=115, fg_color="#7F1D1D", hover_color="#991B1B",
+            text_color="#FCA5A5", border_width=2, border_color="#EF4444",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.toggle_alarm_state
         )
-        self.off_alm_btn.pack(side="left")
+        self.toggle_alm_btn.pack(side="left")
 
         # Row 2: Full-width Memo / Note text input field
         alm_row2 = ctk.CTkFrame(alm_frame, fg_color="transparent")
@@ -1319,16 +1320,29 @@ class SmartDeskStudioProApp(ctk.CTk):
         search_entry.bind("<KeyRelease>", lambda e: _render_dialog_list(search_entry.get()))
         _render_dialog_list()
 
-    def _highlight_alarm_buttons(self, enabled):
-        if hasattr(self, 'set_alm_btn') and hasattr(self, 'off_alm_btn'):
+    def _update_alarm_toggle_ui(self, enabled):
+        self.alarm_enabled_state = enabled
+        if hasattr(self, 'toggle_alm_btn'):
             if enabled:
                 # Alarm ON: Bright Emerald Green
-                self.set_alm_btn.configure(fg_color="#059669", hover_color="#10B981", text_color="#FFFFFF", border_width=2, border_color="#34D399")
-                self.off_alm_btn.configure(fg_color="#1E293B", hover_color="#334155", text_color="#64748B", border_width=1, border_color="#334155")
+                self.toggle_alm_btn.configure(
+                    text="⏰ Alarm On", fg_color="#059669", hover_color="#10B981",
+                    text_color="#FFFFFF", border_width=2, border_color="#34D399"
+                )
             else:
                 # Alarm OFF: Active Red
-                self.off_alm_btn.configure(fg_color="#7F1D1D", hover_color="#991B1B", text_color="#FCA5A5", border_width=2, border_color="#EF4444")
-                self.set_alm_btn.configure(fg_color="#1E293B", hover_color="#334155", text_color="#64748B", border_width=1, border_color="#334155")
+                self.toggle_alm_btn.configure(
+                    text="🔕 Alarm Off", fg_color="#7F1D1D", hover_color="#991B1B",
+                    text_color="#FCA5A5", border_width=2, border_color="#EF4444"
+                )
+
+    def toggle_alarm_state(self):
+        self.last_user_action_time = time.time()
+        new_state = not getattr(self, 'alarm_enabled_state', False)
+        self.pending_control["alarm_enable"] = new_state
+        self._update_alarm_toggle_ui(new_state)
+        st_text = "⏰ Alarm Enabled" if new_state else "🔕 Alarm Disabled"
+        self.status_lbl.configure(text=f"✅ {st_text}", text_color="#39FF14" if new_state else "#F85149")
 
     def _sync_state_from_cyd(self, sdata):
         # Debounce: ignore old state feedback from CYD for 2.5s after user action to eliminate page button flicker
@@ -1371,7 +1385,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         # Sync alarm status from CYD
         alarm_en = sdata.get("alarm_en", None)
         if alarm_en is not None:
-            self._highlight_alarm_buttons(bool(alarm_en))
+            self._update_alarm_toggle_ui(bool(alarm_en))
 
     def apply_city(self):
         self.last_user_action_time = time.time()
@@ -1400,16 +1414,10 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.pending_control["alarm_enable"] = True
             if safe_note:
                 self.pending_control["alarm_note"] = safe_note
-            self._highlight_alarm_buttons(True)
+            self._update_alarm_toggle_ui(True)
             self.status_lbl.configure(text=f"✅ Alarm Clock set for {ah:02d}:{am:02d}" + (f" ({safe_note})" if safe_note else ""), text_color="#39FF14")
         except Exception as e:
             print(f"[Alarm] Error: {e}")
-
-    def apply_alarm_off(self):
-        self.last_user_action_time = time.time()
-        self.pending_control["alarm_enable"] = False
-        self._highlight_alarm_buttons(False)
-        self.status_lbl.configure(text="🔕 Alarm Clock Disabled", text_color="#F85149")
 
     def _update_telemetry_ui(self, c, r, d, u):
         if hasattr(self, 'lbl_cpu'):
