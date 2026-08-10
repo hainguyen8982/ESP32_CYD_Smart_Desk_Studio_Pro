@@ -122,6 +122,9 @@ class SmartDeskStudioProApp(ctk.CTk):
         # Deep Obsidian Charcoal Theme (#0b0f19)
         self.configure(fg_color="#0b0f19")
 
+        # Explicit Window Close Protocol to release Serial port & kill background Python process
+        self.protocol("WM_DELETE_WINDOW", self.on_app_close)
+
         # Robust Window Maximization for CustomTkinter on Windows
         self.after(100, lambda: self._maximize_window())
         self.after(300, lambda: self._maximize_window())
@@ -161,6 +164,23 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
         self.stream_thread.start()
+
+    def on_app_close(self):
+        """Clean shutdown handler: close Serial port & terminate process immediately."""
+        self.is_streaming = False
+        global active_serial_conn
+        with serial_lock:
+            if active_serial_conn and active_serial_conn.is_open:
+                try:
+                    active_serial_conn.close()
+                except Exception:
+                    pass
+                active_serial_conn = None
+        try:
+            self.destroy()
+        except Exception:
+            pass
+        os._exit(0)
 
     def _maximize_window(self):
         try:
@@ -374,7 +394,6 @@ class SmartDeskStudioProApp(ctk.CTk):
 
         for col_i in range(2): p_grid.columnconfigure(col_i, weight=1)
 
-        # Highlight default page 0
         self._highlight_page_button(0)
 
         # 3. Preset Theme Switcher
@@ -965,7 +984,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         ser = None
         while True:
             if not self.is_streaming:
-                time.sleep(1); continue
+                time.sleep(1); break
 
             now_time = time.time()
 
