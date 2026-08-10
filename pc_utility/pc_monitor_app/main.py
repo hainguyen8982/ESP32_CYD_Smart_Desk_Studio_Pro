@@ -54,14 +54,14 @@ CANVAS_HEIGHT = 240
 SCALE = 2.2
 
 PAGE_ITEMS = [
-    ("P0", "🌤️ Weather & Clock", "Realtime Clock, City Weather & SJC Gold", "#38BDF8"),
+    ("P0", "⛅ Weather & Clock", "Realtime Clock, City Weather & SJC Gold", "#38BDF8"),
     ("P1", "📆 Lunar Calendar", "Solar Date, Lunar Calendar & Good Hours", "#F472B6"),
     ("P2", "📈 Finance & Trading", "SJC Gold Rates & World Stock Tickers", "#FBBF24"),
     ("P3", "💻 PC Hardware Stats", "Realtime CPU Load, RAM & GPU Gauges", "#A855F7"),
     ("P4", "🚀 Net & Storage Disks", "Network Speed & Disks C:/ D:/ Usage", "#34D399"),
     ("P5", "⏳ Pomodoro Desk", "Productivity Desk Timer & Alarm Clock", "#FB7185"),
     ("P6", "🎵 Media Remote", "Spotify Track Title, Artist & Volume", "#818CF8"),
-    ("P7", "⚙️ System Settings", "WiFi RSSI, IP, LDR Brightness & Calib", "#94A3B8")
+    ("P7", "⚙ System Settings", "WiFi RSSI, IP, LDR Brightness & Calib", "#94A3B8")
 ]
 
 PAGE_NAMES = [f"{p[0]} • {p[1]}" for p in PAGE_ITEMS]
@@ -365,27 +365,33 @@ class SmartDeskStudioProApp(ctk.CTk):
                     def _async_skip():
                         try:
                             user32 = ctypes.windll.user32
-                            # Phase 1: Media Next Track
+                            # 1. Global Media Next Track (Spotify & Windows Media)
                             user32.keybd_event(0xB0, 0, 0, 0)
                             user32.keybd_event(0xB0, 0, 2, 0)
                             time.sleep(0.02)
-                            # Phase 2: Shift + N (YouTube Next)
-                            user32.keybd_event(0x10, 0, 0, 0)
-                            user32.keybd_event(0x4E, 0, 0, 0)
-                            user32.keybd_event(0x4E, 0, 2, 0)
-                            user32.keybd_event(0x10, 0, 2, 0)
+                            # 2. Fast-Forward YouTube Ad (+40s via 'L' key 4 times)
+                            for _ in range(4):
+                                user32.keybd_event(0x4C, 0, 0, 0) # 'L' key
+                                user32.keybd_event(0x4C, 0, 2, 0)
+                                time.sleep(0.015)
+                            # 3. Fast-Forward YouTube Ad (+25s via Right Arrow 5 times)
+                            for _ in range(5):
+                                user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
+                                user32.keybd_event(0x27, 0, 2, 0)
+                                time.sleep(0.015)
+                            # 4. Shift + N (YouTube Next video / ad shortcut)
+                            user32.keybd_event(0x10, 0, 0, 0) # Shift down
+                            user32.keybd_event(0x4E, 0, 0, 0) # 'N' down
+                            user32.keybd_event(0x4E, 0, 2, 0) # 'N' up
+                            user32.keybd_event(0x10, 0, 2, 0) # Shift up
                             time.sleep(0.02)
-                            # Phase 3: Tab x2 + Enter (YouTube Skip Ad Focus)
-                            for _ in range(2):
-                                user32.keybd_event(0x09, 0, 0, 0)
-                                user32.keybd_event(0x09, 0, 2, 0)
-                                time.sleep(0.02)
-                            user32.keybd_event(0x0D, 0, 0, 0)
-                            user32.keybd_event(0x0D, 0, 2, 0)
+                            # 5. Space key to trigger focused Skip Ad button
+                            user32.keybd_event(0x20, 0, 0, 0)
+                            user32.keybd_event(0x20, 0, 2, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏭️ Media: Skip Ad Triggered (Async)", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏭️ Media: Multi-Phase Skip Ad Executed (Async)", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
