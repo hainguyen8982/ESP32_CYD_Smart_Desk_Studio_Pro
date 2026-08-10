@@ -71,8 +71,8 @@ class SkinDesignerApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("🎨 Smart Desk Studio - Dashboard Multi-Page Skin Designer")
-        self.geometry("1260x840")
+        self.title("🎨 Smart Desk Studio - Dashboard Multi-Page & Sub-Element Skin Designer")
+        self.geometry("1280x860")
         self.resizable(True, True)
 
         self.current_page_idx = 0
@@ -97,24 +97,20 @@ class SkinDesignerApp(ctk.CTk):
         self.load_preset("Retro Dot Matrix LED Clock")
 
     def bind_keyboard_shortcuts(self):
-        # Delete / Backspace shortcuts to delete selected widget
         self.bind("<Delete>", lambda e: self.delete_selected_widget())
         self.bind("<BackSpace>", lambda e: self.delete_selected_widget())
 
-        # Arrow key shortcuts for 1px fine-grained movement
         self.bind("<Up>", lambda e: self.nudge_selected_widget(0, -1))
         self.bind("<Down>", lambda e: self.nudge_selected_widget(0, 1))
         self.bind("<Left>", lambda e: self.nudge_selected_widget(-1, 0))
         self.bind("<Right>", lambda e: self.nudge_selected_widget(1, 0))
 
-        # Shift + Arrow key shortcuts for 5px fast movement
         self.bind("<Shift-Up>", lambda e: self.nudge_selected_widget(0, -5))
         self.bind("<Shift-Down>", lambda e: self.nudge_selected_widget(0, 5))
         self.bind("<Shift-Left>", lambda e: self.nudge_selected_widget(-5, 0))
         self.bind("<Shift-Right>", lambda e: self.nudge_selected_widget(5, 0))
 
     def create_layout(self):
-        # ── Main Container ─────────────────────────────────────────────
         main_frame = ctk.CTkFrame(self, fg_color="transparent")
         main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -123,7 +119,7 @@ class SkinDesignerApp(ctk.CTk):
         hdr.pack(fill="x", pady=(0, 10))
 
         title_lbl = ctk.CTkLabel(
-            hdr, text="🎨 Smart Desk Studio — Multi-Page Layout & Font Designer (Pages 0..7)",
+            hdr, text="🎨 Smart Desk Studio — Sub-Element & Granular Widget Inspector",
             font=ctk.CTkFont(size=16, weight="bold"), text_color="#58a6ff"
         )
         title_lbl.pack(side="left", padx=15, pady=8)
@@ -206,24 +202,23 @@ class SkinDesignerApp(ctk.CTk):
         )
         self.canvas.pack(padx=15, pady=10)
 
-        # Canvas Mouse Binds for Drag & Drop and Resizing
         self.canvas.bind("<ButtonPress-1>", self.on_canvas_click)
         self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
 
-        # 3. Right Properties Panel
-        right_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=250)
+        # 3. Right Sub-Component Properties Panel
+        right_box = ctk.CTkFrame(body, fg_color="#161b22", corner_radius=10, width=260)
         right_box.pack(side="right", fill="y", padx=(10, 0))
 
-        p_lbl = ctk.CTkLabel(right_box, text="⚙️ Widget Inspector", font=ctk.CTkFont(size=14, weight="bold"))
+        p_lbl = ctk.CTkLabel(right_box, text="⚙️ Sub-Element Inspector", font=ctk.CTkFont(size=14, weight="bold"))
         p_lbl.pack(anchor="w", padx=12, pady=(10, 5))
 
         self.sel_name_lbl = ctk.CTkLabel(right_box, text="Select a widget to edit", text_color="#8b949e")
-        self.sel_name_lbl.pack(anchor="w", padx=12, pady=(0, 10))
+        self.sel_name_lbl.pack(anchor="w", padx=12, pady=(0, 5))
 
         # Geometry controls (X, Y, W, H)
         geom_frame = ctk.CTkFrame(right_box, fg_color="transparent")
-        geom_frame.pack(fill="x", padx=10, pady=5)
+        geom_frame.pack(fill="x", padx=10, pady=3)
 
         ctk.CTkLabel(geom_frame, text="X:").grid(row=0, column=0, padx=2, pady=2)
         self.entry_x = ctk.CTkEntry(geom_frame, width=60)
@@ -241,37 +236,54 @@ class SkinDesignerApp(ctk.CTk):
         self.entry_h = ctk.CTkEntry(geom_frame, width=60)
         self.entry_h.grid(row=1, column=3, padx=2, pady=2)
 
-        apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry", width=210, command=self.apply_manual_geometry)
-        apply_geom_btn.pack(padx=10, pady=6)
+        apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry", width=220, command=self.apply_manual_geometry)
+        apply_geom_btn.pack(padx=10, pady=4)
 
         # Font Style Dropdown Selector
-        f_lbl = ctk.CTkLabel(right_box, text="🔤 Font & Display Style", font=ctk.CTkFont(size=12, weight="bold"))
-        f_lbl.pack(anchor="w", padx=12, pady=(8, 2))
+        f_lbl = ctk.CTkLabel(right_box, text="🔤 Font Style", font=ctk.CTkFont(size=11, weight="bold"))
+        f_lbl.pack(anchor="w", padx=12, pady=(4, 1))
 
         self.font_combo = ctk.CTkOptionMenu(
             right_box,
             values=["Dot Matrix LED", "7-Segment Digital", "Monospace Code", "Default Sans"],
-            command=self.on_font_change, width=210
+            command=self.on_font_change, width=220
         )
         self.font_combo.set("Dot Matrix LED")
-        self.font_combo.pack(padx=10, pady=4)
+        self.font_combo.pack(padx=10, pady=2)
 
-        # Color Pickers
+        # ── Granular Sub-Component Colors ──
+        sub_lbl = ctk.CTkLabel(right_box, text="🎨 Granular Colors & Icons", font=ctk.CTkFont(size=11, weight="bold"))
+        sub_lbl.pack(anchor="w", padx=12, pady=(6, 1))
+
         col_frame = ctk.CTkFrame(right_box, fg_color="transparent")
-        col_frame.pack(fill="x", padx=10, pady=5)
+        col_frame.pack(fill="x", padx=10, pady=2)
 
-        self.bg_col_btn = ctk.CTkButton(col_frame, text="Card BG Color", width=210, fg_color="#21262d", command=self.pick_bg_color)
-        self.bg_col_btn.pack(pady=4)
+        self.accent_col_btn = ctk.CTkButton(col_frame, text="Primary Accent / LED Color", width=220, fg_color="#21262d", command=self.pick_accent_color)
+        self.accent_col_btn.pack(pady=2)
 
-        self.accent_col_btn = ctk.CTkButton(col_frame, text="LED Dot / Accent Color", width=210, fg_color="#21262d", command=self.pick_accent_color)
-        self.accent_col_btn.pack(pady=4)
+        self.sec_col_btn = ctk.CTkButton(col_frame, text="Secondary Text Color", width=220, fg_color="#21262d", command=self.pick_sec_color)
+        self.sec_col_btn.pack(pady=2)
 
-        # Delete Widget
+        self.bg_col_btn = ctk.CTkButton(col_frame, text="Card Background Color", width=220, fg_color="#21262d", command=self.pick_bg_color)
+        self.bg_col_btn.pack(pady=2)
+
+        self.border_col_btn = ctk.CTkButton(col_frame, text="Card Border Color", width=220, fg_color="#21262d", command=self.pick_border_color)
+        self.border_col_btn.pack(pady=2)
+
+        # Sub-element Icon Toggle Checkbox
+        self.show_icon_var = ctk.BooleanVar(value=True)
+        self.icon_chk = ctk.CTkCheckBox(
+            right_box, text="Show Sub-Element Icon", variable=self.show_icon_var,
+            command=self.on_icon_toggle
+        )
+        self.icon_chk.pack(anchor="w", padx=12, pady=6)
+
+        # Delete Widget Button
         self.del_btn = ctk.CTkButton(
-            right_box, text="🗑️ Delete Widget (Del)", width=210, fg_color="#da3633", hover_color="#f85149",
+            right_box, text="🗑️ Delete Widget (Del)", width=220, fg_color="#da3633", hover_color="#f85149",
             command=self.delete_selected_widget
         )
-        self.del_btn.pack(side="bottom", padx=10, pady=15)
+        self.del_btn.pack(side="bottom", padx=10, pady=12)
 
     def on_page_select(self, val):
         for i, name in enumerate(PAGE_NAMES):
@@ -295,11 +307,9 @@ class SkinDesignerApp(ctk.CTk):
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Ensure data has pages 0..7
                 if "pages" in data:
                     self.skin_data = data
                 else:
-                    # Legacy 1-page json conversion
                     widgets = data.get("widgets", [])
                     self.skin_data = {
                         "skin_name": data.get("skin_name", "Preset"),
@@ -409,46 +419,58 @@ class SkinDesignerApp(ctk.CTk):
             wid = w["id"]
 
             is_selected = (wid == self.selected_widget_id)
-            outline_col = "#58a6ff" if is_selected else "#222222"
-            outline_w = 3 if is_selected else 1
 
-            # Card BG & Accent
             card_bg = w.get("bg_color", "#0C0C0C")
             accent = w.get("accent_color", "#FFFFFF")
+            sec_col = w.get("secondary_color", "#8b949e")
+            border_col = w.get("border_color", "#58a6ff" if is_selected else "#222222")
+            if is_selected:
+                border_col = "#58a6ff"
+            outline_w = 3 if is_selected else 1
+
             font_style = w.get("font_style", "dot_matrix")
+            show_icon = w.get("show_icon", True)
 
             # Draw Card Rectangle
-            self.canvas.create_rectangle(wx, wy, wx + ww, wy + wh, fill=card_bg, outline=outline_col, width=outline_w, tags=("widget", wid))
+            self.canvas.create_rectangle(wx, wy, wx + ww, wy + wh, fill=card_bg, outline=border_col, width=outline_w, tags=("widget", wid))
 
             # Widget Visual Simulation Mockup
             wtype = w.get("type", "")
 
             if wtype == "status_bar":
-                # System Status Header Strip
-                self.canvas.create_text(wx + 10, wy + int(wh/2), text="📶 WiFi: 192.168.1.13", fill="#00E676", font=("Segoe UI", int(4 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + int(ww/2), wy + int(wh/2), text=f"PAGE {self.current_page_idx}/7", fill="#58a6ff", font=("Segoe UI", int(4 * SCALE), "bold"), anchor="center", tags=("widget", wid))
-                self.canvas.create_text(wx + ww - 10, wy + int(wh/2), text="⏰ NTP  ☀️ 85%", fill="#8b949e", font=("Segoe UI", int(4 * SCALE)), anchor="e", tags=("widget", wid))
+                if show_icon:
+                    self.canvas.create_text(wx + 10, wy + int(wh/2), text="📶 WiFi: 192.168.1.13", fill=accent, font=("Segoe UI", int(4 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                else:
+                    self.canvas.create_text(wx + 10, wy + int(wh/2), text="192.168.1.13", fill=accent, font=("Segoe UI", int(4 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                self.canvas.create_text(wx + int(ww/2), wy + int(wh/2), text=f"PAGE {self.current_page_idx}/7", fill=sec_col, font=("Segoe UI", int(4 * SCALE), "bold"), anchor="center", tags=("widget", wid))
+                if show_icon:
+                    self.canvas.create_text(wx + ww - 10, wy + int(wh/2), text="⏰ NTP  ☀️ 85%", fill=sec_col, font=("Segoe UI", int(4 * SCALE)), anchor="e", tags=("widget", wid))
 
             elif font_style == "segment7":
-                # 7-Segment Digital Font
                 if wtype in ["clock", "clock_dot_matrix", "clock_dot_matrix_evening"]:
                     self.draw_7segment_text("14:35:08", wx + 15, wy + 15, seg_w=18, seg_h=36, color=accent, wid_tag=wid)
                 elif "gauge" in wtype:
                     self.draw_7segment_text("42-68", wx + 15, wy + 15, seg_w=16, seg_h=32, color=accent, wid_tag=wid)
                 else:
                     self.draw_7segment_text("12:00", wx + 15, wy + 15, seg_w=18, seg_h=36, color=accent, wid_tag=wid)
+
             elif font_style == "mono":
-                # Monospace Code Font
                 self.canvas.create_text(wx + 10, wy + 18, text=f"> {w.get('name','')}", fill=accent, font=("Consolas", int(7 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                self.canvas.create_text(wx + 10, wy + 42, text="sys.status: [OK]", fill="#39FF14", font=("Consolas", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
+                self.canvas.create_text(wx + 10, wy + 42, text="sys.status: [OK]", fill=sec_col, font=("Consolas", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
+
             elif font_style == "dot_matrix" or wtype in ["clock_dot_matrix", "clock_dot_matrix_evening"]:
-                # Dot Matrix LED Font
                 if wtype == "clock_dot_matrix":
-                    self.draw_pixel_sun(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FFCC00", wid_tag=wid)
-                    self.draw_dot_matrix_text("4:40 AM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                    if show_icon:
+                        self.draw_pixel_sun(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FFCC00", wid_tag=wid)
+                        self.draw_dot_matrix_text("4:40 AM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                    else:
+                        self.draw_dot_matrix_text("4:40 AM", wx + 20, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
                 elif wtype == "clock_dot_matrix_evening":
-                    self.draw_pixel_sunrise(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FF9900", wid_tag=wid)
-                    self.draw_dot_matrix_text("7:32 PM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                    if show_icon:
+                        self.draw_pixel_sunrise(wx + 20, wy + 18, dot_size=5, pitch=7, color="#FF9900", wid_tag=wid)
+                        self.draw_dot_matrix_text("7:32 PM", wx + 90, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
+                    else:
+                        self.draw_dot_matrix_text("7:32 PM", wx + 20, wy + 18, dot_size=5, pitch=7, on_color=accent, off_color="#181818", wid_tag=wid)
                 elif wtype == "dot_matrix_divider":
                     line_y = wy + int(wh / 2) - 2
                     for dx in range(wx + 10, wx + ww - 10, 8):
@@ -459,24 +481,27 @@ class SkinDesignerApp(ctk.CTk):
                 # Standard Vector / Default Sans Rendering
                 if wtype == "clock":
                     self.canvas.create_text(wx + 15, wy + 20, text="14:35:08", fill=accent, font=("Consolas", int(14 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                    self.canvas.create_text(wx + 15, wy + 42, text="Thứ Hai, 10/08 • 18/07 Âm", fill="#8b949e", font=("Segoe UI", int(5 * SCALE)), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 15, wy + 42, text="Thứ Hai, 10/08 • 18/07 Âm", fill=sec_col, font=("Segoe UI", int(5 * SCALE)), anchor="w", tags=("widget", wid))
                 elif wtype == "weather":
-                    self.canvas.create_text(wx + 10, wy + 18, text="🌤️ 28°C", fill=accent, font=("Segoe UI", int(9 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                    self.canvas.create_text(wx + 10, wy + 42, text="Hà Nội | Hum:80%", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE)), anchor="w", tags=("widget", wid))
+                    w_txt = "🌤️ 28°C" if show_icon else "28°C"
+                    self.canvas.create_text(wx + 10, wy + 18, text=w_txt, fill=accent, font=("Segoe UI", int(9 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 42, text="Hà Nội | Hum:80%", fill=sec_col, font=("Segoe UI", int(4.5 * SCALE)), anchor="w", tags=("widget", wid))
                 elif wtype == "gauge_cpu":
-                    self.canvas.create_text(wx + 10, wy + 15, text="CPU LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 15, text="CPU LOAD", fill=sec_col, font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
                     self.canvas.create_text(wx + 10, wy + 45, text="42%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                    self.canvas.create_arc(wx + ww - 50, wy + 15, wx + ww - 10, wy + 55, start=0, extent=240, outline=accent, width=4, style="arc", tags=("widget", wid))
+                    if show_icon:
+                        self.canvas.create_arc(wx + ww - 50, wy + 15, wx + ww - 10, wy + 55, start=0, extent=240, outline=accent, width=4, style="arc", tags=("widget", wid))
                 elif wtype == "gauge_ram":
-                    self.canvas.create_text(wx + 10, wy + 15, text="RAM LOAD", fill="#8b949e", font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 15, text="RAM LOAD", fill=sec_col, font=("Segoe UI", int(4.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
                     self.canvas.create_text(wx + 10, wy + 45, text="68%", fill=accent, font=("Consolas", int(12 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                    self.canvas.create_rectangle(wx + 70, wy + 40, wx + ww - 15, wy + 50, fill="#21262d", outline="", tags=("widget", wid))
-                    self.canvas.create_rectangle(wx + 70, wy + 40, wx + 70 + int((ww - 85) * 0.68), wy + 50, fill=accent, outline="", tags=("widget", wid))
+                    if show_icon:
+                        self.canvas.create_rectangle(wx + 70, wy + 40, wx + ww - 15, wy + 50, fill="#21262d", outline="", tags=("widget", wid))
+                        self.canvas.create_rectangle(wx + 70, wy + 40, wx + 70 + int((ww - 85) * 0.68), wy + 50, fill=accent, outline="", tags=("widget", wid))
                 elif wtype == "gold_sjc":
                     self.canvas.create_text(wx + 15, wy + 20, text="SJC GOLD: 137.5M / 141.5M (+0.5M)", fill=accent, font=("Segoe UI", int(6.5 * SCALE), "bold"), anchor="w", tags=("widget", wid))
-                    self.canvas.create_text(wx + 15, wy + 45, text="XAUUSD Spot: $4,064.00/oz", fill="#8b949e", font=("Segoe UI", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 15, wy + 45, text="XAUUSD Spot: $4,064.00/oz", fill=sec_col, font=("Segoe UI", int(5.5 * SCALE)), anchor="w", tags=("widget", wid))
                 elif wtype == "line_chart":
-                    self.canvas.create_text(wx + 10, wy + 12, text="REALTIME HARDWARE TREND", fill="#8b949e", font=("Segoe UI", int(4 * SCALE)), anchor="w", tags=("widget", wid))
+                    self.canvas.create_text(wx + 10, wy + 12, text="REALTIME HARDWARE TREND", fill=sec_col, font=("Segoe UI", int(4 * SCALE)), anchor="w", tags=("widget", wid))
                     pts = [(wx + 10, wy + wh - 10), (wx + 40, wy + wh - 25), (wx + 80, wy + wh - 15), (wx + 130, wy + wh - 35), (wx + 180, wy + wh - 20), (wx + ww - 10, wy + wh - 30)]
                     for i in range(len(pts) - 1):
                         self.canvas.create_line(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1], fill=accent, width=2, tags=("widget", wid))
@@ -494,7 +519,6 @@ class SkinDesignerApp(ctk.CTk):
         x, y = event.x, event.y
         widgets = self.get_current_widgets()
 
-        # Check if clicked on a resize handle first
         for w in widgets:
             wx = int(w["x"] * SCALE)
             wy = int(w["y"] * SCALE)
@@ -510,7 +534,6 @@ class SkinDesignerApp(ctk.CTk):
                 self.redraw_canvas()
                 return
 
-        # Check if clicked inside a widget rectangle
         for w in reversed(widgets):
             wx = int(w["x"] * SCALE)
             wy = int(w["y"] * SCALE)
@@ -526,7 +549,6 @@ class SkinDesignerApp(ctk.CTk):
                 self.redraw_canvas()
                 return
 
-        # Clicked empty canvas space
         self.selected_widget_id = None
         self.redraw_canvas()
 
@@ -579,6 +601,9 @@ class SkinDesignerApp(ctk.CTk):
 
             self.bg_col_btn.configure(fg_color=w.get("bg_color", "#161b22"))
             self.accent_col_btn.configure(fg_color=w.get("accent_color", "#00D4FF"))
+            self.sec_col_btn.configure(fg_color=w.get("secondary_color", "#8b949e"))
+            self.border_col_btn.configure(fg_color=w.get("border_color", "#222222"))
+            self.show_icon_var.set(w.get("show_icon", True))
         else:
             self.sel_name_lbl.configure(text="No widget selected", text_color="#8b949e")
             self.entry_x.delete(0, tk.END)
@@ -596,6 +621,12 @@ class SkinDesignerApp(ctk.CTk):
                 "Default Sans": "default"
             }
             w["font_style"] = font_key_map.get(val, "default")
+            self.redraw_canvas()
+
+    def on_icon_toggle(self):
+        w = self.get_selected_widget()
+        if w:
+            w["show_icon"] = self.show_icon_var.get()
             self.redraw_canvas()
 
     def apply_manual_geometry(self):
@@ -621,9 +652,25 @@ class SkinDesignerApp(ctk.CTk):
     def pick_accent_color(self):
         w = self.get_selected_widget()
         if w:
-            color = colorchooser.askcolor(title="Choose Accent / LED Dot Color", color=w.get("accent_color", "#00D4FF"))[1]
+            color = colorchooser.askcolor(title="Choose Primary Accent / LED Color", color=w.get("accent_color", "#00D4FF"))[1]
             if color:
                 w["accent_color"] = color
+                self.redraw_canvas()
+
+    def pick_sec_color(self):
+        w = self.get_selected_widget()
+        if w:
+            color = colorchooser.askcolor(title="Choose Secondary Text / Label Color", color=w.get("secondary_color", "#8b949e"))[1]
+            if color:
+                w["secondary_color"] = color
+                self.redraw_canvas()
+
+    def pick_border_color(self):
+        w = self.get_selected_widget()
+        if w:
+            color = colorchooser.askcolor(title="Choose Card Border Color", color=w.get("border_color", "#222222"))[1]
+            if color:
+                w["border_color"] = color
                 self.redraw_canvas()
 
     def add_widget(self, name, wtype, def_w, def_h):
@@ -635,13 +682,15 @@ class SkinDesignerApp(ctk.CTk):
             "name": name,
             "type": wtype,
             "font_style": "dot_matrix" if is_matrix else "default",
+            "show_icon": True,
             "x": 0 if wtype == "status_bar" else 20,
             "y": 0 if wtype == "status_bar" else 20,
             "w": def_w,
             "h": def_h,
             "bg_color": "#000000" if wtype == "status_bar" else ("#0C0C0C" if is_matrix else "#161b22"),
             "accent_color": "#00E676" if wtype == "status_bar" else ("#FF3333" if wtype == "dot_matrix_divider" else ("#FFFFFF" if is_matrix else "#00D4FF")),
-            "text_color": "#FFFFFF"
+            "secondary_color": "#8b949e",
+            "border_color": "#222222"
         }
         widgets.append(new_w)
         self.selected_widget_id = new_id
