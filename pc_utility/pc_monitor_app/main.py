@@ -38,6 +38,15 @@ active_serial_conn = None
 serial_lock = threading.Lock()
 app_instance = None
 
+# Deduplication guard for Media commands received from both Serial + UDP
+_last_media_cmd = ""
+_last_media_cmd_time = 0.0
+_MEDIA_DEDUP_WINDOW = 0.5  # 500ms window to ignore duplicate commands
+
+# Windows Media Session State (populated by background poller)
+_media_session_info = {"title": "", "artist": "", "playing": False}
+_media_info_lock = threading.Lock()
+
 CANVAS_WIDTH = 320
 CANVAS_HEIGHT = 240
 SCALE = 2.2
@@ -111,6 +120,44 @@ VN_CITIES = [
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
+def _media_session_poller():
+    """Background thread: poll Windows Media Transport Controls for track info every 2s."""
+    global _media_session_info
+    try:
+        import asyncio
+        from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
+
+        async def _get_media_info():
+            mgr = await GlobalSystemMediaTransportControlsSessionManager.request_async()
+            session = mgr.get_current_session()
+            if session is None:
+                return {"title": "", "artist": "", "playing": False}
+
+            info = await session.try_get_media_properties_async()
+            playback = session.get_playback_info()
+
+            title = str(info.title) if info.title else ""
+            artist = str(info.artist) if info.artist else ""
+            # PlaybackStatus: 4 = Playing, 5 = Paused
+            is_playing = (playback.playback_status == 4) if playback else False
+
+            return {"title": title, "artist": artist, "playing": is_playing}
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        while True:
+            try:
+                result = loop.run_until_complete(_get_media_info())
+                with _media_info_lock:
+                    _media_session_info = result
+            except Exception:
+                pass
+            time.sleep(2)
+    except ImportError:
+        print("[Media Poller] winsdk not available, media info disabled")
+    except Exception as e:
+        print(f"[Media Poller] Error: {e}")
+
 class SmartDeskStudioProApp(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -170,6 +217,10 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.udp_thread = threading.Thread(target=self.udp_listener_loop, daemon=True)
         self.udp_thread.start()
 
+        # Start Windows Media Session Poller (track title, artist, playing state)
+        self.media_poller_thread = threading.Thread(target=_media_session_poller, daemon=True)
+        self.media_poller_thread.start()
+
     def on_app_close(self):
         """Clean shutdown handler: close Serial port & terminate process immediately."""
         self.is_streaming = False
@@ -208,7 +259,15 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.bind("<Right>", lambda e: self.nudge_selected_element(1, 0))
 
     def handle_media_action(self, action):
-        """Execute Windows Virtual Key Event for Media Control (Spotify, YouTube, Media Players)."""
+        """Execute Windows Virtual Key Event for Media Control with deduplication guard."""
+        global _last_media_cmd, _last_media_cmd_time
+        now = time.time()
+        # Dedup: ignore if same command arrives within 500ms (Serial + UDP fire together)
+        if action == _last_media_cmd and (now - _last_media_cmd_time) < _MEDIA_DEDUP_WINDOW:
+            return
+        _last_media_cmd = action
+        _last_media_cmd_time = now
+
         if sys.platform == "win32":
             try:
                 if action == "play_pause":
@@ -1142,6 +1201,20 @@ class SmartDeskStudioProApp(ctk.CTk):
                     "net_up": up_speed,
                     "disks": disks_info[:4]
                 }
+
+                # Include Windows Media Session info (track title, artist, playing state)
+                with _media_info_lock:
+                    mi = _media_session_info.copy()
+                if mi.get("title"):
+                    # Strip Unicode/Vietnamese diacritics for TFT LCD character set
+                    safe_title = remove_vietnamese_accents(mi["title"][:60])
+                    safe_artist = remove_vietnamese_accents(mi.get("artist", "")[:60])
+                    # Keep only printable ASCII characters
+                    safe_title = ''.join(c for c in safe_title if c in string.printable and c not in '\t\n\r\x0b\x0c')
+                    safe_artist = ''.join(c for c in safe_artist if c in string.printable and c not in '\t\n\r\x0b\x0c')
+                    payload["mediaTitle"] = safe_title
+                    payload["mediaArtist"] = safe_artist
+                    payload["isMediaPlaying"] = mi.get("playing", False)
 
                 # MERGE PENDING USER CONTROL COMMANDS INTO TELEMETRY JSON PACKET
                 if self.pending_control:
