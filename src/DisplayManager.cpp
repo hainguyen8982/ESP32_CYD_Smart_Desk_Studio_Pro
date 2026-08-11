@@ -1646,11 +1646,12 @@ void DisplayManager::renderPage7_Settings() {
                 spr.drawRoundRect(bx + 1, by + 1, 118, 44, 5, themePreviews[i].primaryC);
             }
 
-            // 3. Draw 3 color dot swatches (Primary, Secondary, Text)
+            // 3. Draw 3 color dot swatches (1. Background, 2. Primary Accent, 3. Secondary/Text)
             int dotY = by + 12;
-            spr.fillCircle(bx + 18, dotY, 4, themePreviews[i].primaryC);
-            spr.fillCircle(bx + 29, dotY, 4, themePreviews[i].secondaryC);
-            spr.fillCircle(bx + 40, dotY, 4, themePreviews[i].textC);
+            spr.fillCircle(bx + 18, dotY, 4, themePreviews[i].bgC);
+            spr.drawCircle(bx + 18, dotY, 4, C_TRACE);
+            spr.fillCircle(bx + 29, dotY, 4, themePreviews[i].primaryC);
+            spr.fillCircle(bx + 40, dotY, 4, themePreviews[i].secondaryC);
 
             // 4. Draw Active badge if selected
             if (isSelected) {
