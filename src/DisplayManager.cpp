@@ -1606,8 +1606,25 @@ void DisplayManager::renderPage7_Settings() {
         spr.drawString("v2.5.0", 278, y + 11, 2);
 
     } else if (settingsTab == 1) {
-        // ── TAB 1: THEME PRESET SELECTOR ──────────────────────────────────
-        const char* themes[6] = { "Ocean Dark", "Cyberpunk", "Forest", "Cherry", "Light Day", "Retro Green" };
+        // ── TAB 1: THEME PRESET SELECTOR (WITH COLOR SWATCH PREVIEWS) ──────
+        struct ThemePreview {
+            const char* name;
+            const char* key;
+            uint16_t bgC;
+            uint16_t primaryC;
+            uint16_t secondaryC;
+            uint16_t textC;
+        };
+
+        ThemePreview themePreviews[6] = {
+            { "Ocean Dark",  "ocean_dark",  0x0813, 0x3DEE, 0x041F, 0xFFFF }, // Deep navy bg, Cyan accent, Blue sub
+            { "Cyberpunk",   "cyberpunk",   0x1805, 0xF81F, 0x07FF, 0xF81F }, // Dark violet bg, Pink magenta accent, Cyan sub
+            { "Forest",      "forest",      0x0182, 0x1650, 0xA700, 0x2FE4 }, // Dark pine bg, Emerald green accent, Yellow gold sub
+            { "Cherry",      "cherry",      0x2803, 0xFBAE, 0xF9C7, 0xFD52 }, // Dark wine bg, Rose pink accent, Coral sub
+            { "Light Day",   "light_day",   0xE71C, 0x0273, 0x041F, 0x0000 }, // Bright light bg, Royal blue accent, Slate text
+            { "Retro Green", "retro_green", 0x0000, 0x07E0, 0x05E5, 0x07E0 }  // Pitch black bg, Matrix neon green accent
+        };
+
         const char* currentP = getCurrentThemePresetName();
 
         for (int i = 0; i < 6; i++) {
@@ -1616,15 +1633,36 @@ void DisplayManager::renderPage7_Settings() {
             int bx = 34 + col * 128;
             int by = 63 + row * 52;
 
-            bool isSelected = (strcmp(currentP, themes[i]) == 0);
-            uint16_t borderC = isSelected ? C_GREEN : C_TRACE;
-            uint16_t textC = isSelected ? C_GREEN : C_WHITE;
+            bool isSelected = (strcmp(currentP, themePreviews[i].name) == 0 ||
+                               strcmp(currentP, themePreviews[i].key) == 0);
 
-            spr.fillRoundRect(bx, by, 120, 46, 6, C_CARD);
+            // 1. Fill card with theme background color
+            spr.fillRoundRect(bx, by, 120, 46, 6, themePreviews[i].bgC);
+
+            // 2. Draw card border (Double glowing border if selected)
+            uint16_t borderC = isSelected ? themePreviews[i].primaryC : C_TRACE;
             spr.drawRoundRect(bx, by, 120, 46, 6, borderC);
-            spr.setTextDatum(MC_DATUM);
-            spr.setTextColor(textC, C_CARD);
-            spr.drawString(themes[i], bx + 60, by + 23, 2);
+            if (isSelected) {
+                spr.drawRoundRect(bx + 1, by + 1, 118, 44, 5, themePreviews[i].primaryC);
+            }
+
+            // 3. Draw 3 color dot swatches (Primary, Secondary, Text)
+            int dotY = by + 12;
+            spr.fillCircle(bx + 18, dotY, 4, themePreviews[i].primaryC);
+            spr.fillCircle(bx + 29, dotY, 4, themePreviews[i].secondaryC);
+            spr.fillCircle(bx + 40, dotY, 4, themePreviews[i].textC);
+
+            // 4. Draw Active badge if selected
+            if (isSelected) {
+                spr.setTextDatum(MR_DATUM);
+                spr.setTextColor(themePreviews[i].primaryC, themePreviews[i].bgC);
+                spr.drawString("[ACTIVE]", bx + 114, dotY, 1);
+            }
+
+            // 5. Draw Theme Name
+            spr.setTextDatum(ML_DATUM);
+            spr.setTextColor(themePreviews[i].textC, themePreviews[i].bgC);
+            spr.drawString(themePreviews[i].name, bx + 10, by + 32, 2);
         }
     } else {
         // ── TAB 2: WEB QR CODE & NFC MOBILE CONFIG ASSISTANT ──────────────
