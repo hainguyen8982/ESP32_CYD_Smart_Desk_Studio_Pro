@@ -421,23 +421,6 @@ class SmartDeskStudioProApp(ctk.CTk):
                                 user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x10, 0, 0, 0); user32.keybd_event(0x4A, 0, 0, 0)
                                 time.sleep(0.02)
                                 user32.keybd_event(0x4A, 0, 2, 0); user32.keybd_event(0x10, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
-
-                                # 3. Layer 2: Click Inside Video Player Container (58% X, 54% Y)
-                                # Safely stays inside video player container (avoids 84% X sidebar ad banner!)
-                                if browser_hwnd:
-                                    class RECT(ctypes.Structure):
-                                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
-                                                    ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-                                    rect = RECT()
-                                    user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
-                                    w = rect.right - rect.left
-                                    h = rect.bottom - rect.top
-                                    click_x = rect.left + int(w * 0.58)
-                                    click_y = rect.top + int(h * 0.54)
-                                    user32.SetCursorPos(click_x, click_y)
-                                    time.sleep(0.02)
-                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
-                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
