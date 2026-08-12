@@ -152,7 +152,7 @@ private:
     int16_t     calendarMonthOffset;
     bool        isMediaPlaying;
     unsigned long lastLocalMediaToggle;  // debounce remote state after local toggle
-    uint8_t     touchedMediaBtn;         // 1=PREV, 2=PLAY/PAUSE, 3=NEXT, 4=VOL-, 5=SKIP_AD, 6=VOL+
+    uint8_t     touchedMediaBtn;         // 1=PREV, 2=PLAY/PAUSE, 3=NEXT, 4=VOL-, 5=MUTE, 6=VOL+
     unsigned long lastMediaTouchTime;    // timestamp for touch visual feedback
     char        mediaTitle[64];
     char        mediaArtist[64];

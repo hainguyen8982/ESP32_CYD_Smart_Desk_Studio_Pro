@@ -300,7 +300,7 @@ void loop() {
                         hardware.playBeep(900, 40);
                     } else if (evt.x >= 117 && evt.x <= 203) {
                         display.setTouchedMediaBtn(5);
-                        network.triggerMediaAction("skip_ad");
+                        network.triggerMediaAction("mute");
                         hardware.playBeep(1800, 50);
                     } else if (evt.x >= 210 && evt.x <= 286) {
                         display.setTouchedMediaBtn(6);

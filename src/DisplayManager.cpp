@@ -1804,18 +1804,25 @@ void DisplayManager::renderPage6_MediaControl() {
     spr.setTextColor(fg4, btn4Touch ? C_YELLOW : C_CARD);
     spr.drawString("VOL -", cx4, 211, 2);
 
-    // 5. SKIP AD
+    // 5. MUTE AUDIO
     bool btn5Touch = isTouchActive && (touchedMediaBtn == 5);
-    spr.fillRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_ORANGE : C_CARD);
-    spr.drawRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_WHITE : C_ORANGE);
+    uint16_t colorMute = 0xF851; // Vibrant Red for Mute
+    spr.fillRoundRect(117, 145, 86, 72, 8, btn5Touch ? colorMute : C_CARD);
+    spr.drawRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_WHITE : colorMute);
     int cx5 = 160, cy5 = 171;
-    uint16_t fg5 = btn5Touch ? C_BG : C_ORANGE;
-    spr.fillTriangle(cx5 - 10, cy5 - 10, cx5 - 2, cy5, cx5 - 10, cy5 + 10, fg5);
-    spr.fillTriangle(cx5 - 2, cy5 - 10, cx5 + 6, cy5, cx5 - 2, cy5 + 10, fg5);
-    spr.fillRect(cx5 + 7, cy5 - 10, 3, 20, fg5);
+    uint16_t fg5 = btn5Touch ? C_BG : colorMute;
+    // Draw Mute Speaker Icon (Speaker + X)
+    spr.fillRoundRect(cx5 - 18, cy5 - 6, 6, 12, 1, fg5);
+    spr.fillTriangle(cx5 - 12, cy5 - 6, cx5 - 4, cy5 - 12, cx5 - 12, cy5 + 6, fg5);
+    spr.fillTriangle(cx5 - 12, cy5 + 6, cx5 - 4, cy5 + 12, cx5 - 4, cy5 - 12, fg5);
+    // Draw X for Mute
+    spr.drawLine(cx5 + 3, cy5 - 6, cx5 + 13, cy5 + 6, fg5);
+    spr.drawLine(cx5 + 4, cy5 - 6, cx5 + 14, cy5 + 6, fg5);
+    spr.drawLine(cx5 + 3, cy5 + 6, cx5 + 13, cy5 - 6, fg5);
+    spr.drawLine(cx5 + 4, cy5 + 6, cx5 + 14, cy5 - 6, fg5);
     spr.setTextDatum(BC_DATUM);
-    spr.setTextColor(fg5, btn5Touch ? C_ORANGE : C_CARD);
-    spr.drawString("SKIP AD", cx5, 211, 1);
+    spr.setTextColor(fg5, btn5Touch ? colorMute : C_CARD);
+    spr.drawString("MUTE", cx5, 211, 2);
 
     // 6. VOL +
     bool btn6Touch = isTouchActive && (touchedMediaBtn == 6);
