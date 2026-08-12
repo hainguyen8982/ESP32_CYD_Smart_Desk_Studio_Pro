@@ -389,9 +389,8 @@ class SmartDeskStudioProApp(ctk.CTk):
                                     user32.SetForegroundWindow(browser_hwnd)
                                     time.sleep(0.05)
 
-                                # 2. Perform Precise Click at YouTube 'Bỏ qua ⏭️' Button Location (92% X, 88% Y)
-                                # Directly hits the 'Bỏ qua ⏭️' pill button (bottom right corner) shown on screen!
-                                # Avoids bottom-left 'Truy cập trang...' / sponsor links!
+                                 # 2. Perform Precise Burst Clicks at YouTube 'Bỏ qua ⏭️' Location (92% X, 88% Y)
+                                # Click 1 immediately, Click 2 after 3.5s to catch countdown completion!
                                 if browser_hwnd:
                                     class RECT(ctypes.Structure):
                                         _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
@@ -402,14 +401,27 @@ class SmartDeskStudioProApp(ctk.CTk):
                                     h = rect.bottom - rect.top
                                     click_x = rect.left + int(w * 0.92)
                                     click_y = rect.top + int(h * 0.88)
+
+                                    # First Immediate Click
                                     user32.SetCursorPos(click_x, click_y)
                                     time.sleep(0.02)
-                                    user32.mouse_event(0x0002, 0, 0, 0, 0) # Left Down
-                                    user32.mouse_event(0x0004, 0, 0, 0, 0) # Left Up
+                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
+
+                                    # Delayed Burst Click (3.5s) in case 5s countdown was still running
+                                    time.sleep(3.5)
+                                    if user32.IsWindowVisible(browser_hwnd):
+                                        user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
+                                        click_x = rect.left + int((rect.right - rect.left) * 0.92)
+                                        click_y = rect.top + int((rect.bottom - rect.top) * 0.88)
+                                        user32.SetCursorPos(click_x, click_y)
+                                        time.sleep(0.02)
+                                        user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                        user32.mouse_event(0x0004, 0, 0, 0, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: YouTube 'Bỏ qua ⏭️' Clicked Directly", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: Smart Burst Skip Ad Executed (0s & +3.5s)", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 

@@ -52,7 +52,7 @@ def background_skip_youtube_ad():
             user32.SetForegroundWindow(browser_hwnd)
             time.sleep(0.05)
 
-        # 2. Perform Precise Click at YouTube 'Bỏ qua ⏭️' Button Location (92% X, 88% Y)
+        # 2. Perform Precise Burst Clicks at YouTube 'Bỏ qua ⏭️' Location (92% X, 88% Y)
         if browser_hwnd:
             class RECT(ctypes.Structure):
                 _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
@@ -63,12 +63,25 @@ def background_skip_youtube_ad():
             h = rect.bottom - rect.top
             click_x = rect.left + int(w * 0.92)
             click_y = rect.top + int(h * 0.88)
+
+            # First Immediate Click
             user32.SetCursorPos(click_x, click_y)
             time.sleep(0.02)
-            user32.mouse_event(0x0002, 0, 0, 0, 0) # Left Down
-            user32.mouse_event(0x0004, 0, 0, 0, 0) # Left Up
+            user32.mouse_event(0x0002, 0, 0, 0, 0)
+            user32.mouse_event(0x0004, 0, 0, 0, 0)
+
+            # Delayed Burst Click (3.5s) in case 5s countdown was running
+            time.sleep(3.5)
+            if user32.IsWindowVisible(browser_hwnd):
+                user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
+                click_x = rect.left + int((rect.right - rect.left) * 0.92)
+                click_y = rect.top + int((rect.bottom - rect.top) * 0.88)
+                user32.SetCursorPos(click_x, click_y)
+                time.sleep(0.02)
+                user32.mouse_event(0x0002, 0, 0, 0, 0)
+                user32.mouse_event(0x0004, 0, 0, 0, 0)
             
-        print("[Media Remote]: Executed YouTube 'Bỏ qua ⏭️' Targeted Click!")
+        print("[Media Remote]: Executed Smart Burst YouTube 'Bỏ qua ⏭️' Click!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
