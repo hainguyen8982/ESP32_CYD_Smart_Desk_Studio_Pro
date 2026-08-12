@@ -421,10 +421,6 @@ class SmartDeskStudioProApp(ctk.CTk):
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
                     self.status_lbl.configure(text="⏩ Media: Calibrated Skip Ad Click Executed", text_color="#FFA726")
-                        except Exception as ex:
-                            print(f"[Skip Ad Async Error]: {ex}")
-                    threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: Native JS DOM Skip Ad Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
