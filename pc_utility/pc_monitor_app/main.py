@@ -389,16 +389,31 @@ class SmartDeskStudioProApp(ctk.CTk):
                                     user32.SetForegroundWindow(browser_hwnd)
                                     time.sleep(0.05)
 
-                                # 2. Execute Tab -> Enter / Space sequence to click Skip Ad button
-                                user32.keybd_event(0x09, 0, 0, 0); user32.keybd_event(0x09, 0, 2, 0) # Tab
-                                time.sleep(0.03)
-                                user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0) # Enter
-                                time.sleep(0.02)
-                                user32.keybd_event(0x20, 0, 0, 0); user32.keybd_event(0x20, 0, 2, 0) # Space
+                                # 2. Perform Targeted Click at YouTube Skip Ad Button Location (84% X, 76% Y)
+                                # Avoids top-left / bottom-left 'My Ad Center' sponsor links!
+                                if browser_hwnd:
+                                    class RECT(ctypes.Structure):
+                                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                                                    ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+                                    rect = RECT()
+                                    user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
+                                    w = rect.right - rect.left
+                                    h = rect.bottom - rect.top
+                                    click_x = rect.left + int(w * 0.84)
+                                    click_y = rect.top + int(h * 0.76)
+                                    user32.SetCursorPos(click_x, click_y)
+                                    time.sleep(0.02)
+                                    user32.mouse_event(0x0002, 0, 0, 0, 0) # Left Down
+                                    user32.mouse_event(0x0004, 0, 0, 0, 0) # Left Up
+                                else:
+                                    # Fallback key sequence if window rect unavailable
+                                    user32.keybd_event(0x09, 0, 0, 0); user32.keybd_event(0x09, 0, 2, 0) # Tab
+                                    time.sleep(0.02)
+                                    user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0) # Enter
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: YouTube Skip Ad Executed on Browser", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: YouTube Skip Ad Button Clicked", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
