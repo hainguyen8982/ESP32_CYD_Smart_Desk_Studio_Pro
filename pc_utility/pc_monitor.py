@@ -24,23 +24,22 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Targeted Ad Fast-Forward Sequence!"""
+    """Background YouTube Ad Skipper — Native Skip Button Clicker!"""
     if sys.platform != "win32":
         return
     try:
         user32 = ctypes.windll.user32
         
-        # 1. Fast forward 20s via 4x Right Arrow (0x27)
-        for _ in range(4):
-            user32.keybd_event(0x27, 0, 0, 0)
-            user32.keybd_event(0x27, 0, 2, 0)
-            time.sleep(0.015)
+        # 1. Focus YouTube's native 'Skip Ad' button via Tab key (0x09)
+        user32.keybd_event(0x09, 0, 0, 0)
+        user32.keybd_event(0x09, 0, 2, 0)
+        time.sleep(0.03)
 
-        # 2. Fast forward 10s via 'L' key (0x4C)
-        user32.keybd_event(0x4C, 0, 0, 0)
-        user32.keybd_event(0x4C, 0, 2, 0)
+        # 2. Click focused 'Skip Ad' button via Enter key (0x0D)
+        user32.keybd_event(0x0D, 0, 0, 0)
+        user32.keybd_event(0x0D, 0, 2, 0)
             
-        print("[Media Remote]: Executed YouTube Ad Fast-Forward Sequence!")
+        print("[Media Remote]: Executed YouTube Skip Ad Button Click!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
