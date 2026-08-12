@@ -364,39 +364,41 @@ class SmartDeskStudioProApp(ctk.CTk):
                 elif action == "skip_ad":
                     def _async_skip():
                         try:
-                            # Smart Ad Detection Check
-                            is_ad = False
                             if sys.platform == "win32":
-                                try:
-                                    user32 = ctypes.windll.user32
-                                    hwnd = user32.GetForegroundWindow()
-                                    length = user32.GetWindowTextLengthW(hwnd)
-                                    if length > 0:
-                                        buff = ctypes.create_unicode_buffer(length + 1)
-                                        user32.GetWindowTextW(hwnd, buff, length + 1)
-                                        wt = buff.value.lower()
-                                        if any(k in wt for k in ["quảng cáo", "advertisement", "ad", "youtube"]):
-                                            is_ad = True
-                                    with _media_info_lock:
-                                        mt = _media_session_info.get("title", "").lower()
-                                        ma = _media_session_info.get("artist", "").lower()
-                                        if any(k in mt or k in ma for k in ["quảng cáo", "advertisement", "ad"]):
-                                            is_ad = True
-                                except Exception:
-                                    is_ad = True # Fallback if detection unavailable
+                                user32 = ctypes.windll.user32
 
-                            user32 = ctypes.windll.user32
-                            # 1. Focus YouTube's native 'Skip Ad' button via Tab key (0x09)
-                            user32.keybd_event(0x09, 0, 0, 0) # Tab
-                            user32.keybd_event(0x09, 0, 2, 0)
-                            time.sleep(0.03)
-                            # 2. Click focused 'Skip Ad' button via Enter key (0x0D)
-                            user32.keybd_event(0x0D, 0, 0, 0) # Enter
-                            user32.keybd_event(0x0D, 0, 2, 0)
+                                # 1. Find Chrome / Edge / Firefox / YouTube window
+                                browser_hwnd = None
+                                def _enum_cb(hwnd, extra):
+                                    nonlocal browser_hwnd
+                                    if user32.IsWindowVisible(hwnd):
+                                        length = user32.GetWindowTextLengthW(hwnd)
+                                        if length > 0:
+                                            buff = ctypes.create_unicode_buffer(length + 1)
+                                            user32.GetWindowTextW(hwnd, buff, length + 1)
+                                            title = buff.value.lower()
+                                            if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
+                                                browser_hwnd = hwnd
+                                                return False
+                                    return True
+
+                                WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+                                user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
+
+                                if browser_hwnd:
+                                    user32.SetForegroundWindow(browser_hwnd)
+                                    time.sleep(0.05)
+
+                                # 2. Execute Tab -> Enter / Space sequence to click Skip Ad button
+                                user32.keybd_event(0x09, 0, 0, 0); user32.keybd_event(0x09, 0, 2, 0) # Tab
+                                time.sleep(0.03)
+                                user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0) # Enter
+                                time.sleep(0.02)
+                                user32.keybd_event(0x20, 0, 0, 0); user32.keybd_event(0x20, 0, 2, 0) # Space
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: YouTube Skip Ad Button Clicked", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: YouTube Skip Ad Executed on Browser", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 

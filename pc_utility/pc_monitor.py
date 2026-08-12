@@ -24,20 +24,38 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Native Skip Button Clicker!"""
+    """Background YouTube Ad Skipper — Browser Targeting Ad Clicker!"""
     if sys.platform != "win32":
         return
     try:
         user32 = ctypes.windll.user32
         
-        # 1. Focus YouTube's native 'Skip Ad' button via Tab key (0x09)
-        user32.keybd_event(0x09, 0, 0, 0)
-        user32.keybd_event(0x09, 0, 2, 0)
-        time.sleep(0.03)
+        # 1. Find Chrome / Edge / Firefox / YouTube window
+        browser_hwnd = None
+        def _enum_cb(hwnd, extra):
+            nonlocal browser_hwnd
+            if user32.IsWindowVisible(hwnd):
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length > 0:
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buff, length + 1)
+                    title = buff.value.lower()
+                    if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
+                        browser_hwnd = hwnd
+                        return False
+            return True
 
-        # 2. Click focused 'Skip Ad' button via Enter key (0x0D)
-        user32.keybd_event(0x0D, 0, 0, 0)
-        user32.keybd_event(0x0D, 0, 2, 0)
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+        user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
+
+        if browser_hwnd:
+            user32.SetForegroundWindow(browser_hwnd)
+            time.sleep(0.05)
+
+        # 2. Focus and Click YouTube Skip Ad button via Tab -> Enter
+        user32.keybd_event(0x09, 0, 0, 0); user32.keybd_event(0x09, 0, 2, 0)
+        time.sleep(0.03)
+        user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0)
             
         print("[Media Remote]: Executed YouTube Skip Ad Button Click!")
     except Exception as e:
