@@ -665,7 +665,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             ("⏯️ Play / Pause", "play_pause", "#39FF14"),
             ("⏭️ Next Track", "next", "#818CF8"),
             ("⏬️ Vol Down", "vol_down", "#FBBF24"),
-            ("⏭️ Skip Ad", "skip_ad", "#FFA726"),
+            ("🔇 Mute Audio", "mute", "#F85149"),
             ("⏫️ Vol Up", "vol_up", "#FBBF24")
         ]
 
