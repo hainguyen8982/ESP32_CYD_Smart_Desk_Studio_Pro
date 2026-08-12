@@ -443,23 +443,27 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.tab_hdr_frame = ctk.CTkFrame(main_container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, height=45)
         self.tab_hdr_frame.pack(fill="x", pady=(0, 8))
 
+        img_tab_live = self.get_icon("tab_live", size=(18, 18))
+        img_tab_designer = self.get_icon("tab_designer", size=(18, 18))
+        img_tab_settings = self.get_icon("tab_settings", size=(18, 18))
+
         self.tab_btn_live = ctk.CTkButton(
-            self.tab_hdr_frame, text="🖥️ Live Control Center", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="#1f2937", hover_color="#374151", text_color="#38bdf8",
+            self.tab_hdr_frame, text="  Live Control Center", image=img_tab_live, compound="left",
+            font=ctk.CTkFont(size=13, weight="bold"), height=36, fg_color="#1f2937", hover_color="#374151", text_color="#38bdf8",
             command=lambda: self.switch_main_tab("live")
         )
         self.tab_btn_live.pack(side="left", fill="x", expand=True, padx=4, pady=4)
 
         self.tab_btn_designer = ctk.CTkButton(
-            self.tab_hdr_frame, text="🎨 Skin Designer Studio", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
+            self.tab_hdr_frame, text="  Skin Designer Studio", image=img_tab_designer, compound="left",
+            font=ctk.CTkFont(size=13, weight="bold"), height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
             command=lambda: self.switch_main_tab("designer")
         )
         self.tab_btn_designer.pack(side="left", fill="x", expand=True, padx=4, pady=4)
 
         self.tab_btn_settings = ctk.CTkButton(
-            self.tab_hdr_frame, text="⚙️ System Settings", font=ctk.CTkFont(size=13, weight="bold"),
-            height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
+            self.tab_hdr_frame, text="  System Settings", image=img_tab_settings, compound="left",
+            font=ctk.CTkFont(size=13, weight="bold"), height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
             command=lambda: self.switch_main_tab("settings")
         )
         self.tab_btn_settings.pack(side="left", fill="x", expand=True, padx=4, pady=4)

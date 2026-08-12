@@ -77,8 +77,45 @@ def create_icons():
     draw.arc([10, 10, 54, 54], start=30, end=300, fill=color, width=7)
     draw.polygon([(46, 8), (58, 22), (38, 24)], fill=color)
     img.save(os.path.join(assets_dir, "refresh.png"))
+
+    # 9. TAB LIVE CONTROL CENTER ICON (#38BDF8) - Desktop Screen + Control Sliders
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    color = (56, 189, 248, 255)
+    draw.rounded_rectangle([8, 10, 56, 42], radius=4, fill=color)
+    draw.rectangle([14, 16, 50, 36], fill=(15, 23, 42, 255))
+    draw.rectangle([28, 42, 36, 50], fill=color)
+    draw.rounded_rectangle([20, 50, 44, 54], radius=2, fill=color)
+    draw.polygon([(26, 20), (40, 26), (26, 32)], fill=color)
+    img.save(os.path.join(assets_dir, "tab_live.png"))
+
+    # 10. TAB SKIN DESIGNER STUDIO ICON (#F472B6) - Paint Palette / Brush
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    color = (244, 114, 182, 255)
+    draw.ellipse([8, 10, 56, 54], fill=color)
+    draw.ellipse([14, 16, 50, 48], fill=(15, 23, 42, 255))
+    draw.ellipse([20, 22, 28, 30], fill=(56, 189, 248, 255))
+    draw.ellipse([34, 18, 42, 26], fill=(57, 255, 20, 255))
+    draw.ellipse([42, 32, 50, 40], fill=(251, 191, 36, 255))
+    draw.ellipse([18, 36, 26, 44], fill=color)
+    img.save(os.path.join(assets_dir, "tab_designer.png"))
+
+    # 11. TAB SYSTEM SETTINGS ICON (#FBBF24) - Gear Cogwheel
+    import math
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    color = (251, 191, 36, 255)
+    for angle in range(0, 360, 45):
+        rad = math.radians(angle)
+        x1 = 32 + int(22 * math.cos(rad))
+        y1 = 32 + int(22 * math.sin(rad))
+        draw.ellipse([x1-5, y1-5, x1+5, y1+5], fill=color)
+    draw.ellipse([14, 14, 50, 50], fill=color)
+    draw.ellipse([24, 24, 40, 40], fill=(15, 23, 42, 255))
+    img.save(os.path.join(assets_dir, "tab_settings.png"))
     
-    print("PNG Media & Port Icons generated successfully in assets/!")
+    print("PNG Media, Port & Tab Icons generated successfully in assets/!")
 
 if __name__ == "__main__":
     create_icons()
