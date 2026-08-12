@@ -59,9 +59,26 @@ def create_icons():
     draw.polygon([(18, 24), (32, 14), (32, 50), (18, 40)], fill=color)
     draw.rounded_rectangle([40, 29, 56, 35], radius=2, fill=color)
     draw.rounded_rectangle([45, 24, 51, 40], radius=2, fill=color)
-    img.save(os.path.join(assets_dir, "vol_up.png"))
+    # 7. PORT ICON (#38BDF8) - USB Plug / Serial Cable
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    color = (56, 189, 248, 255)
+    draw.rounded_rectangle([18, 10, 46, 28], radius=3, fill=color)
+    draw.rectangle([24, 16, 28, 22], fill=(15, 23, 42, 255))
+    draw.rectangle([36, 16, 40, 22], fill=(15, 23, 42, 255))
+    draw.rounded_rectangle([14, 28, 50, 46], radius=4, fill=color)
+    draw.rounded_rectangle([28, 46, 36, 58], radius=2, fill=color)
+    img.save(os.path.join(assets_dir, "port.png"))
+
+    # 8. REFRESH ICON (#34D399) - Reload Circular Arrow
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    color = (52, 211, 153, 255)
+    draw.arc([10, 10, 54, 54], start=30, end=300, fill=color, width=7)
+    draw.polygon([(46, 8), (58, 22), (38, 24)], fill=color)
+    img.save(os.path.join(assets_dir, "refresh.png"))
     
-    print("PNG Media Icons generated successfully in assets/!")
+    print("PNG Media & Port Icons generated successfully in assets/!")
 
 if __name__ == "__main__":
     create_icons()

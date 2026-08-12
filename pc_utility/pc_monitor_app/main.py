@@ -389,13 +389,23 @@ class SmartDeskStudioProApp(ctk.CTk):
         except Exception as e:
             print(f"[UDP] Listener start error: {e}")
 
-    def create_unified_ui(self):
-        main_container = ctk.CTkFrame(self, fg_color="transparent")
-        main_container.pack(fill="both", expand=True, padx=12, pady=12)
+    def get_icon(self, name, size=(18, 18)):
+        assets_path = os.path.join(os.path.dirname(__file__), "assets")
+        p = os.path.join(assets_path, f"{name}.png")
+        if os.path.exists(p):
+            try:
+                img = Image.open(p)
+                return ctk.CTkImage(light_image=img, dark_image=img, size=size)
+            except Exception: pass
+        return None
 
-        # ── Header Status Bar with Manual COM Selector ─────────────────
-        hdr = ctk.CTkFrame(main_container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, height=55)
-        hdr.pack(fill="x", pady=(0, 10))
+    def create_unified_ui(self):
+        main_container = ctk.CTkFrame(self, fg_color="#030712")
+        main_container.pack(fill="both", expand=True, padx=8, pady=8)
+
+        # ── Compact Top Header (App Title & Status Bar) ───────────────
+        hdr = ctk.CTkFrame(main_container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
+        hdr.pack(fill="x", pady=(0, 8))
 
         title_lbl = ctk.CTkLabel(
             hdr, text="👑 Smart Desk Studio Pro", font=ctk.CTkFont(size=18, weight="bold"), text_color="#38bdf8"
@@ -406,11 +416,22 @@ class SmartDeskStudioProApp(ctk.CTk):
         com_frame = ctk.CTkFrame(hdr, fg_color="transparent")
         com_frame.pack(side="left", padx=20, pady=8)
 
-        ctk.CTkLabel(com_frame, text="🔌 Port:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8").pack(side="left", padx=(0, 5))
+        port_icon = self.get_icon("port", size=(16, 16))
+        refresh_icon = self.get_icon("refresh", size=(16, 16))
+
+        port_lbl = ctk.CTkLabel(
+            com_frame, text="  Port:", image=port_icon, compound="left",
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="#94a3b8"
+        )
+        port_lbl.pack(side="left", padx=(0, 5))
+
         self.com_combo = ctk.CTkOptionMenu(com_frame, values=["Auto Detect"], width=150, command=self.on_com_select)
         self.com_combo.pack(side="left", padx=2)
 
-        ref_btn = ctk.CTkButton(com_frame, text="🔄", width=32, height=28, fg_color="#1f2937", hover_color="#374151", command=self.refresh_com_ports)
+        ref_btn = ctk.CTkButton(
+            com_frame, text="", image=refresh_icon, width=32, height=28,
+            fg_color="#1f2937", hover_color="#374151", command=self.refresh_com_ports
+        )
         ref_btn.pack(side="left", padx=4)
 
         self.status_lbl = ctk.CTkLabel(
