@@ -366,22 +366,11 @@ class SmartDeskStudioProApp(ctk.CTk):
                         try:
                             if sys.platform == "win32":
                                 user32 = ctypes.windll.user32
-                                # 1. Global Media Next Track (0xB0)
-                                user32.keybd_event(0xB0, 0, 0, 0)
-                                user32.keybd_event(0xB0, 0, 2, 0)
-                                time.sleep(0.03)
-
-                                # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
-                                user32.keybd_event(0x10, 0, 0, 0) # Shift down
-                                user32.keybd_event(0x4E, 0, 0, 0) # N down
-                                user32.keybd_event(0x4E, 0, 2, 0) # N up
-                                user32.keybd_event(0x10, 0, 2, 0) # Shift up
-                                time.sleep(0.03)
-
-                                # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
-                                for _ in range(5):
-                                    user32.keybd_event(0x27, 0, 0, 0)
-                                    user32.keybd_event(0x27, 0, 2, 0)
+                                # Fast-forward ad to end (+40s seek) without skipping to the next song
+                                # Removed 0xB0 (Next Track) and Shift+N which caused song skipping
+                                for _ in range(8):
+                                    user32.keybd_event(0x27, 0, 0, 0) # Right Arrow down
+                                    user32.keybd_event(0x27, 0, 2, 0) # Right Arrow up
                                     time.sleep(0.015)
                         except Exception as ex:
                             print(f"[Skip Ad Error]: {ex}")
