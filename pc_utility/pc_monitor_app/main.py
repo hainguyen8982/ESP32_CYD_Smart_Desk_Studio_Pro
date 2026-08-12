@@ -74,9 +74,19 @@ class CYDExtensionHTTPHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
+def free_port(port=18888):
+    for proc in psutil.process_iter(['pid', 'name']):
+        try:
+            for conn in proc.net_connections(kind='inet'):
+                if conn.laddr.port == port and proc.info['pid'] != os.getpid():
+                    proc.kill()
+        except Exception: pass
+
 def start_cyd_extension_bridge_server():
     def _run():
+        free_port(18888)
         try:
+            socketserver.TCPServer.allow_reuse_address = True
             with socketserver.TCPServer(("127.0.0.1", 18888), CYDExtensionHTTPHandler) as httpd:
                 httpd.serve_forever()
         except Exception as e:
