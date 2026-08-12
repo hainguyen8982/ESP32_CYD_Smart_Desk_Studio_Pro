@@ -1811,15 +1811,20 @@ void DisplayManager::renderPage6_MediaControl() {
     spr.drawRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_WHITE : colorMute);
     int cx5 = 160, cy5 = 171;
     uint16_t fg5 = btn5Touch ? C_BG : colorMute;
-    // Draw Mute Speaker Icon (Speaker + X)
-    spr.fillRoundRect(cx5 - 18, cy5 - 6, 6, 12, 1, fg5);
-    spr.fillTriangle(cx5 - 12, cy5 - 6, cx5 - 4, cy5 - 12, cx5 - 12, cy5 + 6, fg5);
-    spr.fillTriangle(cx5 - 12, cy5 + 6, cx5 - 4, cy5 + 12, cx5 - 4, cy5 - 12, fg5);
-    // Draw X for Mute
-    spr.drawLine(cx5 + 3, cy5 - 6, cx5 + 13, cy5 + 6, fg5);
-    spr.drawLine(cx5 + 4, cy5 - 6, cx5 + 14, cy5 + 6, fg5);
-    spr.drawLine(cx5 + 3, cy5 + 6, cx5 + 13, cy5 - 6, fg5);
-    spr.drawLine(cx5 + 4, cy5 + 6, cx5 + 14, cy5 - 6, fg5);
+    
+    // Draw Large Bold Mute Speaker Icon (Matching VOL- / VOL+ 28px scale)
+    spr.fillRoundRect(cx5 - 22, cy5 - 7, 8, 14, 2, fg5);
+    spr.fillTriangle(cx5 - 14, cy5 - 7, cx5 - 5, cy5 - 14, cx5 - 14, cy5 + 7, fg5);
+    spr.fillTriangle(cx5 - 14, cy5 + 7, cx5 - 5, cy5 + 14, cx5 - 5, cy5 - 14, fg5);
+    
+    // Bold X Mark (3px thick)
+    int x1 = cx5 + 3, x2 = cx5 + 17;
+    int y1 = cy5 - 10, y2 = cy5 + 10;
+    for (int d = -1; d <= 1; d++) {
+        spr.drawLine(x1 + d, y1, x2 + d, y2, fg5);
+        spr.drawLine(x1 + d, y2, x2 + d, y1, fg5);
+    }
+
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg5, btn5Touch ? colorMute : C_CARD);
     spr.drawString("MUTE", cx5, 211, 2);
