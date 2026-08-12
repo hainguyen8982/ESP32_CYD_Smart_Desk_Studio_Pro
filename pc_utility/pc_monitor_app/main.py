@@ -365,33 +365,22 @@ class SmartDeskStudioProApp(ctk.CTk):
                     def _async_skip():
                         try:
                             user32 = ctypes.windll.user32
-                            # 1. Global Media Next Track (Spotify & Windows Media)
-                            user32.keybd_event(0xB0, 0, 0, 0)
-                            user32.keybd_event(0xB0, 0, 2, 0)
-                            time.sleep(0.02)
-                            # 2. Fast-Forward YouTube Ad (+40s via 'L' key 4 times)
+                            # 1. Fast-Forward YouTube Ad (+20s via Right Arrow 4 times)
                             for _ in range(4):
-                                user32.keybd_event(0x4C, 0, 0, 0) # 'L' key
-                                user32.keybd_event(0x4C, 0, 2, 0)
-                                time.sleep(0.015)
-                            # 3. Fast-Forward YouTube Ad (+25s via Right Arrow 5 times)
-                            for _ in range(5):
                                 user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
                                 user32.keybd_event(0x27, 0, 2, 0)
                                 time.sleep(0.015)
-                            # 4. Shift + N (YouTube Next video / ad shortcut)
-                            user32.keybd_event(0x10, 0, 0, 0) # Shift down
-                            user32.keybd_event(0x4E, 0, 0, 0) # 'N' down
-                            user32.keybd_event(0x4E, 0, 2, 0) # 'N' up
-                            user32.keybd_event(0x10, 0, 2, 0) # Shift up
+                            # 2. Fast-Forward YouTube Ad via 'L' key (+10s)
+                            user32.keybd_event(0x4C, 0, 0, 0) # 'L' key
+                            user32.keybd_event(0x4C, 0, 2, 0)
                             time.sleep(0.02)
-                            # 5. Space key to trigger focused Skip Ad button
-                            user32.keybd_event(0x20, 0, 0, 0)
+                            # 3. Space key to click focused Skip Ad button on YouTube
+                            user32.keybd_event(0x20, 0, 0, 0) # Space
                             user32.keybd_event(0x20, 0, 2, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏭️ Media: Multi-Phase Skip Ad Executed (Async)", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: YouTube Ad Fast-Forward & Skip Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 

@@ -24,31 +24,28 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
+    """Background YouTube Ad Skipper — Targeted Ad Fast-Forward & Skip Sequence!"""
     if sys.platform != "win32":
         return
     try:
         user32 = ctypes.windll.user32
         
-        # 1. Global Media Next Track (0xB0)
-        user32.keybd_event(0xB0, 0, 0, 0)
-        user32.keybd_event(0xB0, 0, 2, 0)
-        time.sleep(0.03)
-
-        # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
-        user32.keybd_event(0x10, 0, 0, 0) # Shift down
-        user32.keybd_event(0x4E, 0, 0, 0) # N down
-        user32.keybd_event(0x4E, 0, 2, 0) # N up
-        user32.keybd_event(0x10, 0, 2, 0) # Shift up
-        time.sleep(0.03)
-
-        # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
-        for _ in range(5):
+        # 1. Fast forward 20s via 4x Right Arrow (0x27)
+        for _ in range(4):
             user32.keybd_event(0x27, 0, 0, 0)
             user32.keybd_event(0x27, 0, 2, 0)
             time.sleep(0.015)
+
+        # 2. Fast forward 10s via 'L' key (0x4C)
+        user32.keybd_event(0x4C, 0, 0, 0)
+        user32.keybd_event(0x4C, 0, 2, 0)
+        time.sleep(0.02)
+
+        # 3. Trigger focused Skip Ad button via Space (0x20)
+        user32.keybd_event(0x20, 0, 0, 0)
+        user32.keybd_event(0x20, 0, 2, 0)
             
-        print("[Media Remote]: Executed Multi-phase YouTube Ad Skip Sequence!")
+        print("[Media Remote]: Executed YouTube Ad Skip & Fast-Forward Sequence!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
