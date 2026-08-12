@@ -364,6 +364,27 @@ class SmartDeskStudioProApp(ctk.CTk):
                 elif action == "skip_ad":
                     def _async_skip():
                         try:
+                            # Smart Ad Detection Check
+                            is_ad = False
+                            if sys.platform == "win32":
+                                try:
+                                    user32 = ctypes.windll.user32
+                                    hwnd = user32.GetForegroundWindow()
+                                    length = user32.GetWindowTextLengthW(hwnd)
+                                    if length > 0:
+                                        buff = ctypes.create_unicode_buffer(length + 1)
+                                        user32.GetWindowTextW(hwnd, buff, length + 1)
+                                        wt = buff.value.lower()
+                                        if any(k in wt for k in ["quảng cáo", "advertisement", "ad", "youtube"]):
+                                            is_ad = True
+                                    with _media_info_lock:
+                                        mt = _media_session_info.get("title", "").lower()
+                                        ma = _media_session_info.get("artist", "").lower()
+                                        if any(k in mt or k in ma for k in ["quảng cáo", "advertisement", "ad"]):
+                                            is_ad = True
+                                except Exception:
+                                    is_ad = True # Fallback if detection unavailable
+
                             user32 = ctypes.windll.user32
                             # Fast-Forward YouTube Ad (+20s via Right Arrow 4 times)
                             for _ in range(4):
