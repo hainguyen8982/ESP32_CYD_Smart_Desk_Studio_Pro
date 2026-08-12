@@ -389,43 +389,38 @@ class SmartDeskStudioProApp(ctk.CTk):
                                     user32.SetForegroundWindow(browser_hwnd)
                                     time.sleep(0.05)
 
-                                # 2. Native JS DOM Skip Ad Execution via Address Bar (100% Reliable, 0% DevTools flicker, 0% Misclick)
-                                js_payload = "(function(){let b=document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-ad-skip-button-slot,.ytp-skip-ad-button');if(b)b.click();let v=document.querySelector('video');if(v&&document.querySelector('.ytp-ad-player-overlay'))v.currentTime=v.duration;})();"
-                                
-                                try:
-                                    if ctypes.windll.user32.OpenClipboard(None):
-                                        ctypes.windll.user32.EmptyClipboard()
-                                        h_cd = ctypes.windll.kernel32.GlobalAlloc(0x0042, (len(js_payload) + 1) * 2)
-                                        ptr = ctypes.windll.kernel32.GlobalLock(h_cd)
-                                        ctypes.cdll.msvcrt.wcscpy(ctypes.c_wchar_p(ptr), js_payload)
-                                        ctypes.windll.kernel32.GlobalUnlock(h_cd)
-                                        ctypes.windll.user32.SetClipboardData(13, h_cd) # CF_UNICODETEXT
-                                        ctypes.windll.user32.CloseClipboard()
-                                except Exception: pass
+                                # 2. Calibrated Dual-Point Click Strategy for YouTube 'Bỏ qua ⏭️' Button
+                                # Point 1: X=58%, Y=56% (Hits 'Bỏ qua' button in Default View Mode inside video container, avoiding 84% X sidebar ad banner!)
+                                # Point 2: X=92%, Y=82% (Hits 'Bỏ qua' button in Theatre / Fullscreen View Mode)
+                                if browser_hwnd:
+                                    class RECT(ctypes.Structure):
+                                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                                                    ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+                                    rect = RECT()
+                                    user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
+                                    w = rect.right - rect.left
+                                    h = rect.bottom - rect.top
 
-                                # Focus Address Bar via Ctrl + L
-                                user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x4C, 0, 0, 0)
-                                time.sleep(0.02)
-                                user32.keybd_event(0x4C, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
-                                time.sleep(0.05)
+                                    # Click 1: Default View Mode (58% X, 56% Y)
+                                    cx1 = rect.left + int(w * 0.58)
+                                    cy1 = rect.top + int(h * 0.56)
+                                    user32.SetCursorPos(cx1, cy1)
+                                    time.sleep(0.02)
+                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
+                                    time.sleep(0.04)
 
-                                # Type 'javascript:' so Chromium doesn't strip it
-                                for ch in "javascript:":
-                                    if ch == ':':
-                                        user32.keybd_event(0x10, 0, 0, 0); user32.keybd_event(0xBA, 0, 0, 0)
-                                        user32.keybd_event(0xBA, 0, 2, 0); user32.keybd_event(0x10, 0, 2, 0)
-                                    else:
-                                        vk = ord(ch.upper())
-                                        user32.keybd_event(vk, 0, 0, 0); user32.keybd_event(vk, 0, 2, 0)
-                                    time.sleep(0.003)
-
-                                # Paste JS Payload & Run (Ctrl + V -> Enter)
-                                user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x56, 0, 0, 0)
-                                time.sleep(0.02)
-                                user32.keybd_event(0x56, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
-                                time.sleep(0.03)
-
-                                user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0) # Enter
+                                    # Click 2: Theatre / Fullscreen View Mode (92% X, 82% Y)
+                                    cx2 = rect.left + int(w * 0.92)
+                                    cy2 = rect.top + int(h * 0.82)
+                                    user32.SetCursorPos(cx2, cy2)
+                                    time.sleep(0.02)
+                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
+                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
+                        except Exception as ex:
+                            print(f"[Skip Ad Async Error]: {ex}")
+                    threading.Thread(target=_async_skip, daemon=True).start()
+                    self.status_lbl.configure(text="⏩ Media: Calibrated Skip Ad Click Executed", text_color="#FFA726")
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
