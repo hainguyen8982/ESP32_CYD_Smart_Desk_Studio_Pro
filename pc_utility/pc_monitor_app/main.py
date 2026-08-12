@@ -364,47 +364,40 @@ class SmartDeskStudioProApp(ctk.CTk):
                 elif action == "skip_ad":
                     def _async_skip():
                         try:
-                            if sys.platform == "win32":
+                            # 1. Native Windows WinSDK Silent Background Ad Skip (0% Window Popup, 0% Focus Stealing)
+                            async def _do_winsdk_skip():
+                                try:
+                                    from winsdk.windows.media.control import GlobalSystemMediaTransportControlsSessionManager
+                                    mgr = await GlobalSystemMediaTransportControlsSessionManager.request_async()
+                                    sessions = mgr.get_sessions()
+                                    target_session = None
+                                    for s in sessions:
+                                        app_id = s.source_app_user_model_id.lower()
+                                        if any(b in app_id for b in ["chrome", "msedge", "firefox", "brave", "opera"]):
+                                            target_session = s
+                                            break
+                                    if not target_session:
+                                        target_session = mgr.get_current_session()
+                                    if target_session:
+                                        await target_session.try_fast_forward_async()
+                                        await target_session.try_skip_next_async()
+                                        return True
+                                except Exception: pass
+                                return False
+
+                            loop = asyncio.new_event_loop()
+                            asyncio.set_event_loop(loop)
+                            success = loop.run_until_complete(_do_winsdk_skip())
+                            loop.close()
+
+                            if not success and sys.platform == "win32":
                                 user32 = ctypes.windll.user32
-
-                                # 1. Find Browser Window handle (Chrome / Edge / Firefox / Brave)
-                                browser_hwnd = None
-                                def _enum_cb(hwnd, extra):
-                                    nonlocal browser_hwnd
-                                    if user32.IsWindowVisible(hwnd):
-                                        length = user32.GetWindowTextLengthW(hwnd)
-                                        if length > 0:
-                                            buff = ctypes.create_unicode_buffer(length + 1)
-                                            user32.GetWindowTextW(hwnd, buff, length + 1)
-                                            title = buff.value.lower()
-                                            if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
-                                                browser_hwnd = hwnd
-                                                return False
-                                    return True
-
-                                WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
-                                user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
-
-                                # 2. Send Background Seek (+40s) via PostMessageW directly to Browser Window
-                                # NEVER activates browser window, NEVER pops up over user's work, NEVER steals focus!
-                                WM_KEYDOWN = 0x0100
-                                WM_KEYUP = 0x0101
-                                VK_RIGHT = 0x27
-
-                                if browser_hwnd:
-                                    for _ in range(8):
-                                        user32.PostMessageW(browser_hwnd, WM_KEYDOWN, VK_RIGHT, 0)
-                                        user32.PostMessageW(browser_hwnd, WM_KEYUP, VK_RIGHT, 0)
-                                        time.sleep(0.015)
-                                else:
-                                    for _ in range(8):
-                                        user32.keybd_event(VK_RIGHT, 0, 0, 0)
-                                        user32.keybd_event(VK_RIGHT, 0, 2, 0)
-                                        time.sleep(0.015)
+                                user32.keybd_event(0xB0, 0, 0, 0)
+                                user32.keybd_event(0xB0, 0, 2, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: Background Ad Skip Executed (0% Popup, Work Preserved)", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: WinSDK Silent Background Skip Ad Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
