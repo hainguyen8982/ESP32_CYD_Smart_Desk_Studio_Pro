@@ -49,6 +49,43 @@ _MEDIA_DEDUP_WINDOW = 1.5  # 1.5s window — must exceed stream_loop sleep(1) to
 _media_session_info = {"title": "", "artist": "", "playing": False}
 _media_info_lock = threading.Lock()
 
+# --- Local HTTP Bridge Server for CYD Chrome Extension (Port 18888) ---
+import http.server
+import socketserver
+
+_cyd_skip_requested = False
+
+class CYDExtensionHTTPHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass # Silence HTTP console logs
+        
+    def do_GET(self):
+        global _cyd_skip_requested
+        if self.path.startswith("/poll"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            resp = {"skip": _cyd_skip_requested}
+            if _cyd_skip_requested:
+                _cyd_skip_requested = False
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+def start_cyd_extension_bridge_server():
+    def _run():
+        try:
+            with socketserver.TCPServer(("127.0.0.1", 18888), CYDExtensionHTTPHandler) as httpd:
+                httpd.serve_forever()
+        except Exception as e:
+            print(f"[CYD Extension Bridge]: Port 18888 Server info: {e}")
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+
+start_cyd_extension_bridge_server()
+
 CANVAS_WIDTH = 320
 CANVAS_HEIGHT = 240
 SCALE = 2.2
@@ -362,8 +399,12 @@ class SmartDeskStudioProApp(ctk.CTk):
                     ctypes.windll.user32.keybd_event(VK_VOLUME_MUTE, 0, 2, 0)
                     self.status_lbl.configure(text="🔇 Mute Toggled", text_color="#F85149")
                 elif action == "skip_ad":
+                    global _cyd_skip_requested
+                    _cyd_skip_requested = True
                     def _async_skip():
                         try:
+                            # Allow Extension 0.4s to poll and execute 100% silent DOM click
+                            time.sleep(0.4)
                             if sys.platform == "win32":
                                 user32 = ctypes.windll.user32
                                 # 1. Global Media Next Track (0xB0)
@@ -386,7 +427,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                         except Exception as ex:
                             print(f"[Skip Ad Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏭️ Media: Multi-phase Skip Ad Sequence (Old Project Code)", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: CYD Extension Skip Ad Triggered!", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 

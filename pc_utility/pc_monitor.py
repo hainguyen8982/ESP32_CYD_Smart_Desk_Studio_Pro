@@ -23,30 +23,73 @@ VK_VOLUME_MUTE      = 0xAD
 VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
-def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
-    if sys.platform != "win32":
-        return
-    try:
-        user32 = ctypes.windll.user32
+# --- Local HTTP Bridge Server for CYD Chrome Extension (Port 18888) ---
+import http.server
+import socketserver
+import threading
+
+_cyd_skip_requested = False
+
+class CYDExtensionHTTPHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
         
-        # 1. Global Media Next Track (0xB0)
-        user32.keybd_event(0xB0, 0, 0, 0)
-        user32.keybd_event(0xB0, 0, 2, 0)
-        time.sleep(0.03)
+    def do_GET(self):
+        global _cyd_skip_requested
+        if self.path.startswith("/poll"):
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            resp = {"skip": _cyd_skip_requested}
+            if _cyd_skip_requested:
+                _cyd_skip_requested = False
+            self.wfile.write(json.dumps(resp).encode("utf-8"))
+        else:
+            self.send_response(404)
+            self.end_headers()
 
-        # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
-        user32.keybd_event(0x10, 0, 0, 0) # Shift down
-        user32.keybd_event(0x4E, 0, 0, 0) # N down
-        user32.keybd_event(0x4E, 0, 2, 0) # N up
-        user32.keybd_event(0x10, 0, 2, 0) # Shift up
-        time.sleep(0.03)
+def start_cyd_extension_bridge_server():
+    def _run():
+        try:
+            with socketserver.TCPServer(("127.0.0.1", 18888), CYDExtensionHTTPHandler) as httpd:
+                httpd.serve_forever()
+        except Exception as e:
+            pass
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
 
-        # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
-        for _ in range(5):
-            user32.keybd_event(0x27, 0, 0, 0)
-            user32.keybd_event(0x27, 0, 2, 0)
-            time.sleep(0.015)
+try:
+    start_cyd_extension_bridge_server()
+except Exception: pass
+
+def background_skip_youtube_ad():
+    """Background YouTube Ad Skipper — CYD Extension Bridge & Fallback!"""
+    global _cyd_skip_requested
+    _cyd_skip_requested = True
+    try:
+        time.sleep(0.4)
+        if sys.platform == "win32":
+            user32 = ctypes.windll.user32
+            # 1. Global Media Next Track (0xB0)
+            user32.keybd_event(0xB0, 0, 0, 0)
+            user32.keybd_event(0xB0, 0, 2, 0)
+            time.sleep(0.03)
+
+            # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+            user32.keybd_event(0x10, 0, 0, 0) # Shift down
+            user32.keybd_event(0x4E, 0, 0, 0) # N down
+            user32.keybd_event(0x4E, 0, 2, 0) # N up
+            user32.keybd_event(0x10, 0, 2, 0) # Shift up
+            time.sleep(0.03)
+
+            # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+            for _ in range(5):
+                user32.keybd_event(0x27, 0, 0, 0)
+                user32.keybd_event(0x27, 0, 2, 0)
+                time.sleep(0.015)
+    except Exception as e:
+        print(f"[Skip Ad Error]: {e}")
             
         print("[Media Remote]: Executed Multi-phase YouTube Ad Skip Sequence!")
     except Exception as e:
