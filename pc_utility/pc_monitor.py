@@ -24,78 +24,16 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Targeted Click with Instant Work-Window & Cursor Restore!"""
+    """Background YouTube Ad Skipper — Keyboard Fast-Forward Seek (No Mouse Clicks)!"""
     if sys.platform != "win32":
         return
     try:
         user32 = ctypes.windll.user32
-
-        # 1. Save user's current working window and cursor position
-        active_hwnd = user32.GetForegroundWindow()
-        class POINT(ctypes.Structure):
-            _fields_ = [("x", ctypes.c_long), ("y", ctypes.c_long)]
-        orig_pt = POINT()
-        user32.GetCursorPos(ctypes.byref(orig_pt))
-
-        # 2. Find Chrome / Edge / Firefox / YouTube window
-        browser_hwnd = None
-        def _enum_cb(hwnd, extra):
-            nonlocal browser_hwnd
-            if user32.IsWindowVisible(hwnd):
-                length = user32.GetWindowTextLengthW(hwnd)
-                if length > 0:
-                    buff = ctypes.create_unicode_buffer(length + 1)
-                    user32.GetWindowTextW(hwnd, buff, length + 1)
-                    title = buff.value.lower()
-                    if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
-                        browser_hwnd = hwnd
-                        return False
-            return True
-
-        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
-        user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
-
-        if browser_hwnd:
-            class RECT(ctypes.Structure):
-                _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
-                            ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-            rect = RECT()
-            user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
-            w = rect.right - rect.left
-            h = rect.bottom - rect.top
-
-            user32.SetForegroundWindow(browser_hwnd)
+        for _ in range(8):
+            user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
+            user32.keybd_event(0x27, 0, 2, 0)
             time.sleep(0.015)
-
-            # Click 1: Default View Mode (60% X, 56% Y) inside video player container
-            cx1 = rect.left + int(w * 0.60)
-            cy1 = rect.top + int(h * 0.56)
-            user32.SetCursorPos(cx1, cy1)
-            time.sleep(0.01)
-            user32.mouse_event(0x0002, 0, 0, 0, 0)
-            user32.mouse_event(0x0004, 0, 0, 0, 0)
-            time.sleep(0.015)
-
-            # Click 2: Theatre / Fullscreen View Mode (92% X, 82% Y)
-            cx2 = rect.left + int(w * 0.92)
-            cy2 = rect.top + int(h * 0.82)
-            user32.SetCursorPos(cx2, cy2)
-            time.sleep(0.01)
-            user32.mouse_event(0x0002, 0, 0, 0, 0)
-            user32.mouse_event(0x0004, 0, 0, 0, 0)
-
-            # Fast-forward seek (+20s)
-            for _ in range(4):
-                user32.keybd_event(0x27, 0, 0, 0)
-                user32.keybd_event(0x27, 0, 2, 0)
-                time.sleep(0.01)
-
-        # 3. IMMEDIATELY RESTORE USER'S WORKING WINDOW & MOUSE CURSOR
-        if active_hwnd:
-            user32.SetForegroundWindow(active_hwnd)
-        user32.SetCursorPos(orig_pt.x, orig_pt.y)
-            
-        print("[Media Remote]: Executed Skip Ad (Work Window & Cursor Preserved)!")
+        print("[Media Remote]: Executed Ad Fast-Forward Seek (No Mouse Clicks)!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
