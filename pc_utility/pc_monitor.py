@@ -24,20 +24,68 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
+    """Background YouTube Ad Skipper — Focused Fast-Forward & Skip Executed!"""
     if sys.platform != "win32":
         return
     try:
         user32 = ctypes.windll.user32
         
-        # Fast-forward ad to end (+40s seek) without skipping to the next song
-        # Removed 0xB0 (Next Track) and Shift+N which caused song skipping
-        for _ in range(8):
-            user32.keybd_event(0x27, 0, 0, 0) # Right Arrow down
-            user32.keybd_event(0x27, 0, 2, 0) # Right Arrow up
+        # 1. Find and Focus Chrome / Edge / Firefox / YouTube window
+        browser_hwnd = None
+        def _enum_cb(hwnd, extra):
+            nonlocal browser_hwnd
+            if user32.IsWindowVisible(hwnd):
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length > 0:
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buff, length + 1)
+                    title = buff.value.lower()
+                    if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
+                        browser_hwnd = hwnd
+                        return False
+            return True
+
+        WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
+        user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
+
+        if browser_hwnd:
+            user32.SetForegroundWindow(browser_hwnd)
+            time.sleep(0.05)
+
+        # 2. Perform Focused Ad Seek (+40s seek) to instantly finish unskippable ads
+        for _ in range(6):
+            user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
+            user32.keybd_event(0x27, 0, 2, 0)
             time.sleep(0.015)
+
+        # 3. Perform Targeted Click on YouTube 'Bỏ qua ⏭️' Pill Button
+        if browser_hwnd:
+            class RECT(ctypes.Structure):
+                _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
+                            ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
+            rect = RECT()
+            user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
+            w = rect.right - rect.left
+            h = rect.bottom - rect.top
+
+            # Click 1: Default View Mode (62% X, 56% Y) inside video player container
+            cx1 = rect.left + int(w * 0.62)
+            cy1 = rect.top + int(h * 0.56)
+            user32.SetCursorPos(cx1, cy1)
+            time.sleep(0.02)
+            user32.mouse_event(0x0002, 0, 0, 0, 0)
+            user32.mouse_event(0x0004, 0, 0, 0, 0)
+            time.sleep(0.03)
+
+            # Click 2: Theatre / Fullscreen View Mode (92% X, 82% Y)
+            cx2 = rect.left + int(w * 0.92)
+            cy2 = rect.top + int(h * 0.82)
+            user32.SetCursorPos(cx2, cy2)
+            time.sleep(0.02)
+            user32.mouse_event(0x0002, 0, 0, 0, 0)
+            user32.mouse_event(0x0004, 0, 0, 0, 0)
             
-        print("[Media Remote]: Executed Ad Fast-Forward Sequence (+40s seek)!")
+        print("[Media Remote]: Executed Focused Ad Fast-Forward & Skip!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
