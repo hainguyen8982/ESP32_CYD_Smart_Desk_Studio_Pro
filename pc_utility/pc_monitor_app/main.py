@@ -661,19 +661,19 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
         media_btns = [
-            ("⏮️ Prev Track", "prev", "#818CF8"),
-            ("⏯️ Play / Pause", "play_pause", "#39FF14"),
-            ("⏭️ Next Track", "next", "#818CF8"),
-            ("⏬️ Vol Down", "vol_down", "#FBBF24"),
-            ("🔇 Mute Audio", "mute", "#F85149"),
-            ("⏫️ Vol Up", "vol_up", "#FBBF24")
+            ("⏮  PREV", "prev", "#818CF8"),
+            ("⏯  PLAY / PAUSE", "play_pause", "#39FF14"),
+            ("⏭  NEXT", "next", "#818CF8"),
+            ("🔉  VOL -", "vol_down", "#FBBF24"),
+            ("🔇  MUTE", "mute", "#F85149"),
+            ("🔊  VOL +", "vol_up", "#FBBF24")
         ]
 
         for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
             mb = ctk.CTkButton(
-                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=12, weight="bold"),
-                height=36, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
+                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=13, weight="bold"),
+                height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
                 border_width=1, border_color="#1f2937",
                 command=lambda a=m_act: self.handle_media_action(a)
             )
