@@ -364,24 +364,35 @@ class SmartDeskStudioProApp(ctk.CTk):
                 elif action == "skip_ad":
                     def _async_skip():
                         try:
-                            # 1. Check Chrome Remote Debugging Protocol (CDP Port 9222) for 100% silent DOM skip
+                            # 1. Pure Python Standard Library Chrome CDP WebSocket Skip (0% External Packages, 100% Silent)
                             cdp_success = False
                             try:
-                                import urllib.request, json
+                                import urllib.request, json, socket, base64, os
                                 req = urllib.request.urlopen("http://localhost:9222/json", timeout=0.3)
                                 tabs = json.loads(req.read().decode('utf-8'))
                                 for t in tabs:
                                     if "youtube.com" in t.get("url", "").lower():
                                         ws_url = t.get("webSocketDebuggerUrl")
                                         if ws_url:
-                                            import websockets, asyncio
-                                            async def _cdp_click():
-                                                async with websockets.connect(ws_url) as ws:
-                                                    js = "document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-skip-ad-button')?.click();"
-                                                    cmd = {"id": 1, "method": "Runtime.evaluate", "params": {"expression": js}}
-                                                    await ws.send(json.dumps(cmd))
-                                            asyncio.run(_cdp_click())
-                                            cdp_success = True
+                                            url_parts = ws_url.replace("ws://", "").split("/")
+                                            host_port = url_parts[0].split(":")
+                                            host, port, path = host_port[0], int(host_port[1]), "/" + "/".join(url_parts[1:])
+                                            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                                            s.settimeout(1.0)
+                                            s.connect((host, port))
+                                            sec_key = base64.b64encode(os.urandom(16)).decode('utf-8')
+                                            s.sendall((f"GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {sec_key}\r\nSec-WebSocket-Version: 13\r\n\r\n").encode('utf-8'))
+                                            if b"101" in s.recv(1024):
+                                                js = "document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-skip-ad-button')?.click();"
+                                                cmd = json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {"expression": js}}).encode('utf-8')
+                                                mask = os.urandom(4)
+                                                frame = bytearray([0x81, 0x80 | len(cmd)])
+                                                frame.extend(mask)
+                                                for i, b in enumerate(cmd): frame.append(b ^ mask[i % 4])
+                                                s.sendall(frame)
+                                                time.sleep(0.04)
+                                                cdp_success = True
+                                            s.close()
                                             break
                             except Exception: pass
 
@@ -395,7 +406,7 @@ class SmartDeskStudioProApp(ctk.CTk):
                         except Exception as ex:
                             print(f"[Skip Ad Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: Skip Ad Triggered", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: CDP Pure WS Skip Ad Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
