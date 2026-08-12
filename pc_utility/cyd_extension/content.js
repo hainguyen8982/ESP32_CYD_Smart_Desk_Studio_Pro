@@ -3,8 +3,6 @@ console.log("[CYD Extension Content]: YouTube Background Ad Skipper Loaded!");
 
 function executeAdSkip() {
     console.log("[CYD Extension Content]: Executing Ad Skip...");
-    
-    // 1. All modern YouTube Skip Ad button CSS selectors
     const skipSelectors = [
         '.ytp-ad-skip-button',
         '.ytp-ad-skip-button-modern',
@@ -29,7 +27,6 @@ function executeAdSkip() {
         });
     }
 
-    // 2. Fast-forward video element if an ad is currently playing
     const isAdPlaying = document.querySelector('.ad-showing, .ad-interrupting, .ytp-ad-player-overlay, .ytp-ad-module');
     const video = document.querySelector('video');
     if (video && (isAdPlaying || !clicked)) {

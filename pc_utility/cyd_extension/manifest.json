@@ -3,16 +3,16 @@
   "name": "CYD Smart Desk - YouTube Ad Skipper",
   "version": "1.0",
   "description": "Companion Extension for CYD Smart Desk Dashboard - 100% Background Silent YouTube Ad Skipper",
-  "permissions": ["tabs"],
-  "host_permissions": ["https://www.youtube.com/*", "http://127.0.0.1:18888/*"],
+  "permissions": ["tabs", "scripting"],
+  "host_permissions": ["https://*.youtube.com/*", "http://127.0.0.1:18888/*"],
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
+      "matches": ["https://*.youtube.com/*"],
       "js": ["content.js"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }
