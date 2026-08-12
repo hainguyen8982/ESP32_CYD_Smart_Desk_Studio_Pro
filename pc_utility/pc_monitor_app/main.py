@@ -366,61 +366,27 @@ class SmartDeskStudioProApp(ctk.CTk):
                         try:
                             if sys.platform == "win32":
                                 user32 = ctypes.windll.user32
+                                # 1. Global Media Next Track (0xB0)
+                                user32.keybd_event(0xB0, 0, 0, 0)
+                                user32.keybd_event(0xB0, 0, 2, 0)
+                                time.sleep(0.03)
 
-                                # 1. Find Chrome / Edge / Firefox / YouTube window
-                                browser_hwnd = None
-                                def _enum_cb(hwnd, extra):
-                                    nonlocal browser_hwnd
-                                    if user32.IsWindowVisible(hwnd):
-                                        length = user32.GetWindowTextLengthW(hwnd)
-                                        if length > 0:
-                                            buff = ctypes.create_unicode_buffer(length + 1)
-                                            user32.GetWindowTextW(hwnd, buff, length + 1)
-                                            title = buff.value.lower()
-                                            if any(b in title for b in ["youtube", "chrome", "edge", "firefox", "brave", "opera"]):
-                                                browser_hwnd = hwnd
-                                                return False
-                                    return True
+                                # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+                                user32.keybd_event(0x10, 0, 0, 0) # Shift down
+                                user32.keybd_event(0x4E, 0, 0, 0) # N down
+                                user32.keybd_event(0x4E, 0, 2, 0) # N up
+                                user32.keybd_event(0x10, 0, 2, 0) # Shift up
+                                time.sleep(0.03)
 
-                                WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
-                                user32.EnumWindows(WNDENUMPROC(_enum_cb), 0)
-
-                                if browser_hwnd:
-                                    user32.SetForegroundWindow(browser_hwnd)
-                                    time.sleep(0.05)
-
-                                # 2. Calibrated Dual-Point Click Strategy for YouTube 'Bỏ qua ⏭️' Button
-                                # Point 1: X=58%, Y=56% (Hits 'Bỏ qua' button in Default View Mode inside video container, avoiding 84% X sidebar ad banner!)
-                                # Point 2: X=92%, Y=82% (Hits 'Bỏ qua' button in Theatre / Fullscreen View Mode)
-                                if browser_hwnd:
-                                    class RECT(ctypes.Structure):
-                                        _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
-                                                    ("right", ctypes.c_long), ("bottom", ctypes.c_long)]
-                                    rect = RECT()
-                                    user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
-                                    w = rect.right - rect.left
-                                    h = rect.bottom - rect.top
-
-                                    # Click 1: Default View Mode (58% X, 56% Y)
-                                    cx1 = rect.left + int(w * 0.58)
-                                    cy1 = rect.top + int(h * 0.56)
-                                    user32.SetCursorPos(cx1, cy1)
-                                    time.sleep(0.02)
-                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
-                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
-                                    time.sleep(0.04)
-
-                                    # Click 2: Theatre / Fullscreen View Mode (92% X, 82% Y)
-                                    cx2 = rect.left + int(w * 0.92)
-                                    cy2 = rect.top + int(h * 0.82)
-                                    user32.SetCursorPos(cx2, cy2)
-                                    time.sleep(0.02)
-                                    user32.mouse_event(0x0002, 0, 0, 0, 0)
-                                    user32.mouse_event(0x0004, 0, 0, 0, 0)
+                                # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+                                for _ in range(5):
+                                    user32.keybd_event(0x27, 0, 0, 0)
+                                    user32.keybd_event(0x27, 0, 2, 0)
+                                    time.sleep(0.015)
                         except Exception as ex:
-                            print(f"[Skip Ad Async Error]: {ex}")
+                            print(f"[Skip Ad Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: Calibrated Skip Ad Click Executed", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏭️ Media: Multi-phase Skip Ad Sequence (Old Project Code)", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
