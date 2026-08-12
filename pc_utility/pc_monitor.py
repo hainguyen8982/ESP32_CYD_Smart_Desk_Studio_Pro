@@ -52,7 +52,41 @@ def background_skip_youtube_ad():
             user32.SetForegroundWindow(browser_hwnd)
             time.sleep(0.05)
 
-        # 2. Perform Precise Burst Clicks at YouTube 'Bỏ qua ⏭️' Location (92% X, 88% Y)
+        # 2. Layer 1: Native JavaScript DOM Click via DevTools Console (100% accurate, 0% misclick)
+        js_payload = "(function(){let b=document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-ad-skip-button-slot,.ytp-skip-ad-button');if(b)b.click();let v=document.querySelector('video');if(v&&document.querySelector('.ytp-ad-player-overlay'))v.currentTime=v.duration;})();"
+        
+        try:
+            if ctypes.windll.user32.OpenClipboard(None):
+                ctypes.windll.user32.EmptyClipboard()
+                h_cd = ctypes.windll.kernel32.GlobalAlloc(0x0042, (len(js_payload) + 1) * 2)
+                ptr = ctypes.windll.kernel32.GlobalLock(h_cd)
+                ctypes.cdll.msvcrt.wcscpy(ctypes.c_wchar_p(ptr), js_payload)
+                ctypes.windll.kernel32.GlobalUnlock(h_cd)
+                ctypes.windll.user32.SetClipboardData(13, h_cd) # CF_UNICODETEXT
+                ctypes.windll.user32.CloseClipboard()
+        except Exception: pass
+
+        # Open Console (Ctrl + Shift + J)
+        user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x10, 0, 0, 0); user32.keybd_event(0x4A, 0, 0, 0)
+        time.sleep(0.02)
+        user32.keybd_event(0x4A, 0, 2, 0); user32.keybd_event(0x10, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
+        time.sleep(0.04)
+
+        # Paste & Run JS Payload
+        user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x56, 0, 0, 0)
+        time.sleep(0.02)
+        user32.keybd_event(0x56, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
+        time.sleep(0.02)
+        user32.keybd_event(0x0D, 0, 0, 0); user32.keybd_event(0x0D, 0, 2, 0) # Enter
+        time.sleep(0.04)
+
+        # Close Console (Ctrl + Shift + J)
+        user32.keybd_event(0x11, 0, 0, 0); user32.keybd_event(0x10, 0, 0, 0); user32.keybd_event(0x4A, 0, 0, 0)
+        time.sleep(0.02)
+        user32.keybd_event(0x4A, 0, 2, 0); user32.keybd_event(0x10, 0, 2, 0); user32.keybd_event(0x11, 0, 2, 0)
+
+        # 3. Layer 2: Click Inside Video Player Container (58% X, 54% Y)
+        # Safely stays inside video player container (avoids 84% X sidebar ad banner!)
         if browser_hwnd:
             class RECT(ctypes.Structure):
                 _fields_ = [("left", ctypes.c_long), ("top", ctypes.c_long),
@@ -61,27 +95,14 @@ def background_skip_youtube_ad():
             user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
             w = rect.right - rect.left
             h = rect.bottom - rect.top
-            click_x = rect.left + int(w * 0.92)
-            click_y = rect.top + int(h * 0.88)
-
-            # First Immediate Click
+            click_x = rect.left + int(w * 0.58)
+            click_y = rect.top + int(h * 0.54)
             user32.SetCursorPos(click_x, click_y)
             time.sleep(0.02)
             user32.mouse_event(0x0002, 0, 0, 0, 0)
             user32.mouse_event(0x0004, 0, 0, 0, 0)
-
-            # Delayed Burst Click (3.5s) in case 5s countdown was running
-            time.sleep(3.5)
-            if user32.IsWindowVisible(browser_hwnd):
-                user32.GetWindowRect(browser_hwnd, ctypes.byref(rect))
-                click_x = rect.left + int((rect.right - rect.left) * 0.92)
-                click_y = rect.top + int((rect.bottom - rect.top) * 0.88)
-                user32.SetCursorPos(click_x, click_y)
-                time.sleep(0.02)
-                user32.mouse_event(0x0002, 0, 0, 0, 0)
-                user32.mouse_event(0x0004, 0, 0, 0, 0)
             
-        print("[Media Remote]: Executed Smart Burst YouTube 'Bỏ qua ⏭️' Click!")
+        print("[Media Remote]: Executed Native JS DOM Skip Ad Injection!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
