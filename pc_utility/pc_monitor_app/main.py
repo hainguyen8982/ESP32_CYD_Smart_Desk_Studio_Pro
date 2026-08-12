@@ -660,21 +660,31 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid = ctk.CTkFrame(m_frame, fg_color="transparent")
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
+        assets_path = os.path.join(os.path.dirname(__file__), "assets")
+        def _get_icon(name):
+            p = os.path.join(assets_path, f"{name}.png")
+            if os.path.exists(p):
+                try:
+                    img = Image.open(p)
+                    return ctk.CTkImage(light_image=img, dark_image=img, size=(18, 18))
+                except Exception: pass
+            return None
+
         media_btns = [
-            ("│◄  PREV", "prev", "#818CF8"),
-            ("►❚❚  PLAY / PAUSE", "play_pause", "#39FF14"),
-            ("►│  NEXT", "next", "#818CF8"),
-            ("━  VOL -", "vol_down", "#FBBF24"),
-            ("✖  MUTE", "mute", "#F85149"),
-            ("✚  VOL +", "vol_up", "#FBBF24")
+            ("PREV", "prev", "#818CF8", _get_icon("prev")),
+            ("PLAY / PAUSE", "play_pause", "#39FF14", _get_icon("play_pause")),
+            ("NEXT", "next", "#818CF8", _get_icon("next")),
+            ("VOL -", "vol_down", "#FBBF24", _get_icon("vol_down")),
+            ("MUTE", "mute", "#F85149", _get_icon("mute")),
+            ("VOL +", "vol_up", "#FBBF24", _get_icon("vol_up"))
         ]
 
-        for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
+        for idx, (m_lbl, m_act, acc_c, m_img) in enumerate(media_btns):
             row = idx // 3; col = idx % 3
             mb = ctk.CTkButton(
-                m_btn_grid, text=m_lbl, font=ctk.CTkFont(size=13, weight="bold"),
+                m_btn_grid, text=f"  {m_lbl}", image=m_img, font=ctk.CTkFont(size=12, weight="bold"),
                 height=38, fg_color="#030712", hover_color="#1f2937", text_color=acc_c,
-                border_width=1, border_color="#1f2937",
+                border_width=1, border_color="#1f2937", compound="left",
                 command=lambda a=m_act: self.handle_media_action(a)
             )
             mb.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
