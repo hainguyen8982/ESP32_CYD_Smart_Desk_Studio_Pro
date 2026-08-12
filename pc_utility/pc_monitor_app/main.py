@@ -661,12 +661,12 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
         media_btns = [
-            ("⏮  PREV", "prev", "#818CF8"),
-            ("⏯  PLAY / PAUSE", "play_pause", "#39FF14"),
-            ("⏭  NEXT", "next", "#818CF8"),
-            ("🔉  VOL -", "vol_down", "#FBBF24"),
-            ("🔇  MUTE", "mute", "#F85149"),
-            ("🔊  VOL +", "vol_up", "#FBBF24")
+            ("│◄  PREV", "prev", "#818CF8"),
+            ("►❚❚  PLAY / PAUSE", "play_pause", "#39FF14"),
+            ("►│  NEXT", "next", "#818CF8"),
+            ("━  VOL -", "vol_down", "#FBBF24"),
+            ("✖  MUTE", "mute", "#F85149"),
+            ("✚  VOL +", "vol_up", "#FBBF24")
         ]
 
         for idx, (m_lbl, m_act, acc_c) in enumerate(media_btns):
