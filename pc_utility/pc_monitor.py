@@ -24,7 +24,7 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Targeted Ad Fast-Forward & Skip Sequence!"""
+    """Background YouTube Ad Skipper — Targeted Ad Fast-Forward Sequence!"""
     if sys.platform != "win32":
         return
     try:
@@ -39,13 +39,8 @@ def background_skip_youtube_ad():
         # 2. Fast forward 10s via 'L' key (0x4C)
         user32.keybd_event(0x4C, 0, 0, 0)
         user32.keybd_event(0x4C, 0, 2, 0)
-        time.sleep(0.02)
-
-        # 3. Trigger focused Skip Ad button via Space (0x20)
-        user32.keybd_event(0x20, 0, 0, 0)
-        user32.keybd_event(0x20, 0, 2, 0)
             
-        print("[Media Remote]: Executed YouTube Ad Skip & Fast-Forward Sequence!")
+        print("[Media Remote]: Executed YouTube Ad Fast-Forward Sequence!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 

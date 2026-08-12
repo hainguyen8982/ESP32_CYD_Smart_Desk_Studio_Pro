@@ -365,22 +365,18 @@ class SmartDeskStudioProApp(ctk.CTk):
                     def _async_skip():
                         try:
                             user32 = ctypes.windll.user32
-                            # 1. Fast-Forward YouTube Ad (+20s via Right Arrow 4 times)
+                            # Fast-Forward YouTube Ad (+20s via Right Arrow 4 times)
                             for _ in range(4):
                                 user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
                                 user32.keybd_event(0x27, 0, 2, 0)
                                 time.sleep(0.015)
-                            # 2. Fast-Forward YouTube Ad via 'L' key (+10s)
+                            # Fast-Forward YouTube Ad via 'L' key (+10s)
                             user32.keybd_event(0x4C, 0, 0, 0) # 'L' key
                             user32.keybd_event(0x4C, 0, 2, 0)
-                            time.sleep(0.02)
-                            # 3. Space key to click focused Skip Ad button on YouTube
-                            user32.keybd_event(0x20, 0, 0, 0) # Space
-                            user32.keybd_event(0x20, 0, 2, 0)
                         except Exception as ex:
                             print(f"[Skip Ad Async Error]: {ex}")
                     threading.Thread(target=_async_skip, daemon=True).start()
-                    self.status_lbl.configure(text="⏩ Media: YouTube Ad Fast-Forward & Skip Executed", text_color="#FFA726")
+                    self.status_lbl.configure(text="⏩ Media: YouTube Ad Fast-Forward Executed", text_color="#FFA726")
             except Exception as e:
                 print(f"[Media] Keybd Event Error: {e}")
 
