@@ -24,16 +24,38 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Keyboard Fast-Forward Seek (No Mouse Clicks)!"""
-    if sys.platform != "win32":
-        return
+    """Background YouTube Ad Skipper — CDP Port 9222 & Fast-Forward Fallback!"""
     try:
-        user32 = ctypes.windll.user32
-        for _ in range(8):
-            user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
-            user32.keybd_event(0x27, 0, 2, 0)
-            time.sleep(0.015)
-        print("[Media Remote]: Executed Ad Fast-Forward Seek (No Mouse Clicks)!")
+        # 1. Check Chrome Remote Debugging Protocol (CDP Port 9222) for 100% silent DOM skip
+        cdp_success = False
+        try:
+            import urllib.request, json
+            req = urllib.request.urlopen("http://localhost:9222/json", timeout=0.3)
+            tabs = json.loads(req.read().decode('utf-8'))
+            for t in tabs:
+                if "youtube.com" in t.get("url", "").lower():
+                    ws_url = t.get("webSocketDebuggerUrl")
+                    if ws_url:
+                        import websockets, asyncio
+                        async def _cdp_click():
+                            async with websockets.connect(ws_url) as ws:
+                                js = "document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-skip-ad-button')?.click();"
+                                cmd = {"id": 1, "method": "Runtime.evaluate", "params": {"expression": js}}
+                                await ws.send(json.dumps(cmd))
+                        asyncio.run(_cdp_click())
+                        cdp_success = True
+                        print("[Media Remote]: Executed CDP Port 9222 Native DOM Skip Ad!")
+                        break
+        except Exception: pass
+
+        # 2. Fallback: Fast-forward seek (+40s) without mouse clicks or window activation
+        if not cdp_success and sys.platform == "win32":
+            user32 = ctypes.windll.user32
+            for _ in range(8):
+                user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
+                user32.keybd_event(0x27, 0, 2, 0)
+                time.sleep(0.015)
+            print("[Media Remote]: Executed Ad Fast-Forward Seek!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
