@@ -1,4 +1,4 @@
-// Service worker runs in background extension context (bypasses Mixed Content Security restrictions)
+// Service worker runs in extension background context
 console.log("[CYD Extension Background]: Service Worker Active!");
 
 async function pollCYDServer() {
@@ -8,9 +8,12 @@ async function pollCYDServer() {
             const data = await response.json();
             if (data.skip === true) {
                 console.log("[CYD Extension Background]: Received Skip Ad Command from CYD Dashboard!");
-                const tabs = await chrome.tabs.query({ url: "https://www.youtube.com/*" });
+                const tabs = await chrome.tabs.query({});
                 tabs.forEach(tab => {
-                    chrome.tabs.sendMessage(tab.id, { action: "click_skip" }).catch(() => {});
+                    if (tab.url && tab.url.includes("youtube.com")) {
+                        console.log("[CYD Extension Background]: Forwarding click_skip to YouTube tab ID:", tab.id);
+                        chrome.tabs.sendMessage(tab.id, { action: "click_skip" }).catch(() => {});
+                    }
                 });
             }
         }
@@ -19,4 +22,4 @@ async function pollCYDServer() {
     }
 }
 
-setInterval(pollCYDServer, 350);
+setInterval(pollCYDServer, 300);
