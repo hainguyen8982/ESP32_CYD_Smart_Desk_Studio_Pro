@@ -24,49 +24,31 @@ VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
 def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — Pure Python Socket CDP 9222 & Fast-Forward Fallback!"""
+    """Background YouTube Ad Skipper — MULTI-PHASE 100% Skip Sequence!"""
+    if sys.platform != "win32":
+        return
     try:
-        # 1. Pure Python Standard Library Chrome CDP WebSocket Skip (0% External Packages, 100% Silent)
-        cdp_success = False
-        try:
-            import urllib.request, json, socket, base64, os
-            req = urllib.request.urlopen("http://localhost:9222/json", timeout=0.3)
-            tabs = json.loads(req.read().decode('utf-8'))
-            for t in tabs:
-                if "youtube.com" in t.get("url", "").lower():
-                    ws_url = t.get("webSocketDebuggerUrl")
-                    if ws_url:
-                        url_parts = ws_url.replace("ws://", "").split("/")
-                        host_port = url_parts[0].split(":")
-                        host, port, path = host_port[0], int(host_port[1]), "/" + "/".join(url_parts[1:])
-                        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                        s.settimeout(1.0)
-                        s.connect((host, port))
-                        sec_key = base64.b64encode(os.urandom(16)).decode('utf-8')
-                        s.sendall((f"GET {path} HTTP/1.1\r\nHost: {host}:{port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: {sec_key}\r\nSec-WebSocket-Version: 13\r\n\r\n").encode('utf-8'))
-                        if b"101" in s.recv(1024):
-                            js = "document.querySelector('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,.ytp-skip-ad-button')?.click();"
-                            cmd = json.dumps({"id": 1, "method": "Runtime.evaluate", "params": {"expression": js}}).encode('utf-8')
-                            mask = os.urandom(4)
-                            frame = bytearray([0x81, 0x80 | len(cmd)])
-                            frame.extend(mask)
-                            for i, b in enumerate(cmd): frame.append(b ^ mask[i % 4])
-                            s.sendall(frame)
-                            time.sleep(0.04)
-                            cdp_success = True
-                            print("[Media Remote]: Executed Pure WS CDP Port 9222 Native DOM Skip Ad!")
-                        s.close()
-                        break
-        except Exception: pass
+        user32 = ctypes.windll.user32
+        
+        # 1. Global Media Next Track (0xB0)
+        user32.keybd_event(0xB0, 0, 0, 0)
+        user32.keybd_event(0xB0, 0, 2, 0)
+        time.sleep(0.03)
 
-        # 2. Fallback: Fast-forward seek (+40s) without mouse clicks or window activation
-        if not cdp_success and sys.platform == "win32":
-            user32 = ctypes.windll.user32
-            for _ in range(8):
-                user32.keybd_event(0x27, 0, 0, 0) # Right Arrow
-                user32.keybd_event(0x27, 0, 2, 0)
-                time.sleep(0.015)
-            print("[Media Remote]: Executed Ad Fast-Forward Seek!")
+        # 2. Shift + N (YouTube Native Shortcut for Next / Skip Ad)
+        user32.keybd_event(0x10, 0, 0, 0) # Shift down
+        user32.keybd_event(0x4E, 0, 0, 0) # N down
+        user32.keybd_event(0x4E, 0, 2, 0) # N up
+        user32.keybd_event(0x10, 0, 2, 0) # Shift up
+        time.sleep(0.03)
+
+        # 3. 5x Right Arrow (0x27) (Fast forward 25s for unskippable ads)
+        for _ in range(5):
+            user32.keybd_event(0x27, 0, 0, 0)
+            user32.keybd_event(0x27, 0, 2, 0)
+            time.sleep(0.015)
+            
+        print("[Media Remote]: Executed Multi-phase YouTube Ad Skip Sequence!")
     except Exception as e:
         print(f"[Skip Ad Error]: {e}")
 
