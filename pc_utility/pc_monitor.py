@@ -23,64 +23,6 @@ VK_VOLUME_MUTE      = 0xAD
 VK_VOLUME_DOWN      = 0xAE
 VK_VOLUME_UP        = 0xAF
 
-# --- Local HTTP Bridge Server for CYD Chrome Extension (Port 18888) ---
-import http.server
-import socketserver
-import threading
-
-_cyd_skip_requested = False
-
-class CYDExtensionHTTPHandler(http.server.BaseHTTPRequestHandler):
-    def log_message(self, format, *args):
-        pass
-        
-    def do_GET(self):
-        global _cyd_skip_requested
-        if self.path.startswith("/poll"):
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            resp = {"skip": _cyd_skip_requested}
-            if _cyd_skip_requested:
-                _cyd_skip_requested = False
-            self.wfile.write(json.dumps(resp).encode("utf-8"))
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-def free_port(port=18888):
-    for proc in psutil.process_iter(['pid', 'name']):
-        try:
-            for conn in proc.net_connections(kind='inet'):
-                if conn.laddr.port == port and proc.info['pid'] != os.getpid():
-                    proc.kill()
-        except Exception: pass
-
-def start_cyd_extension_bridge_server():
-    def _run():
-        free_port(18888)
-        try:
-            socketserver.TCPServer.allow_reuse_address = True
-            with socketserver.TCPServer(("127.0.0.1", 18888), CYDExtensionHTTPHandler) as httpd:
-                httpd.serve_forever()
-        except Exception as e:
-            pass
-    t = threading.Thread(target=_run, daemon=True)
-    t.start()
-
-try:
-    start_cyd_extension_bridge_server()
-except Exception: pass
-
-def background_skip_youtube_ad():
-    """Background YouTube Ad Skipper — CYD Extension Bridge Direct Trigger!"""
-    global _cyd_skip_requested
-    _cyd_skip_requested = True
-    print("[Media Remote]: Triggered CYD Extension Background Ad Skip!")
-
-last_media_time = 0.0
-
 def handle_media_action(action):
     global last_media_time
     if not action:
@@ -101,12 +43,8 @@ def handle_media_action(action):
         vk = VK_VOLUME_UP
     elif act in ["vol_down", "volume_down"]:
         vk = VK_VOLUME_DOWN
-    elif act in ["mute"]:
+    elif act in ["mute", "skip_ad", "skipad", "skip"]:
         vk = VK_VOLUME_MUTE
-    elif act in ["skip_ad", "skipad", "skip"]:
-        last_media_time = now
-        background_skip_youtube_ad()
-        return
 
     if vk is not None and sys.platform == "win32":
         try:
