@@ -5,7 +5,6 @@
 #include "Theme.h"
 #include "DisplayManager.h"
 #include "TouchManager.h"
-#include "DynamicSkinManager.h"
 #include <ESPmDNS.h>
 
 extern DisplayManager display;
@@ -237,7 +236,7 @@ static float calcCurrencyRate(const char* code, float vndUsd, JsonDocument* eDoc
 }
 
 void NetworkManager::setupWebRoutes() {
-    // Enable CORS for PC Theme Designer Web App & Chrome Private Network Access
+    // Enable CORS for PC Web App & Chrome Private Network Access
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "*");
@@ -455,26 +454,7 @@ void NetworkManager::setupWebRoutes() {
         request->send(200, "application/json", "{\"status\":\"ok\"}");
     });
 
-    // Live Skin Update API (POST /api/skin/update)
-    server.on("/api/skin/update", HTTP_POST, [](AsyncWebServerRequest *request) {}, NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            char* buf = (char*)malloc(len + 1);
-            if (!buf) {
-                sendCORSResponse(request, 500, "{\"status\":\"out of memory\"}");
-                return;
-            }
-            memcpy(buf, data, len);
-            buf[len] = '\0';
-            String payload = String(buf);
-            free(buf);
 
-            if (g_skinMgr.parseAndSaveSkinJSON(payload)) {
-                display.refreshDisplay();
-                sendCORSResponse(request, 200, "{\"status\":\"ok\",\"message\":\"Skin updated\"}");
-            } else {
-                sendCORSResponse(request, 400, "{\"status\":\"error\",\"message\":\"Invalid skin JSON\"}");
-            }
-        });
 
     // Alarm API
     server.on("/api/alarm", HTTP_GET, [](AsyncWebServerRequest *request) {

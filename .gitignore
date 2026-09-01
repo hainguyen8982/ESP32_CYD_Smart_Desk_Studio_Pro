@@ -7,3 +7,9 @@
 __pycache__/
 *.pyc
 *.pyo
+*.log
+
+# PyInstaller & Installer Build Artifacts
+build/
+dist/
+installer_output/

@@ -7,7 +7,6 @@
 #include "PCMonitor.h"
 #include "DeskUtilities.h"
 #include "Theme.h"
-#include "DynamicSkinManager.h"
 #include <time.h>
 
 // BOOT button (GPIO 0) long-press tracking
@@ -15,6 +14,7 @@ static unsigned long bootBtnPressStart = 0;
 static bool bootBtnWasPressed = false;
 
 void setup() {
+    Serial.setRxBufferSize(8192);
     Serial.begin(115200);
     delay(200);
     Serial.println("\n=============================================");
@@ -27,7 +27,6 @@ void setup() {
     touch.begin();
     pcMonitor.begin();
     deskUtils.begin();
-    g_skinMgr.begin();
 
     // BOOT button as input (has external pull-up on CYD boards)
     pinMode(PIN_BOOT_BTN, INPUT_PULLUP);
@@ -212,17 +211,17 @@ void loop() {
                 Serial.println("[Touch] Home");
 
             } else if (display.getCurrentPage() == 2 && evt.x >= 180 && evt.x <= 310 && evt.y >= 54 && evt.y <= 134) {
-                // Page 2: Tap Gold Chart -> Open SJC Gold Fullscreen Detail Chart
+                // Page 2: Tap Gold Chart -> Open SJC Gold Fullscreen Detail Chart Modal
                 display.openDetailModal(MODAL_GOLD_SJC);
                 Serial.println("[Touch] Finance -> Opened SJC Gold Detail Chart Modal");
 
             } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 155 && evt.y <= 186) {
-                // Page 2: Tap Currency 1 Chart -> Open Currency 1 Detail Chart
+                // Page 2: Tap Currency 1 Chart -> Open Currency 1 Detail Chart Modal
                 display.openDetailModal(MODAL_CURRENCY_1);
                 Serial.println("[Touch] Finance -> Opened Currency 1 Detail Chart Modal");
 
-            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 187 && evt.y <= 220) {
-                // Page 2: Tap Currency 2 Chart -> Open Currency 2 Detail Chart
+            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 220) {
+                // Page 2: Tap Currency 2 Chart -> Open Currency 2 Detail Chart Modal
                 display.openDetailModal(MODAL_CURRENCY_2);
                 Serial.println("[Touch] Finance -> Opened Currency 2 Detail Chart Modal");
 

@@ -89,17 +89,6 @@ def create_icons():
     draw.polygon([(26, 20), (40, 26), (26, 32)], fill=color)
     img.save(os.path.join(assets_dir, "tab_live.png"))
 
-    # 10. TAB SKIN DESIGNER STUDIO ICON (#F472B6) - Paint Palette / Brush
-    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    color = (244, 114, 182, 255)
-    draw.ellipse([8, 10, 56, 54], fill=color)
-    draw.ellipse([14, 16, 50, 48], fill=(15, 23, 42, 255))
-    draw.ellipse([20, 22, 28, 30], fill=(56, 189, 248, 255))
-    draw.ellipse([34, 18, 42, 26], fill=(57, 255, 20, 255))
-    draw.ellipse([42, 32, 50, 40], fill=(251, 191, 36, 255))
-    draw.ellipse([18, 36, 26, 44], fill=color)
-    img.save(os.path.join(assets_dir, "tab_designer.png"))
 
     # 11. TAB SYSTEM SETTINGS ICON (#FBBF24) - Gear Cogwheel
     import math
@@ -114,8 +103,26 @@ def create_icons():
     draw.ellipse([14, 14, 50, 50], fill=color)
     draw.ellipse([24, 24, 40, 40], fill=(15, 23, 42, 255))
     img.save(os.path.join(assets_dir, "tab_settings.png"))
+
+    # 12. APP ICON (256x256 RGBA PNG & Multi-size ICO) - Futuristic Desk Studio Display
+    app_img = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
+    d = ImageDraw.Draw(app_img)
+    # Dark rounded background tile
+    d.rounded_rectangle([12, 12, 244, 244], radius=44, fill=(15, 23, 42, 255), outline=(56, 189, 248, 255), width=6)
+    # Screen monitor frame
+    d.rounded_rectangle([36, 44, 220, 172], radius=16, fill=(30, 41, 59, 255), outline=(129, 140, 248, 255), width=4)
+    # Inner display glass grid / telemetry lines
+    d.line([(56, 108), (100, 84), (140, 124), (200, 76)], fill=(56, 189, 248, 255), width=6)
+    d.ellipse([194, 70, 206, 82], fill=(57, 255, 20, 255))
+    # Monitor Stand Base
+    d.rectangle([114, 172, 142, 200], fill=(100, 116, 139, 255))
+    d.rounded_rectangle([80, 200, 176, 216], radius=6, fill=(148, 163, 184, 255))
     
-    print("PNG Media, Port & Tab Icons generated successfully in assets/!")
+    app_img.save(os.path.join(assets_dir, "app_icon.png"))
+    app_img.save(os.path.join(assets_dir, "app_icon.ico"), format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+
+    print("PNG Media, Port, Tab & App Icons (ICO/PNG) generated successfully in assets/!")
 
 if __name__ == "__main__":
     create_icons()
+

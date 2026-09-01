@@ -16,6 +16,62 @@ import customtkinter as ctk
 from PIL import Image, ImageDraw, ImageTk
 import socket
 import ctypes
+try:
+    import winreg
+except ImportError:
+    winreg = None
+
+APP_REG_KEY_NAME = "SmartDeskStudioPro"
+
+def get_resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    if getattr(sys, 'frozen', False):
+        base_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, relative_path)
+
+def is_windows_autostart_enabled():
+    if sys.platform != "win32" or winreg is None:
+        return False
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0, winreg.KEY_READ
+        )
+        val, _ = winreg.QueryValueEx(key, APP_REG_KEY_NAME)
+        winreg.CloseKey(key)
+        return bool(val)
+    except Exception:
+        return False
+
+def set_windows_autostart(enable: bool):
+    if sys.platform != "win32" or winreg is None:
+        return False
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0, winreg.KEY_SET_VALUE
+        )
+        if enable:
+            if getattr(sys, 'frozen', False):
+                exe_path = f'"{sys.executable}"'
+            else:
+                script_path = os.path.abspath(sys.argv[0])
+                exe_path = f'"{sys.executable}" "{script_path}"'
+            winreg.SetValueEx(key, APP_REG_KEY_NAME, 0, winreg.REG_SZ, exe_path)
+        else:
+            try:
+                winreg.DeleteValue(key, APP_REG_KEY_NAME)
+            except FileNotFoundError:
+                pass
+        winreg.CloseKey(key)
+        return True
+    except Exception as e:
+        print(f"[Windows AutoStart Error] {e}")
+        return False
 
 def remove_vietnamese_accents(text):
     if not text:
@@ -24,6 +80,38 @@ def remove_vietnamese_accents(text):
     s = unicodedata.normalize('NFD', s)
     s = ''.join(c for c in s if unicodedata.category(c) != 'Mn')
     return unicodedata.normalize('NFC', s)
+
+def create_vector_icon(name, color="#38BDF8", size=16):
+    """Draw crisp anti-aliased 32bit RGBA vector icons for CTkButtons using PIL ImageDraw."""
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    try:
+        h = color.lstrip('#')
+        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        fill_col = rgb + (255,)
+    except Exception:
+        fill_col = (56, 189, 248, 255)
+
+    if name == "pin":
+        draw.ellipse([size*0.2, size*0.08, size*0.8, size*0.62], fill=fill_col)
+        draw.polygon([(size*0.24, size*0.48), (size*0.76, size*0.48), (size*0.5, size*0.95)], fill=fill_col)
+        draw.ellipse([size*0.38, size*0.25, size*0.62, size*0.45], fill=(3, 7, 18, 255))
+    elif name == "sun":
+        cx, cy, r = size*0.5, size*0.5, size*0.26
+        draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill=fill_col)
+        w = max(1, int(size*0.09))
+        draw.line([cx, 1, cx, size*0.18], fill=fill_col, width=w)
+        draw.line([cx, size*0.82, cx, size-1], fill=fill_col, width=w)
+        draw.line([1, cy, size*0.18, cy], fill=fill_col, width=w)
+        draw.line([size*0.82, cy, size-1, cy], fill=fill_col, width=w)
+    elif name == "fx":
+        w = max(2, int(size*0.11))
+        draw.line([size*0.12, size*0.32, size*0.75, size*0.32], fill=fill_col, width=w)
+        draw.polygon([(size*0.58, size*0.16), (size*0.88, size*0.32), (size*0.58, size*0.48)], fill=fill_col)
+        draw.line([size*0.25, size*0.68, size*0.88, size*0.68], fill=fill_col, width=w)
+        draw.polygon([(size*0.42, size*0.52), (size*0.12, size*0.68), (size*0.42, size*0.84)], fill=fill_col)
+
+    return ctk.CTkImage(light_image=img, dark_image=img, size=(size, size))
 
 # Windows Virtual Key Definitions for Media Controls
 VK_MEDIA_NEXT_TRACK = 0xB0
@@ -107,11 +195,42 @@ ELEMENT_PRESETS = [
 ]
 
 COLOR_PALETTES = {
-    "Cyberpunk Neon": {"accent": "#00F5FF", "sec": "#FF00CC", "bg": "#140026", "line": "#39FF14"},
-    "Nordic Slate": {"accent": "#38BDF8", "sec": "#94A3B8", "bg": "#0F172A", "line": "#10B981"},
-    "Luxury Gold": {"accent": "#FFD700", "sec": "#FFF8DC", "bg": "#0B0B0E", "line": "#FFA500"},
-    "Retro CRT": {"accent": "#00FF41", "sec": "#009926", "bg": "#000000", "line": "#00FF41"}
+    "Ocean Dark 🔵": {"accent": "#38BDF8", "sec": "#0284C7", "bg": "#0F172A", "line": "#00F5FF"},
+    "Cyberpunk Neon 🟣": {"accent": "#00F5FF", "sec": "#FF00CC", "bg": "#140026", "line": "#39FF14"},
+    "Forest Slate 🟢": {"accent": "#10B981", "sec": "#059669", "bg": "#064E3B", "line": "#34D399"},
+    "Cherry Blossom 🌸": {"accent": "#F472B6", "sec": "#DB2777", "bg": "#4C0519", "line": "#FB7185"},
+    "Light Day ☀️": {"accent": "#0284C7", "sec": "#0369A1", "bg": "#F8FAFC", "line": "#38BDF8"},
+    "Retro Green 📟": {"accent": "#00FF41", "sec": "#009926", "bg": "#000000", "line": "#00FF41"}
 }
+
+ELEMENT_CATEGORIES = [
+    ("🕒 Thời gian & Ngày tháng", [
+        ("Status Bar Time", "status_time", "14:35", 55, 14, "#FFFFFF", "mono"),
+        ("Digital Clock Digits", "matrix_text", "14:35:08", 170, 35, "#00F5FF", "dot_matrix"),
+        ("Solar & Lunar Date", "text", "Mon 10/08 • 18/07 Lunar", 170, 18, "#8B949E", "default"),
+        ("Page Counter Index", "text", "0/7", 30, 14, "#8B949E", "mono"),
+    ]),
+    ("📡 Hệ thống & Kết nối", [
+        ("WiFi Signal Icon", "wifi_signal", "RSSI -54dBm", 55, 14, "#00E676", "mono"),
+        ("WiFi IP Address Text", "text", "192.168.1.13", 75, 14, "#00E676", "mono"),
+        ("PC Serial Status Icon", "text", "[USB Connected]", 45, 14, "#38BDF8", "mono"),
+        ("Page Title & Icon", "text", "Weather Clock", 110, 14, "#FFD700", "default"),
+    ]),
+    ("🌤️ Thời tiết & Cảm biến", [
+        ("Weather City & Temp", "text", "28°C Hanoi", 110, 30, "#FFFFFF", "default"),
+        ("Hardware Line Chart", "line_chart", "chart", 300, 55, "#CC00FF", "mono"),
+    ]),
+    ("🎨 Đồ họa Dot-Matrix", [
+        ("Dot Matrix Sun Icon", "pixel_sun", "sun", 50, 50, "#FFCC00", "dot_matrix"),
+        ("Dot Matrix Sunrise Icon", "pixel_sunrise", "sunrise", 50, 50, "#FF9900", "dot_matrix"),
+        ("Dot Matrix Red Divider", "dot_matrix_divider", "line", 290, 10, "#FF3333", "dot_matrix"),
+    ]),
+    ("📐 Đồ họa & Đường kẻ", [
+        ("Đường kẻ phân cách (Line)", "line", "line", 300, 2, "#1f2937", "default"),
+        ("Khung hình chữ nhật (Box)", "rectangle", "box", 140, 60, "#111827", "default"),
+        ("Hình tròn / Dot (Circle)", "circle", "dot", 20, 20, "#00F5FF", "default"),
+    ])
+]
 
 VN_CITIES = [
     ("Hanoi", "Hà Nội"), ("Ho Chi Minh", "TP. Hồ Chí Minh"), ("Da Nang", "Đà Nẵng"),
@@ -225,9 +344,17 @@ class SmartDeskStudioProApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("👑 Smart Desk Studio Pro — Unified Dashboard & Skin Designer")
+        self.title("👑 Smart Desk Studio Pro — PC Control Center")
         self.geometry("1400x920")
         self.resizable(True, True)
+
+        # Set app window icon if available
+        ico_path = get_resource_path(os.path.join("assets", "app_icon.ico"))
+        if os.path.exists(ico_path):
+            try:
+                self.iconbitmap(ico_path)
+            except Exception:
+                pass
 
         # Deep Obsidian Charcoal Theme (#0b0f19)
         self.configure(fg_color="#0b0f19")
@@ -238,6 +365,12 @@ class SmartDeskStudioProApp(ctk.CTk):
         # Robust Window Maximization for CustomTkinter on Windows
         self.after(100, lambda: self._maximize_window())
         self.after(300, lambda: self._maximize_window())
+
+        # Global mousewheel listener to close city dropdown instantly when scrolling anywhere in app
+        try:
+            self.bind_all("<MouseWheel>", self._on_global_mousewheel, add="+")
+        except Exception:
+            pass
 
         global app_instance
         app_instance = self
@@ -256,21 +389,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         # Thread-safe control dictionary for merging commands into Serial JSON stream
         self.pending_control = {}
 
-        self.current_page_idx = 0
-        self.selected_elem_id = None
-        self.drag_data = {"x": 0, "y": 0, "elem": None, "handle": None}
-        self.skin_data = {
-            "skin_name": "Unified Studio Skin",
-            "author": "Smart Desk Studio Pro",
-            "version": "2.5",
-            "canvas": {"width": CANVAS_WIDTH, "height": CANVAS_HEIGHT, "bg_color": "#000000"},
-            "pages": {}
-        }
-        for i in range(8):
-            self.skin_data["pages"][str(i)] = {"name": PAGE_NAMES[i], "elements": []}
-
         self.create_unified_ui()
-        self.bind_keyboard_shortcuts()
         self.refresh_com_ports()
 
         self.stream_thread = threading.Thread(target=self.stream_loop, daemon=True)
@@ -313,13 +432,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         except Exception:
             pass
 
-    def bind_keyboard_shortcuts(self):
-        self.bind("<Delete>", lambda e: self.delete_selected_element())
-        self.bind("<BackSpace>", lambda e: self.delete_selected_element())
-        self.bind("<Up>", lambda e: self.nudge_selected_element(0, -1))
-        self.bind("<Down>", lambda e: self.nudge_selected_element(0, 1))
-        self.bind("<Left>", lambda e: self.nudge_selected_element(-1, 0))
-        self.bind("<Right>", lambda e: self.nudge_selected_element(1, 0))
+
 
     def handle_media_action(self, action):
         """Execute Windows Virtual Key Event for Media Control with deduplication guard."""
@@ -390,8 +503,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             print(f"[UDP] Listener start error: {e}")
 
     def get_icon(self, name, size=(18, 18)):
-        assets_path = os.path.join(os.path.dirname(__file__), "assets")
-        p = os.path.join(assets_path, f"{name}.png")
+        p = get_resource_path(os.path.join("assets", f"{name}.png"))
         if os.path.exists(p):
             try:
                 img = Image.open(p)
@@ -444,7 +556,6 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.tab_hdr_frame.pack(fill="x", pady=(0, 8))
 
         img_tab_live = self.get_icon("tab_live", size=(18, 18))
-        img_tab_designer = self.get_icon("tab_designer", size=(18, 18))
         img_tab_settings = self.get_icon("tab_settings", size=(18, 18))
 
         self.tab_btn_live = ctk.CTkButton(
@@ -453,13 +564,6 @@ class SmartDeskStudioProApp(ctk.CTk):
             command=lambda: self.switch_main_tab("live")
         )
         self.tab_btn_live.pack(side="left", fill="x", expand=True, padx=4, pady=4)
-
-        self.tab_btn_designer = ctk.CTkButton(
-            self.tab_hdr_frame, text="  Skin Designer Studio", image=img_tab_designer, compound="left",
-            font=ctk.CTkFont(size=13, weight="bold"), height=36, fg_color="transparent", hover_color="#374151", text_color="#94a3b8",
-            command=lambda: self.switch_main_tab("designer")
-        )
-        self.tab_btn_designer.pack(side="left", fill="x", expand=True, padx=4, pady=4)
 
         self.tab_btn_settings = ctk.CTkButton(
             self.tab_hdr_frame, text="  System Settings", image=img_tab_settings, compound="left",
@@ -473,31 +577,23 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.body_stack.pack(fill="both", expand=True)
 
         self.view_live = ctk.CTkFrame(self.body_stack, fg_color="transparent")
-        self.view_designer = ctk.CTkFrame(self.body_stack, fg_color="transparent")
         self.view_settings = ctk.CTkFrame(self.body_stack, fg_color="transparent")
 
         self.view_live.pack(fill="both", expand=True)
 
         self.build_tab_live()
-        self.build_tab_designer()
         self.build_tab_settings()
 
     def switch_main_tab(self, tab_name):
         self.view_live.pack_forget()
-        self.view_designer.pack_forget()
         self.view_settings.pack_forget()
 
         self.tab_btn_live.configure(fg_color="transparent", text_color="#94a3b8")
-        self.tab_btn_designer.configure(fg_color="transparent", text_color="#94a3b8")
         self.tab_btn_settings.configure(fg_color="transparent", text_color="#94a3b8")
 
         if tab_name == "live":
             self.view_live.pack(fill="both", expand=True)
             self.tab_btn_live.configure(fg_color="#1f2937", text_color="#38bdf8")
-        elif tab_name == "designer":
-            self.view_designer.pack(fill="both", expand=True)
-            self.tab_btn_designer.configure(fg_color="#1f2937", text_color="#38bdf8")
-            self.redraw_canvas()
         elif tab_name == "settings":
             self.view_settings.pack(fill="both", expand=True)
             self.tab_btn_settings.configure(fg_color="#1f2937", text_color="#38bdf8")
@@ -523,10 +619,19 @@ class SmartDeskStudioProApp(ctk.CTk):
         container.pack(fill="both", expand=True)
 
         col_left = ctk.CTkScrollableFrame(container, fg_color="transparent")
-        col_left.pack(side="left", fill="both", expand=True, padx=(0, 8))
+        col_left.pack(fill="both", expand=True)
+        self.col_left = col_left
 
-        col_right = ctk.CTkFrame(container, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=540)
-        col_right.pack(side="right", fill="both", expand=False, padx=(0, 0))
+        # Auto-close dropdown popup whenever user scrolls main application window
+        def _on_main_scroll(event=None):
+            self.close_city_dropdown()
+
+        self.col_left.bind("<MouseWheel>", _on_main_scroll, add="+")
+        try:
+            if hasattr(self.col_left, '_parent_canvas'):
+                self.col_left._parent_canvas.bind("<MouseWheel>", _on_main_scroll, add="+")
+        except Exception:
+            pass
 
         # 1. Telemetry Cards
         tele_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -569,7 +674,7 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.bar_net_up = ctk.CTkProgressBar(up_box, height=5, progress_color="#FFA726", fg_color="#1f2937")
         self.bar_net_up.set(0.0); self.bar_net_up.pack(fill="x", padx=10, pady=(0, 8))
 
-        for c_i in range(4): m_grid.columnconfigure(c_i, weight=1)
+        for c_i in range(4): m_grid.columnconfigure(c_i, weight=1, uniform="tele_cols")
 
         # 2. Rich Page Switcher Grid
         p_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -594,7 +699,7 @@ class SmartDeskStudioProApp(ctk.CTk):
             badge_lbl.pack(side="left", padx=8, pady=6)
 
             txt_inner = ctk.CTkFrame(btn_box, fg_color="transparent")
-            txt_inner.pack(side="left", fill="x", expand=True, padx=2, pady=4)
+            txt_inner.pack(side="left", fill="x", expand=True, padx=(2, 6), pady=4)
 
             title_lbl = ctk.CTkLabel(txt_inner, text=f"{p_ico}  {p_title}", font=ctk.CTkFont(size=13, weight="bold"), text_color="#FFFFFF", anchor="w")
             title_lbl.pack(anchor="w", pady=0)
@@ -609,7 +714,7 @@ class SmartDeskStudioProApp(ctk.CTk):
 
             self.page_btns.append(btn_box)
 
-        for col_i in range(2): p_grid.columnconfigure(col_i, weight=1)
+        for col_i in range(2): p_grid.columnconfigure(col_i, weight=1, uniform="p_cols")
 
         self._highlight_page_button(0)
 
@@ -642,39 +747,58 @@ class SmartDeskStudioProApp(ctk.CTk):
             t_btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
             self.theme_btns[tkey] = (t_btn, acc_col)
 
-        for col_i in range(3): th_grid.columnconfigure(col_i, weight=1)
+        for col_i in range(3): th_grid.columnconfigure(col_i, weight=1, uniform="th_cols")
 
         # 4. Weather Location & Currency Settings
         w_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
         w_frame.pack(fill="x", pady=6)
+        self.w_frame = w_frame
 
         ctk.CTkLabel(w_frame, text="🌤️ Weather Location & 💱 Foreign Exchange Currencies", font=ctk.CTkFont(size=14, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(10, 6))
 
-        # Single Clean Row: Searchable Dropdown Modal Button + Set City + FX Currencies
+        # Single Clean Row: Expandable City Button + Set City Button + Currency Combos
         w_inner = ctk.CTkFrame(w_frame, fg_color="transparent")
-        w_inner.pack(fill="x", padx=12, pady=(0, 12))
+        w_inner.pack(fill="x", padx=12, pady=(0, 8))
+        self.w_inner = w_inner
 
-        self.city_picker_btn = ctk.CTkButton(
-            w_inner, text="🏙️ Hà Nội  ▼", width=175, fg_color="#1f2937", hover_color="#374151",
-            text_color="#F8FAFC", border_width=1, border_color="#38bdf8",
-            font=ctk.CTkFont(size=12, weight="bold"), command=self._open_city_picker_dialog
-        )
-        self.city_picker_btn.pack(side="left", padx=(0, 6))
         self.selected_city_eng = "Hanoi"
         self.selected_city_vn = "Hà Nội"
 
-        set_city_btn = ctk.CTkButton(w_inner, text="🌤️ Set City", width=95, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_city)
+        ico_pin = create_vector_icon("pin", color="#38BDF8", size=15)
+        ico_sun = create_vector_icon("sun", color="#FFFFFF", size=15)
+        ico_fx = create_vector_icon("fx", color="#FFFFFF", size=15)
+
+        self.city_picker_btn = ctk.CTkButton(
+            w_inner, text="Hà Nội  ▼", image=ico_pin, compound="left",
+            width=210, height=34, fg_color="#030712", hover_color="#1f2937", text_color="#F8FAFC",
+            border_width=1, border_color="#38bdf8", font=ctk.CTkFont(size=12, weight="bold"),
+            command=self.toggle_city_search_panel
+        )
+        self.city_picker_btn.pack(side="left", padx=(0, 8))
+
+        set_city_btn = ctk.CTkButton(
+            w_inner, text="Set City", image=ico_sun, compound="left",
+            width=100, height=34, fg_color="#0284C7", hover_color="#0369A1",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_city
+        )
         set_city_btn.pack(side="left", padx=(0, 12))
 
         currencies = ["USD", "EUR", "JPY", "GBP", "AUD", "SGD", "CNY", "KRW"]
-        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
+        self.cur1_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75, height=34)
         self.cur1_combo.set("USD"); self.cur1_combo.pack(side="left", padx=(0, 4))
 
-        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75)
+        self.cur2_combo = ctk.CTkOptionMenu(w_inner, values=currencies, width=75, height=34)
         self.cur2_combo.set("EUR"); self.cur2_combo.pack(side="left", padx=(0, 6))
 
-        set_cur_btn = ctk.CTkButton(w_inner, text="💱 Set FX", width=95, fg_color="#0284C7", hover_color="#0369A1", font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_currencies)
+        set_cur_btn = ctk.CTkButton(
+            w_inner, text="Set FX", image=ico_fx, compound="left",
+            width=90, height=34, fg_color="#0284C7", hover_color="#0369A1",
+            font=ctk.CTkFont(size=12, weight="bold"), command=self.apply_currencies
+        )
         set_cur_btn.pack(side="left")
+
+
+
 
         # 5. Media Remote PC Buttons
         m_frame = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
@@ -685,9 +809,8 @@ class SmartDeskStudioProApp(ctk.CTk):
         m_btn_grid = ctk.CTkFrame(m_frame, fg_color="transparent")
         m_btn_grid.pack(fill="x", padx=10, pady=(0, 10))
 
-        assets_path = os.path.join(os.path.dirname(__file__), "assets")
         def _get_icon(name):
-            p = os.path.join(assets_path, f"{name}.png")
+            p = get_resource_path(os.path.join("assets", f"{name}.png"))
             if os.path.exists(p):
                 try:
                     img = Image.open(p)
@@ -758,170 +881,21 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.alarm_note_entry = ctk.CTkEntry(alm_row2, placeholder_text="Nhập ghi chú nhắc nhở khi báo thức (VD: Hop team phong 302)...")
         self.alarm_note_entry.pack(side="left", fill="x", expand=True)
 
-        # ── RIGHT COLUMN CONTENTS (LIVE DIGITAL TWIN SIMULATION) ─────
-        ctk.CTkLabel(col_right, text="📺 Digital Twin Simulation", font=ctk.CTkFont(size=15, weight="bold"), text_color="#38bdf8").pack(anchor="w", padx=15, pady=(12, 4))
-        ctk.CTkLabel(col_right, text="320x240 TFT LCD • Realtime Sync Hardware Preview", font=ctk.CTkFont(size=11), text_color="#64748b").pack(anchor="w", padx=15, pady=(0, 10))
-
-        sim_canvas_frame = ctk.CTkFrame(col_right, fg_color="#000000", border_width=3, border_color="#1f2937", corner_radius=10)
-        sim_canvas_frame.pack(padx=15, pady=5)
-
-        self.sim_canvas = tk.Canvas(sim_canvas_frame, width=320, height=240, bg="#000000", highlightthickness=0)
-        self.sim_canvas.pack(padx=6, pady=6)
-        self.draw_sim_canvas_preview()
-
-        act_frame = ctk.CTkFrame(col_right, fg_color="transparent")
-        act_frame.pack(fill="x", padx=15, pady=15)
+        # 7. Action Control Bar (Sync & Reconnect)
+        act_bar = ctk.CTkFrame(col_left, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10)
+        act_bar.pack(fill="x", pady=6)
 
         sync_now_btn = ctk.CTkButton(
-            act_frame, text="⚡ 1-Click Sync to Desk", font=ctk.CTkFont(weight="bold"),
-            height=40, fg_color="#238636", hover_color="#2ea043", command=self.sync_to_cyd_desk
+            act_bar, text="⚡ 1-Click Sync Telemetry to Desk", font=ctk.CTkFont(weight="bold"),
+            height=36, fg_color="#238636", hover_color="#2ea043", command=self.sync_telemetry_now
         )
-        sync_now_btn.pack(fill="x", pady=4)
+        sync_now_btn.pack(side="left", fill="x", expand=True, padx=8, pady=8)
 
         recon_btn = ctk.CTkButton(
-            act_frame, text="🔄 Force Reconnect USB/WiFi", font=ctk.CTkFont(weight="bold"),
+            act_bar, text="🔄 Force Reconnect USB/WiFi", font=ctk.CTkFont(weight="bold"),
             height=36, fg_color="#1f2937", hover_color="#374151", text_color="#38bdf8", command=self.force_reconnect
         )
-        recon_btn.pack(fill="x", pady=4)
-
-    def draw_sim_canvas_preview(self):
-        if not hasattr(self, 'sim_canvas'): return
-        self.sim_canvas.delete("all")
-        self.sim_canvas.configure(bg="#000000")
-
-        pid = self.active_cyd_page
-        p_code, p_ico, p_title, p_sub, p_col = PAGE_ITEMS[pid]
-        full_title = f"{p_ico} {p_title}"
-        self.sim_canvas.create_rectangle(0, 0, 320, 20, fill="#111827", outline="")
-        self.sim_canvas.create_text(8, 10, text="RSSI -54dBm", fill="#00E676", font=("Consolas", 8), anchor="w")
-        self.sim_canvas.create_text(160, 10, text=full_title, fill="#FFD700", font=("Segoe UI", 9, "bold"), anchor="center")
-        self.sim_canvas.create_text(312, 10, text=f"{pid}/7", fill="#8B949E", font=("Consolas", 8), anchor="e")
-
-        if pid == 0:
-            self.sim_canvas.create_text(160, 100, text="14:35:08", fill="#00F5FF", font=("Consolas", 28, "bold"), anchor="center")
-            self.sim_canvas.create_text(160, 150, text="Mon 10/08 • 18/07 Lunar", fill="#8B949E", font=("Segoe UI", 11), anchor="center")
-            self.sim_canvas.create_text(160, 190, text="28°C Hanoi • Gold SJC 85.5M", fill="#FFFFFF", font=("Segoe UI", 11, "bold"), anchor="center")
-        elif pid == 3:
-            self.sim_canvas.create_text(80, 80, text="CPU: 34%", fill="#00F5FF", font=("Consolas", 14, "bold"), anchor="center")
-            self.sim_canvas.create_text(240, 80, text="RAM: 70%", fill="#AB47BC", font=("Consolas", 14, "bold"), anchor="center")
-            self.sim_canvas.create_rectangle(20, 120, 140, 140, fill="#1f2937", outline="")
-            self.sim_canvas.create_rectangle(20, 120, 20 + int(120*0.34), 140, fill="#00F5FF", outline="")
-            self.sim_canvas.create_rectangle(180, 120, 300, 140, fill="#1f2937", outline="")
-            self.sim_canvas.create_rectangle(180, 120, 180 + int(120*0.70), 140, fill="#AB47BC", outline="")
-        elif pid == 6:
-            self.sim_canvas.create_text(160, 70, text="🎵 Windows Media Remote", fill="#818CF8", font=("Segoe UI", 13, "bold"), anchor="center")
-            self.sim_canvas.create_text(160, 105, text="Spotify / YouTube / Media Player", fill="#94A3B8", font=("Segoe UI", 10), anchor="center")
-            self.sim_canvas.create_text(80, 160, text="⏮️ PREV", fill="#818CF8", font=("Segoe UI", 11, "bold"), anchor="center")
-            self.sim_canvas.create_text(160, 160, text="⏯️ PAUSE", fill="#39FF14", font=("Segoe UI", 11, "bold"), anchor="center")
-            self.sim_canvas.create_text(240, 160, text="⏭️ NEXT", fill="#818CF8", font=("Segoe UI", 11, "bold"), anchor="center")
-
-    # ── TAB 2: SKIN DESIGNER STUDIO ───────────────────────────────────
-    def build_tab_designer(self):
-        body = ctk.CTkFrame(self.view_designer, fg_color="transparent")
-        body.pack(fill="both", expand=True)
-
-        pal_bar = ctk.CTkFrame(body, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=8, height=45)
-        pal_bar.pack(fill="x", pady=(0, 8))
-
-        p_lbl = ctk.CTkLabel(pal_bar, text="🎨 1-Click Theme:", font=ctk.CTkFont(size=11, weight="bold"), text_color="#38bdf8")
-        p_lbl.pack(side="left", padx=10, pady=6)
-
-        for pal_name in COLOR_PALETTES:
-            p_btn = ctk.CTkButton(
-                pal_bar, text=f"✨ {pal_name}", width=110, height=24,
-                fg_color="#030712", hover_color="#1f2937", text_color="#c9d1d9",
-                border_width=1, border_color="#1f2937",
-                command=lambda name=pal_name: self.apply_palette(name)
-            )
-            p_btn.pack(side="left", padx=3, pady=6)
-
-        sync_btn = ctk.CTkButton(
-            pal_bar, text="⚡ 1-Click Sync to Desk", width=160, fg_color="#238636", hover_color="#2ea043",
-            font=ctk.CTkFont(weight="bold"), command=self.sync_to_cyd_desk
-        )
-        sync_btn.pack(side="right", padx=10, pady=6)
-
-        grid_frame = ctk.CTkFrame(body, fg_color="transparent")
-        grid_frame.pack(fill="both", expand=True)
-
-        left_box = ctk.CTkFrame(grid_frame, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=220)
-        left_box.pack(side="left", fill="y", padx=(0, 8))
-
-        w_lbl = ctk.CTkLabel(left_box, text="+ Add Sub-Elements", font=ctk.CTkFont(size=12, weight="bold"), text_color="#38bdf8")
-        w_lbl.pack(anchor="w", padx=12, pady=(10, 5))
-
-        for name, etype, content, def_w, def_h, def_col, font_st in ELEMENT_PRESETS:
-            btn = ctk.CTkButton(
-                left_box, text=f"+ {name}", anchor="w",
-                fg_color="#030712", hover_color="#1f2937", text_color="#c9d1d9",
-                border_width=1, border_color="#1f2937",
-                command=lambda n=name, t=etype, c=content, w=def_w, h=def_h, col=def_col, f=font_st: self.add_sub_element(n, t, c, w, h, col, f)
-            )
-            btn.pack(fill="x", padx=8, pady=2)
-
-        center_box = ctk.CTkFrame(grid_frame, fg_color="#000000", border_width=1, border_color="#1f2937", corner_radius=10)
-        center_box.pack(side="left", fill="both", expand=True)
-
-        self.canvas = tk.Canvas(
-            center_box, width=int(CANVAS_WIDTH * SCALE), height=int(CANVAS_HEIGHT * SCALE),
-            bg="#000000", highlightthickness=2, highlightbackground="#1f2937"
-        )
-        self.canvas.pack(padx=10, pady=10)
-
-        self.canvas.bind("<ButtonPress-1>", self.on_canvas_click)
-        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
-
-        right_box = ctk.CTkFrame(grid_frame, fg_color="#111827", border_width=1, border_color="#1f2937", corner_radius=10, width=250)
-        right_box.pack(side="right", fill="y", padx=(8, 0))
-
-        p_lbl = ctk.CTkLabel(right_box, text="⚙️ Sub-Element Inspector", font=ctk.CTkFont(size=13, weight="bold"), text_color="#38bdf8")
-        p_lbl.pack(anchor="w", padx=12, pady=(10, 5))
-
-        self.sel_name_lbl = ctk.CTkLabel(right_box, text="Click object to edit", text_color="#64748b", font=ctk.CTkFont(weight="bold"))
-        self.sel_name_lbl.pack(anchor="w", padx=12, pady=(0, 5))
-
-        c_lbl = ctk.CTkLabel(right_box, text="Text Content:", font=ctk.CTkFont(size=11, weight="bold"))
-        c_lbl.pack(anchor="w", padx=12, pady=(2, 1))
-
-        self.entry_content = ctk.CTkEntry(right_box, width=220)
-        self.entry_content.pack(padx=10, pady=2)
-
-        apply_content_btn = ctk.CTkButton(right_box, text="Update Text", width=220, command=self.apply_text_content)
-        apply_content_btn.pack(padx=10, pady=3)
-
-        geom_frame = ctk.CTkFrame(right_box, fg_color="transparent")
-        geom_frame.pack(fill="x", padx=10, pady=2)
-
-        ctk.CTkLabel(geom_frame, text="X:").grid(row=0, column=0, padx=2, pady=1)
-        self.entry_x = ctk.CTkEntry(geom_frame, width=55); self.entry_x.grid(row=0, column=1, padx=2, pady=1)
-        ctk.CTkLabel(geom_frame, text="Y:").grid(row=0, column=2, padx=2, pady=1)
-        self.entry_y = ctk.CTkEntry(geom_frame, width=55); self.entry_y.grid(row=0, column=3, padx=2, pady=1)
-        ctk.CTkLabel(geom_frame, text="W:").grid(row=1, column=0, padx=2, pady=1)
-        self.entry_w = ctk.CTkEntry(geom_frame, width=55); self.entry_w.grid(row=1, column=1, padx=2, pady=1)
-        ctk.CTkLabel(geom_frame, text="H:").grid(row=1, column=2, padx=2, pady=1)
-        self.entry_h = ctk.CTkEntry(geom_frame, width=55); self.entry_h.grid(row=1, column=3, padx=2, pady=1)
-
-        apply_geom_btn = ctk.CTkButton(right_box, text="Apply Geometry", width=220, command=self.apply_manual_geometry)
-        apply_geom_btn.pack(padx=10, pady=3)
-
-        f_lbl = ctk.CTkLabel(right_box, text="Font Style:", font=ctk.CTkFont(size=11, weight="bold"))
-        f_lbl.pack(anchor="w", padx=12, pady=(3, 1))
-
-        self.font_combo = ctk.CTkOptionMenu(
-            right_box, values=["Dot Matrix LED", "7-Segment Digital", "Monospace Code", "Default Sans"],
-            command=self.on_font_change, width=220
-        )
-        self.font_combo.set("Dot Matrix LED"); self.font_combo.pack(padx=10, pady=2)
-
-        self.color_btn = ctk.CTkButton(right_box, text="Element Color", width=220, fg_color="#1f2937", command=self.pick_color)
-        self.color_btn.pack(padx=10, pady=4)
-
-        self.del_btn = ctk.CTkButton(
-            right_box, text="Delete Sub-Element", width=220, fg_color="#da3633", hover_color="#f85149",
-            command=self.delete_selected_element
-        )
-        self.del_btn.pack(side="bottom", padx=10, pady=12)
+        recon_btn.pack(side="right", fill="x", expand=True, padx=8, pady=8)
 
     # ── TAB 3: SYSTEM SETTINGS ────────────────────────────────────────
     def build_tab_settings(self):
@@ -941,16 +915,30 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.ip_entry.insert(0, self.esp32_ip)
         self.ip_entry.pack(side="left")
 
-        self.autostart_var = ctk.BooleanVar(value=True)
-        autostart_chk = ctk.CTkCheckBox(s_frame, text="Run Smart Desk Studio Pro on Windows Startup", variable=self.autostart_var)
+        # Real Windows Startup Registry Integration
+        self.autostart_var = ctk.BooleanVar(value=is_windows_autostart_enabled())
+
+        def _on_autostart_toggle():
+            en = self.autostart_var.get()
+            ok = set_windows_autostart(en)
+            if ok:
+                st = "được bật" if en else "đã tắt"
+                self.status_lbl.configure(text=f"✅ Tự khởi động cùng Windows {st}", text_color="#39FF14")
+            else:
+                self.status_lbl.configure(text="⚠️ Không thể ghi Registry Windows", text_color="#FCA5A5")
+
+        autostart_chk = ctk.CTkCheckBox(
+            s_frame, text="🚀 Run Smart Desk Studio Pro on Windows Startup",
+            variable=self.autostart_var, command=_on_autostart_toggle,
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
         autostart_chk.pack(anchor="w", padx=12, pady=8)
 
-    # ── CANVAS DRAWING METHODS ────────────────────────────────────────
-    def get_current_elements(self):
-        pg_str = str(self.current_page_idx)
-        if pg_str not in self.skin_data.get("pages", {}):
-            self.skin_data.setdefault("pages", {})[pg_str] = {"name": PAGE_NAMES[self.current_page_idx], "elements": []}
-        return self.skin_data["pages"][pg_str].setdefault("elements", [])
+    def sync_telemetry_now(self):
+        self.last_user_action_time = time.time()
+        self.last_port_scan = 0
+        if hasattr(self, 'status_lbl'):
+            self.status_lbl.configure(text="⚡ Telemetry synced to ESP32 CYD!", text_color="#39FF14")
 
     def draw_dot_matrix_text(self, text, start_x, start_y, dot_size, pitch, on_color, off_color="#121212", elem_id=""):
         cur_x = start_x
@@ -970,17 +958,17 @@ class SmartDeskStudioProApp(ctk.CTk):
         for ch in text:
             if ch == ':':
                 self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.3), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.3) + 4, fill=color, outline="", tags=("element", elem_id))
-                self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.7), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.7) + 4, fill=color, outline="", tags=("element", elem_id))
+                self.canvas.create_rectangle(cur_x + int(seg_w/2) - 2, start_y + int(seg_h*0.7), cur_x + int(seg_w/2) + 2, start_y + int(seg_h*0.7) + 4, fill=color, outline="", tags=("element", eid if 'eid' in locals() else ""))
                 cur_x += int(seg_w * 0.5); continue
 
             mask = SEGMENT7_MASKS.get(ch, 0x00); off_col = "#151820"; t = 3
-            self.canvas.create_rectangle(cur_x + t, start_y, cur_x + seg_w - t, start_y + t, fill=color if (mask & 0x01) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + t, cur_x + seg_w, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x02) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), cur_x + seg_w, start_y + seg_h - t, fill=color if (mask & 0x04) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x + t, start_y + seg_h - t, cur_x + seg_w - t, start_y + seg_h, fill=color if (mask & 0x08) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x, start_y + int(seg_h/2) + int(t/2), cur_x + t, start_y + seg_h - t, fill=color if (mask & 0x10) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x, start_y + t, cur_x + t, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x20) else off_col, outline="", tags=("element", elem_id))
-            self.canvas.create_rectangle(cur_x + t, start_y + int(seg_h/2) - int(t/2), cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), fill=color if (mask & 0x40) else off_col, outline="", tags=("element", elem_id))
+            self.canvas.create_rectangle(cur_x + t, start_y, cur_x + seg_w - t, start_y + t, fill=color if (mask & 0x01) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + t, cur_x + seg_w, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x02) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), cur_x + seg_w, start_y + seg_h - t, fill=color if (mask & 0x04) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x + t, start_y + seg_h - t, cur_x + seg_w - t, start_y + seg_h, fill=color if (mask & 0x08) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x, start_y + int(seg_h/2) + int(t/2), cur_x + t, start_y + seg_h - t, fill=color if (mask & 0x10) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x, start_y + t, cur_x + t, start_y + int(seg_h/2) - int(t/2), fill=color if (mask & 0x20) else off_col, outline="")
+            self.canvas.create_rectangle(cur_x + t, start_y + int(seg_h/2) - int(t/2), cur_x + seg_w - t, start_y + int(seg_h/2) + int(t/2), fill=color if (mask & 0x40) else off_col, outline="")
             cur_x += seg_w + 5
 
     def draw_pixel_sun(self, start_x, start_y, dot_size, pitch, color, elem_id=""):
@@ -1028,11 +1016,14 @@ class SmartDeskStudioProApp(ctk.CTk):
         if not elements:
             self.canvas.create_text(
                 int(CANVAS_WIDTH * SCALE / 2), int(CANVAS_HEIGHT * SCALE / 2),
-                text=f"[{PAGE_NAMES[self.current_page_idx]}]\nTrang chưa có Sub-Element. Nhấp +Add Sub-Elements bên trái.",
-                fill="#484f58", font=("Segoe UI", 12), justify="center"
+                text=f"[{PAGE_NAMES[self.current_page_idx]}]\nTrang chưa có Sub-Element. Kéo hoặc nhấp +Add bên trái.",
+                fill="#8B949E", font=("Segoe UI", 12, "bold"), justify="center"
             )
 
-        for elem in elements:
+        # Sort elements so containers (rectangle, box, circle) render in background first, text on top
+        sorted_elements = sorted(elements, key=lambda el: 0 if el.get("type") in ["rectangle", "box", "circle"] else 1)
+
+        for elem in sorted_elements:
             ex = int(elem["x"] * SCALE); ey = int(elem["y"] * SCALE)
             ew = int(elem["w"] * SCALE); eh = int(elem["h"] * SCALE)
             eid = elem["id"]
@@ -1042,14 +1033,23 @@ class SmartDeskStudioProApp(ctk.CTk):
             font_style = elem.get("font_style", "default")
             etype = elem.get("type", "text")
             content = elem.get("content", "")
+            font_sz = elem.get("font_size", 12)
 
             if etype == "wifi_signal":
+                disp_txt = content if content else "-54dBm"
                 for b in range(4):
                     bx = ex + b * 4; bh = 3 + b * 2; by = ey + 10 - bh
                     self.canvas.create_oval(bx, by, bx + 3, by + 3, fill=color, outline="", tags=("element", eid))
-                self.canvas.create_text(ex + 20, ey + int(eh/2), text="-54dBm", fill=color, font=("Consolas", int(3.5 * SCALE)), anchor="w", tags=("element", eid))
+                self.canvas.create_text(ex + 18, ey + int(eh/2), text=disp_txt, fill=color, font=("Consolas", int(font_sz * 0.35 * SCALE)), anchor="w", tags=("element", eid))
             elif etype == "status_time":
-                self.canvas.create_text(ex, ey + int(eh/2), text="14:35", fill=color, font=("Consolas", int(4 * SCALE), "bold"), anchor="w", tags=("element", eid))
+                disp_txt = content if content else "17:29:17"
+                self.canvas.create_text(ex, ey + int(eh/2), text=disp_txt, fill=color, font=("Consolas", int(font_sz * 0.4 * SCALE), "bold"), anchor="w", tags=("element", eid))
+            elif etype == "status_serial":
+                disp_txt = content if content else "COM4"
+                self.canvas.create_text(ex, ey + int(eh/2), text=f"💻 {disp_txt}", fill=color, font=("Consolas", int(font_sz * 0.35 * SCALE), "bold"), anchor="w", tags=("element", eid))
+            elif etype == "page_counter":
+                disp_txt = content if content else "7/8"
+                self.canvas.create_text(ex, ey + int(eh/2), text=disp_txt, fill=color, font=("Consolas", int(font_sz * 0.35 * SCALE), "bold"), anchor="w", tags=("element", eid))
             elif etype == "pixel_sun":
                 self.draw_pixel_sun(ex, ey, dot_size=4, pitch=6, color=color, elem_id=eid)
             elif etype == "pixel_sunrise":
@@ -1058,18 +1058,48 @@ class SmartDeskStudioProApp(ctk.CTk):
                 line_y = ey + int(eh / 2)
                 for dx in range(ex, ex + ew, 7):
                     self.canvas.create_oval(dx, line_y, dx + 4, line_y + 4, fill=color, outline="", tags=("element", eid))
+            elif etype == "line":
+                line_y = ey + int(eh / 2)
+                self.canvas.create_line(ex, line_y, ex + ew, line_y, fill=color, width=max(1, int(eh * SCALE)), tags=("element", eid))
+            elif etype == "line_chart":
+                self.canvas.create_rectangle(ex, ey, ex + ew, ey + eh, fill="#050811", outline="#1F2937", tags=("element", eid))
+                import math
+                pts = []
+                for i in range(15):
+                    px = ex + int(i * (ew / 14))
+                    py = ey + int(eh * 0.7) - int(math.sin(i * 0.5) * (eh * 0.35))
+                    pts.extend([px, py])
+                if len(pts) >= 4:
+                    self.canvas.create_line(pts, fill=color, width=2, smooth=True, tags=("element", eid))
+            elif etype in ["rectangle", "box"]:
+                border_col = "#00F5FF" if color == "#1E293B" else "#1f2937"
+                self.canvas.create_rectangle(ex, ey, ex + ew, ey + eh, fill=color, outline=border_col, tags=("element", eid))
+            elif etype == "circle":
+                self.canvas.create_oval(ex, ey, ex + ew, ey + eh, fill=color, outline="", tags=("element", eid))
             elif font_style == "dot_matrix" or etype == "matrix_text":
-                self.draw_dot_matrix_text(content, ex, ey, dot_size=4, pitch=6, on_color=color, off_color="#121212", elem_id=eid)
+                d_sz = max(2, int(font_sz * 0.3))
+                d_pitch = max(3, int(font_sz * 0.45))
+                self.draw_dot_matrix_text(content, ex, ey, dot_size=d_sz, pitch=d_pitch, on_color=color, off_color="#121212", elem_id=eid)
             elif font_style == "segment7":
-                self.draw_7segment_text(content, ex, ey, seg_w=15, seg_h=30, color=color, elem_id=eid)
+                s_w = max(8, int(font_sz * 0.8))
+                s_h = max(14, int(font_sz * 1.6))
+                self.draw_7segment_text(content, ex, ey, seg_w=s_w, seg_h=s_h, color=color, elem_id=eid)
             elif font_style == "mono":
-                self.canvas.create_text(ex, ey + int(eh/2), text=content, fill=color, font=("Consolas", int(4 * SCALE), "bold"), anchor="w", tags=("element", eid))
+                is_centered = (ew >= 40 and len(content) <= 8)
+                tx = ex + int(ew/2) if is_centered else ex
+                anchor_val = "center" if is_centered else "w"
+                self.canvas.create_text(tx, ey + int(eh/2), text=content, fill=color, font=("Consolas", int(font_sz * 0.38 * SCALE), "bold"), anchor=anchor_val, tags=("element", eid))
             else:
-                self.canvas.create_text(ex, ey + int(eh/2), text=content, fill=color, font=("Segoe UI", int(5 * SCALE), "bold"), anchor="w", tags=("element", eid))
+                is_centered = (ew >= 40 and len(content) <= 8 and ("\n" not in content))
+                tx = ex + int(ew/2) if is_centered else ex
+                anchor_val = "center" if is_centered else "w"
+                self.canvas.create_text(tx, ey + int(eh/2), text=content, fill=color, font=("Segoe UI", int(font_sz * 0.42 * SCALE), "bold"), anchor=anchor_val, tags=("element", eid))
 
             if is_selected:
-                self.canvas.create_rectangle(ex - 3, ey - 3, ex + ew + 3, ey + eh + 3, outline="#38bdf8", width=2, dash=(3, 3), tags=("selected", eid))
-                self.canvas.create_rectangle(ex + ew - 4, ey + eh - 4, ex + ew + 5, ey + eh + 5, fill="#38bdf8", outline="#ffffff", tags=("handle", eid))
+                is_glob = elem.get("is_global", False)
+                border_col = "#38bdf8" if not is_glob else "#FFD700"
+                self.canvas.create_rectangle(ex - 3, ey - 3, ex + ew + 3, ey + eh + 3, outline=border_col, width=2, dash=(3, 3), tags=("selected", eid))
+                self.canvas.create_rectangle(ex + ew - 4, ey + eh - 4, ex + ew + 5, ey + eh + 5, fill=border_col, outline="#ffffff", tags=("handle", eid))
                 self.draw_floating_toolbar(elem)
 
         self.update_inspector()
@@ -1139,15 +1169,34 @@ class SmartDeskStudioProApp(ctk.CTk):
             elem["y"] = max(0, min(CANVAS_HEIGHT - elem["h"], elem["y"] + dy))
             self.redraw_canvas()
 
+    def create_color_circle_icon(self, hex_color, size=(14, 14)):
+        try:
+            from PIL import Image, ImageDraw
+            img = Image.new("RGBA", size, (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.ellipse([1, 1, size[0] - 2, size[1] - 2], fill=hex_color)
+            return ctk.CTkImage(light_image=img, dark_image=img, size=size)
+        except Exception:
+            return None
+
     def update_inspector(self):
         elem = self.get_selected_element()
         if elem:
             self.sel_name_lbl.configure(text=f"Selected: {elem['name']}", text_color="#38bdf8")
-            self.entry_content.delete(0, tk.END); self.entry_content.insert(0, elem.get("content", ""))
-            self.entry_x.delete(0, tk.END); self.entry_x.insert(0, str(elem["x"]))
-            self.entry_y.delete(0, tk.END); self.entry_y.insert(0, str(elem["y"]))
-            self.entry_w.delete(0, tk.END); self.entry_w.insert(0, str(elem["w"]))
-            self.entry_h.delete(0, tk.END); self.entry_h.insert(0, str(elem["h"]))
+            focused = self.focus_get()
+            if focused != self.entry_content:
+                self.entry_content.delete(0, tk.END)
+                self.entry_content.insert(0, elem.get("content", ""))
+            if focused not in (self.entry_x, self.entry_y, self.entry_w, self.entry_h):
+                self.entry_x.delete(0, tk.END); self.entry_x.insert(0, str(elem["x"]))
+                self.entry_y.delete(0, tk.END); self.entry_y.insert(0, str(elem["y"]))
+                self.entry_w.delete(0, tk.END); self.entry_w.insert(0, str(elem["w"]))
+                self.entry_h.delete(0, tk.END); self.entry_h.insert(0, str(elem["h"]))
+
+            if hasattr(self, 'lbl_font_size'):
+                self.lbl_font_size.configure(text=f"{elem.get('font_size', 12)}px")
+            if hasattr(self, 'global_chk'):
+                self.global_chk.select() if elem.get("is_global") else self.global_chk.deselect()
 
             font_val_map = {
                 "dot_matrix": "Dot Matrix LED", "segment7": "7-Segment Digital",
@@ -1157,9 +1206,52 @@ class SmartDeskStudioProApp(ctk.CTk):
             self.color_btn.configure(fg_color=elem.get("color", "#FFFFFF"))
         else:
             self.sel_name_lbl.configure(text="Click object to edit", text_color="#64748b")
-            self.entry_content.delete(0, tk.END)
-            self.entry_x.delete(0, tk.END); self.entry_y.delete(0, tk.END)
-            self.entry_w.delete(0, tk.END); self.entry_h.delete(0, tk.END)
+            focused = self.focus_get()
+            if focused not in (self.entry_content, self.entry_x, self.entry_y, self.entry_w, self.entry_h):
+                self.entry_content.delete(0, tk.END)
+                self.entry_x.delete(0, tk.END); self.entry_y.delete(0, tk.END)
+                self.entry_w.delete(0, tk.END); self.entry_h.delete(0, tk.END)
+
+    def change_font_size(self, delta):
+        elem = self.get_selected_element()
+        if elem:
+            curr_sz = elem.get("font_size", 12)
+            elem["font_size"] = max(6, min(60, curr_sz + delta))
+            if hasattr(self, 'lbl_font_size'):
+                self.lbl_font_size.configure(text=f"{elem['font_size']}px")
+            self.redraw_canvas()
+
+    def toggle_global_element(self):
+        elem = self.get_selected_element()
+        if elem:
+            elem["is_global"] = bool(self.global_chk.get())
+            self.redraw_canvas()
+
+    def align_selected_horiz_center(self):
+        elem = self.get_selected_element()
+        if elem:
+            elem["x"] = max(0, int((CANVAS_WIDTH - elem["w"]) / 2))
+            self.redraw_canvas()
+
+    def align_selected_vert_center(self):
+        elem = self.get_selected_element()
+        if elem:
+            elem["y"] = max(0, int((CANVAS_HEIGHT - elem["h"]) / 2))
+            self.redraw_canvas()
+
+    def scale_selected_element(self, factor):
+        elem = self.get_selected_element()
+        if elem:
+            elem["w"] = max(10, min(CANVAS_WIDTH - elem["x"], int(elem["w"] * factor)))
+            elem["h"] = max(8, min(CANVAS_HEIGHT - elem["h"], int(elem["h"] * factor)))
+            self.redraw_canvas()
+
+    def fit_selected_width(self):
+        elem = self.get_selected_element()
+        if elem:
+            elem["x"] = 10
+            elem["w"] = CANVAS_WIDTH - 20
+            self.redraw_canvas()
 
     def apply_text_content(self):
         elem = self.get_selected_element()
@@ -1186,15 +1278,147 @@ class SmartDeskStudioProApp(ctk.CTk):
             color = colorchooser.askcolor(title="Choose Color", color=elem.get("color", "#FFFFFF"))[1]
             if color: elem["color"] = color; self.redraw_canvas()
 
-    def add_sub_element(self, name, etype, content, def_w, def_h, def_col, font_st):
-        elements = self.get_current_elements()
-        new_id = f"elem_{len(elements) + 1}"
-        new_elem = {"id": new_id, "name": name, "type": etype, "content": content, "font_style": font_st, "x": 10, "y": 10, "w": def_w, "h": def_h, "color": def_col}
+    def _destroy_drag_tooltip(self):
+        if hasattr(self, '_drag_tooltip') and self._drag_tooltip:
+            try:
+                self._drag_tooltip.destroy()
+            except Exception: pass
+            self._drag_tooltip = None
+
+    def _setup_drag_and_drop(self, btn, n, t, c, w, h, col, f):
+        def _on_press(e):
+            self._destroy_drag_tooltip()
+            self._drag_preset = (n, t, c, w, h, col, f)
+            self._drag_start_pos = (e.x_root, e.y_root)
+            self._is_dragging = False
+
+        def _on_motion(e):
+            if not hasattr(self, '_drag_preset') or not self._drag_preset:
+                return
+            dx = abs(e.x_root - self._drag_start_pos[0])
+            dy = abs(e.y_root - self._drag_start_pos[1])
+            if dx > 4 or dy > 4:
+                self._is_dragging = True
+                if not hasattr(self, '_drag_tooltip') or not self._drag_tooltip or not self._drag_tooltip.winfo_exists():
+                    try:
+                        win = tk.Toplevel(self)
+                        win.overrideredirect(True)
+                        win.attributes("-topmost", True)
+                        win.configure(bg="#38bdf8")
+                        lbl = tk.Label(win, text=f" ➕ {n} ", bg="#38bdf8", fg="#000000", font=("Segoe UI", 9, "bold"))
+                        lbl.pack(padx=4, pady=2)
+                        self._drag_tooltip = win
+                    except Exception: pass
+                if hasattr(self, '_drag_tooltip') and self._drag_tooltip and self._drag_tooltip.winfo_exists():
+                    try:
+                        self._drag_tooltip.geometry(f"+{e.x_root + 10}+{e.y_root + 10}")
+                    except Exception: pass
+
+        def _on_release(e):
+            self._destroy_drag_tooltip()
+            if not hasattr(self, '_drag_preset') or not self._drag_preset:
+                return
+
+            n_p, t_p, c_p, w_p, h_p, col_p, f_p = self._drag_preset
+            self._drag_preset = None
+            was_dragging = getattr(self, '_is_dragging', False)
+            self._is_dragging = False
+
+            try:
+                mx, my = self.winfo_pointerxy()
+                cx0 = self.canvas.winfo_rootx()
+                cy0 = self.canvas.winfo_rooty()
+                cw = self.canvas.winfo_width()
+                ch = self.canvas.winfo_height()
+
+                if was_dragging and (cx0 <= mx <= cx0 + cw) and (cy0 <= my <= cy0 + ch):
+                    rel_x = (mx - cx0) / SCALE - (w_p / 2)
+                    rel_y = (my - cy0) / SCALE - (h_p / 2)
+                    self.add_sub_element(n_p, t_p, c_p, w_p, h_p, col_p, f_p, pos_x=rel_x, pos_y=rel_y)
+                    return
+            except Exception: pass
+
+            self.add_sub_element(n_p, t_p, c_p, w_p, h_p, col_p, f_p)
+
+        try:
+            btn.bind("<ButtonPress-1>", _on_press)
+            btn.bind("<B1-Motion>", _on_motion)
+            btn.bind("<ButtonRelease-1>", _on_release)
+        except Exception: pass
+
+    def add_sub_element(self, name, etype, content, def_w, def_h, def_col, font_st, pos_x=None, pos_y=None):
+        elements = self.get_current_page_elements()
+        new_id = f"elem_{int(time.time() * 1000)}"
+        if pos_x is None or pos_y is None:
+            pos_x = int((CANVAS_WIDTH - def_w) / 2)
+            pos_y = int((CANVAS_HEIGHT - def_h) / 2)
+        pos_x = max(0, min(CANVAS_WIDTH - def_w, pos_x))
+        pos_y = max(0, min(CANVAS_HEIGHT - def_h, pos_y))
+        new_elem = {"id": new_id, "name": name, "type": etype, "content": content, "font_style": font_st, "x": int(pos_x), "y": int(pos_y), "w": def_w, "h": def_h, "color": def_col}
         elements.append(new_elem); self.selected_elem_id = new_id; self.redraw_canvas()
+        if hasattr(self, 'status_lbl'):
+            self.status_lbl.configure(text=f"✨ Added '{name}' at ({int(pos_x)}, {int(pos_y)})", text_color="#38bdf8")
+
+    def nudge_element(self, dx, dy):
+        if not self.selected_elem_id: return
+        for elem in self.get_current_elements():
+            if elem["id"] == self.selected_elem_id:
+                step = int(self.nudge_step_var.get() if hasattr(self, 'nudge_step_var') and self.nudge_step_var.get() else 1)
+                elem["x"] = max(0, min(CANVAS_WIDTH - elem["w"], elem["x"] + dx * step))
+                elem["y"] = max(0, min(CANVAS_HEIGHT - elem["h"], elem["y"] + dy * step))
+                if hasattr(self, 'entry_x'):
+                    self.entry_x.delete(0, tk.END); self.entry_x.insert(0, str(int(elem["x"])))
+                if hasattr(self, 'entry_y'):
+                    self.entry_y.delete(0, tk.END); self.entry_y.insert(0, str(int(elem["y"])))
+                self.redraw_canvas()
+                break
+
+    def duplicate_selected_element(self):
+        if not self.selected_elem_id: return
+        target = self.get_selected_element()
+        if target:
+            import copy
+            new_el = copy.deepcopy(target)
+            new_el["id"] = f"elem_{int(time.time() * 1000)}"
+            new_el["x"] = min(CANVAS_WIDTH - new_el["w"], new_el["x"] + 10)
+            new_el["y"] = min(CANVAS_HEIGHT - new_el["h"], new_el["y"] + 10)
+            new_el["is_global"] = False
+            self.get_current_page_elements().append(new_el)
+            self.selected_elem_id = new_el["id"]
+            self.redraw_canvas()
+
+    def move_layer(self, direction):
+        if not self.selected_elem_id: return
+        elements = self.get_current_page_elements()
+        idx = None
+        for i, el in enumerate(elements):
+            if el["id"] == self.selected_elem_id:
+                idx = i; break
+        if idx is not None:
+            if direction == "up" and idx < len(elements) - 1:
+                elements[idx], elements[idx+1] = elements[idx+1], elements[idx]
+            elif direction == "down" and idx > 0:
+                elements[idx], elements[idx-1] = elements[idx-1], elements[idx]
+            self.redraw_canvas()
+
+    def align_selected_center(self):
+        if not self.selected_elem_id: return
+        for elem in self.get_current_elements():
+            if elem["id"] == self.selected_elem_id:
+                elem["x"] = max(0, int((CANVAS_WIDTH - elem["w"]) / 2))
+                elem["y"] = max(0, int((CANVAS_HEIGHT - elem["h"]) / 2))
+                self.redraw_canvas()
+                break
+
+    def clear_current_page_elements(self):
+        if tk.messagebox.askyesno("🧹 Clear Page", f"Bạn có chắc muốn xóa tất cả Sub-Elements của trang {PAGE_NAMES[self.current_page_idx]}?"):
+            self.skin_data["pages"][str(self.current_page_idx)]["elements"] = []
+            self.selected_elem_id = None
+            self.redraw_canvas()
 
     def delete_selected_element(self):
         if self.selected_elem_id:
-            elements = self.get_current_elements()
+            elements = self.get_current_page_elements()
             self.skin_data["pages"][str(self.current_page_idx)]["elements"] = [el for el in elements if el["id"] != self.selected_elem_id]
             self.selected_elem_id = None; self.redraw_canvas()
 
@@ -1214,28 +1438,106 @@ class SmartDeskStudioProApp(ctk.CTk):
             else: el["color"] = pal["line"]
         self.redraw_canvas()
 
-    def sync_to_cyd_desk(self):
-        payload_str = json.dumps(self.skin_data)
-        success = False
+    def get_cyd_default_page_elements(self, p):
+        p_code, p_ico, p_title, _, _ = PAGE_ITEMS[p]
+        hdr_line = {"id": "g_hdr_line", "name": "Status Bar Line", "type": "line", "content": "line", "font_style": "default", "x": 10, "y": 20, "w": 300, "h": 2, "color": "#00F5FF", "is_global": True}
+        hdr_time = {"id": "g_time", "name": "Status Time", "type": "status_time", "content": "17:29:17", "font_style": "mono", "x": 135, "y": 4, "w": 55, "h": 14, "color": "#FFFFFF", "font_size": 12, "is_global": True}
+        hdr_wifi = {"id": "g_wifi", "name": "WiFi Signal", "type": "wifi_signal", "content": "-54dBm", "font_style": "mono", "x": 235, "y": 4, "w": 40, "h": 14, "color": "#00E676", "font_size": 12, "is_global": True}
+        hdr_serial = {"id": "g_ser", "name": "PC Serial Status Icon", "type": "status_serial", "content": "COM4", "font_style": "mono", "x": 280, "y": 4, "w": 30, "h": 14, "color": "#38BDF8", "font_size": 12, "is_global": True}
+        hdr_t = {"id": f"p{p}_title", "name": "Page Title & Icon", "type": "text", "content": f"{p_ico} {p_title.split(' ')[0]}", "font_style": "default", "x": 10, "y": 4, "w": 90, "h": 14, "color": "#38BDF8", "font_size": 11, "is_global": False}
+        hdr_ctr = {"id": f"p{p}_ctr", "name": "Page Counter Index", "type": "page_counter", "content": f"{p+1}/8", "font_style": "mono", "x": 200, "y": 4, "w": 30, "h": 14, "color": "#94A3B8", "font_size": 11, "is_global": False}
 
-        if active_serial_conn and active_serial_conn.is_open:
-            with serial_lock:
-                try:
-                    active_serial_conn.write(f"SKIN_JSON:{payload_str}\n".encode('utf-8'))
-                    success = True
-                    tk.messagebox.showinfo("⚡ Live Sync Success", "Skin successfully synced to ESP32 CYD via USB Serial!")
-                except Exception: pass
+        base = [hdr_line, hdr_time, hdr_wifi, hdr_serial, hdr_t, hdr_ctr]
 
-        if not success and self.cached_ip:
-            try:
-                resp = requests.post(f"http://{self.cached_ip}/api/skin/update", json=self.skin_data, timeout=1.0)
-                if resp.ok:
-                    success = True
-                    tk.messagebox.showinfo("⚡ Live Sync Success", f"Skin successfully synced to ESP32 CYD via WiFi ({self.cached_ip})!")
-            except Exception: pass
+        if p == 0:
+            base.extend([
+                {"id": "p0_sun", "name": "Dot Matrix Sun Icon", "type": "pixel_sun", "content": "sun", "font_style": "dot_matrix", "x": 20, "y": 30, "w": 40, "h": 40, "color": "#FFD700"},
+                {"id": "p0_wtr", "name": "Weather City & Temp", "type": "text", "content": "28°C Hanoi", "font_style": "default", "x": 75, "y": 38, "w": 140, "h": 24, "color": "#38BDF8", "font_size": 18},
+                {"id": "p0_box", "name": "Clock Container Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 80, "w": 300, "h": 145, "color": "#111827"},
+                {"id": "p0_clk", "name": "Digital Clock Digits", "type": "matrix_text", "content": "17:29:17", "font_style": "dot_matrix", "x": 25, "y": 100, "w": 270, "h": 50, "color": "#00F5FF", "font_size": 26},
+                {"id": "p0_dt", "name": "Solar & Lunar Date", "type": "text", "content": "Mon 10/08/2026 • 18/07 Lunar Binh Ngo", "font_style": "default", "x": 25, "y": 175, "w": 270, "h": 18, "color": "#FFD700", "font_size": 12}
+            ])
+        elif p == 1:
+            base.extend([
+                {"id": "p1_box", "name": "Calendar Container Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p1_t", "name": "Calendar Header", "type": "text", "content": "Solar & Lunar Calendar", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#FFD700", "font_size": 15},
+                {"id": "p1_sol", "name": "Solar Date Text", "type": "text", "content": "Solar: Monday, 10/08/2026", "font_style": "default", "x": 25, "y": 80, "w": 250, "h": 20, "color": "#FFFFFF", "font_size": 14},
+                {"id": "p1_lun", "name": "Lunar Date Text", "type": "text", "content": "Lunar: 18/07 Binh Ngo", "font_style": "default", "x": 25, "y": 115, "w": 250, "h": 20, "color": "#00E676", "font_size": 13},
+                {"id": "p1_hrs", "name": "Hoang Dao Hours", "type": "text", "content": "Gio Hoang Dao: Ty, Suu, Mao, Ngo, Than", "font_style": "default", "x": 25, "y": 150, "w": 250, "h": 18, "color": "#38BDF8", "font_size": 12}
+            ])
+        elif p == 2:
+            base.extend([
+                {"id": "p2_box", "name": "Crypto Container Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p2_t", "name": "Crypto Header", "type": "text", "content": "📈 Crypto Live Market Ticker", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#FFD700", "font_size": 15},
+                {"id": "p2_btc", "name": "BTC Price", "type": "text", "content": "BTC: $64,500.00 ▲ +2.4%", "font_style": "mono", "x": 25, "y": 85, "w": 250, "h": 20, "color": "#00E676", "font_size": 14},
+                {"id": "p2_eth", "name": "ETH Price", "type": "text", "content": "ETH: $3,450.00 ▲ +1.8%", "font_style": "mono", "x": 25, "y": 120, "w": 250, "h": 20, "color": "#00E676", "font_size": 14},
+                {"id": "p2_sol", "name": "SOL Price", "type": "text", "content": "SOL: $145.20 ▲ +4.2%", "font_style": "mono", "x": 25, "y": 155, "w": 250, "h": 20, "color": "#38BDF8", "font_size": 14}
+            ])
+        elif p == 3:
+            base.extend([
+                {"id": "p3_box", "name": "PC Monitor Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p3_t", "name": "PC Monitor Header", "type": "text", "content": "🖥️ PC Hardware Performance", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#38BDF8", "font_size": 15},
+                {"id": "p3_cpu", "name": "CPU/GPU Temp", "type": "text", "content": "CPU: 45°C (35%) • GPU: 52°C (60%)", "font_style": "mono", "x": 25, "y": 80, "w": 250, "h": 18, "color": "#FFFFFF", "font_size": 12},
+                {"id": "p3_ram", "name": "RAM Usage", "type": "text", "content": "RAM: 42% (6.7GB / 16.0GB)", "font_style": "mono", "x": 25, "y": 105, "w": 250, "h": 18, "color": "#00E676", "font_size": 12},
+                {"id": "p3_cht", "name": "Hardware Line Chart", "type": "line_chart", "content": "chart", "font_style": "mono", "x": 25, "y": 130, "w": 270, "h": 50, "color": "#CC00FF", "font_size": 12},
+                {"id": "p3_usb", "name": "USB Status", "type": "text", "content": "[USB Connected • Serial COM4]", "font_style": "mono", "x": 25, "y": 190, "w": 250, "h": 16, "color": "#8B949E", "font_size": 11}
+            ])
+        elif p == 4:
+            base.extend([
+                {"id": "p4_box", "name": "Network Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p4_t", "name": "Network Header", "type": "text", "content": "🌐 WiFi Network & Disk Space", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#00E676", "font_size": 15},
+                {"id": "p4_ip", "name": "WiFi IP Text", "type": "text", "content": "IP: 192.168.1.13 • RSSI -54dBm", "font_style": "mono", "x": 25, "y": 80, "w": 250, "h": 18, "color": "#FFFFFF", "font_size": 13},
+                {"id": "p4_disk", "name": "Disk Free", "type": "text", "content": "Disk C: 128GB Free / 512GB (75%)", "font_style": "mono", "x": 25, "y": 115, "w": 250, "h": 18, "color": "#38BDF8", "font_size": 13},
+                {"id": "p4_spd", "name": "Net Speed", "type": "text", "content": "Speed: ↓ 45.2 Mbps  ↑ 12.4 Mbps", "font_style": "mono", "x": 25, "y": 150, "w": 250, "h": 18, "color": "#FFD700", "font_size": 13}
+            ])
+        elif p == 5:
+            base.extend([
+                {"id": "p5_box", "name": "Pomodoro Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p5_t", "name": "Pomodoro Header", "type": "text", "content": "⏱️ Pomodoro Focus Timer", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#FF3333", "font_size": 15},
+                {"id": "p5_tmr", "name": "Pomodoro Digits", "type": "matrix_text", "content": "25:00", "font_style": "dot_matrix", "x": 25, "y": 80, "w": 270, "h": 50, "color": "#FF3333", "font_size": 28},
+                {"id": "p5_st", "name": "Focus Status", "type": "text", "content": "State: 🎯 WORK FOCUS SESSION", "font_style": "default", "x": 25, "y": 145, "w": 250, "h": 18, "color": "#00E676", "font_size": 13},
+                {"id": "p5_ses", "name": "Sessions Completed", "type": "text", "content": "Progress: 3 / 4 Sessions Done", "font_style": "mono", "x": 25, "y": 175, "w": 250, "h": 16, "color": "#8B949E", "font_size": 12}
+            ])
+        elif p == 6: # Authentic Media Remote (1-to-1 Match with CYD Photo!)
+            base.extend([
+                {"id": "p6_t", "name": "Media Page Title", "type": "text", "content": "MEDIA CONTROL", "font_style": "default", "x": 110, "y": 28, "w": 100, "h": 16, "color": "#38BDF8", "font_size": 13},
+                {"id": "p6_b1", "name": "Button PREV Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 34, "y": 55, "w": 76, "h": 72, "color": "#111827"},
+                {"id": "p6_b1_ico", "name": "PREV Icon", "type": "text", "content": "⏮️", "font_style": "default", "x": 56, "y": 70, "w": 32, "h": 30, "color": "#00F5FF", "font_size": 20},
+                {"id": "p6_b1_txt", "name": "PREV Text", "type": "text", "content": "PREV", "font_style": "default", "x": 54, "y": 105, "w": 36, "h": 16, "color": "#00F5FF", "font_size": 12},
 
-        if not success:
-            tk.messagebox.showwarning("Sync Notice", "Could not reach CYD hardware over USB or WiFi.\nSkin saved locally.")
+                {"id": "p6_b2", "name": "Button PLAY Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 117, "y": 55, "w": 86, "h": 72, "color": "#111827"},
+                {"id": "p6_b2_ico", "name": "PLAY Icon", "type": "text", "content": "▶️", "font_style": "default", "x": 144, "y": 70, "w": 32, "h": 30, "color": "#00E676", "font_size": 20},
+                {"id": "p6_b2_txt", "name": "PLAY Text", "type": "text", "content": "PLAY", "font_style": "default", "x": 142, "y": 105, "w": 36, "h": 16, "color": "#00E676", "font_size": 12},
+
+                {"id": "p6_b3", "name": "Button NEXT Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 210, "y": 55, "w": 76, "h": 72, "color": "#111827"},
+                {"id": "p6_b3_ico", "name": "NEXT Icon", "type": "text", "content": "⏭️", "font_style": "default", "x": 232, "y": 70, "w": 32, "h": 30, "color": "#00F5FF", "font_size": 20},
+                {"id": "p6_b3_txt", "name": "NEXT Text", "type": "text", "content": "NEXT", "font_style": "default", "x": 230, "y": 105, "w": 36, "h": 16, "color": "#00F5FF", "font_size": 12},
+
+                {"id": "p6_b4", "name": "Button VOL - Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 34, "y": 135, "w": 76, "h": 72, "color": "#111827"},
+                {"id": "p6_b4_ico", "name": "VOL - Icon", "type": "text", "content": "🔊", "font_style": "default", "x": 56, "y": 150, "w": 32, "h": 30, "color": "#FFD700", "font_size": 20},
+                {"id": "p6_b4_txt", "name": "VOL - Text", "type": "text", "content": "VOL -", "font_style": "default", "x": 50, "y": 185, "w": 44, "h": 16, "color": "#FFD700", "font_size": 12},
+
+                {"id": "p6_b5", "name": "Button SKIP AD Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 117, "y": 135, "w": 86, "h": 72, "color": "#1E293B"},
+                {"id": "p6_b5_ico", "name": "SKIP AD Icon", "type": "text", "content": "⏭️", "font_style": "default", "x": 144, "y": 150, "w": 32, "h": 30, "color": "#FFD700", "font_size": 20},
+                {"id": "p6_b5_txt", "name": "SKIP AD Text", "type": "text", "content": "SKIP AD", "font_style": "default", "x": 132, "y": 185, "w": 56, "h": 16, "color": "#FFD700", "font_size": 12},
+
+                {"id": "p6_b6", "name": "Button VOL + Box", "type": "rectangle", "content": "box", "font_style": "default", "x": 210, "y": 135, "w": 76, "h": 72, "color": "#111827"},
+                {"id": "p6_b6_ico", "name": "VOL + Icon", "type": "text", "content": "🔊", "font_style": "default", "x": 232, "y": 150, "w": 32, "h": 30, "color": "#FFD700", "font_size": 20},
+                {"id": "p6_b6_txt", "name": "VOL + Text", "type": "text", "content": "VOL +", "font_style": "default", "x": 226, "y": 185, "w": 44, "h": 16, "color": "#FFD700", "font_size": 12},
+
+                {"id": "p6_arr_l", "name": "Left Nav Arrow", "type": "text", "content": "<", "font_style": "default", "x": 12, "y": 115, "w": 15, "h": 20, "color": "#00F5FF", "font_size": 16},
+                {"id": "p6_arr_r", "name": "Right Nav Arrow", "type": "text", "content": ">", "font_style": "default", "x": 295, "y": 115, "w": 15, "h": 20, "color": "#00F5FF", "font_size": 16}
+            ])
+        elif p == 7:
+            base.extend([
+                {"id": "p7_box", "name": "System Box Container", "type": "rectangle", "content": "box", "font_style": "default", "x": 10, "y": 30, "w": 300, "h": 195, "color": "#111827"},
+                {"id": "p7_t", "name": "System Header", "type": "text", "content": "⚙️ CYD Desk System Information", "font_style": "default", "x": 25, "y": 45, "w": 250, "h": 22, "color": "#FFD700", "font_size": 15},
+                {"id": "p7_clk", "name": "Big Digital Clock", "type": "matrix_text", "content": "17:29:17", "font_style": "dot_matrix", "x": 25, "y": 80, "w": 270, "h": 45, "color": "#00F5FF", "font_size": 24},
+                {"id": "p7_up", "name": "System Uptime", "type": "text", "content": "System Uptime: 12d 04h 25m", "font_style": "mono", "x": 25, "y": 140, "w": 250, "h": 18, "color": "#00E676", "font_size": 13},
+                {"id": "p7_ver", "name": "Firmware Version", "type": "text", "content": "Firmware: CYD Desk Studio Pro v2.4", "font_style": "mono", "x": 25, "y": 170, "w": 250, "h": 16, "color": "#8B949E", "font_size": 12}
+            ])
+
+        return base
 
     # ── CONTROL FUNCTIONS ─────────────────────────────────────────────
     def force_reconnect(self):
@@ -1254,8 +1556,168 @@ class SmartDeskStudioProApp(ctk.CTk):
         self.active_cyd_page = page_id
         self.pending_control["page"] = page_id
         self._highlight_page_button(page_id)
-        self.draw_sim_canvas_preview()
         self.status_lbl.configure(text=f"✅ Switched to Page {page_id}", text_color="#39FF14")
+
+    def _on_global_mousewheel(self, event):
+        if hasattr(self, 'city_dropdown_popup') and self.city_dropdown_popup is not None:
+            try:
+                if self.city_dropdown_popup.winfo_exists() and self.city_dropdown_popup.winfo_viewable():
+                    w = getattr(event, 'widget', None)
+                    if w:
+                        w_str = str(w)
+                        pop_str = str(self.city_dropdown_popup)
+                        if w_str == pop_str or w_str.startswith(pop_str + "."):
+                            return
+                    self.close_city_dropdown()
+            except Exception:
+                pass
+
+    def close_city_dropdown(self):
+        if hasattr(self, 'city_dropdown_popup') and self.city_dropdown_popup is not None:
+            try:
+                if self.city_dropdown_popup.winfo_exists():
+                    self.city_dropdown_popup.withdraw()
+            except Exception:
+                pass
+
+    def toggle_city_search_panel(self):
+        self.last_user_action_time = time.time()
+
+        # If popup is currently open & visible, toggle it closed
+        if hasattr(self, 'city_dropdown_popup') and self.city_dropdown_popup is not None:
+            try:
+                if self.city_dropdown_popup.winfo_exists() and self.city_dropdown_popup.winfo_viewable():
+                    self.city_dropdown_popup.withdraw()
+                    return
+            except Exception:
+                pass
+
+        # Otherwise create if needed and show instantly on 1st click
+        if not hasattr(self, 'city_dropdown_popup') or self.city_dropdown_popup is None or not self.city_dropdown_popup.winfo_exists():
+            self._create_city_dropdown_popup()
+
+        self._position_and_show_city_popup()
+
+    def _create_city_dropdown_popup(self):
+        # Create frameless floating CTkToplevel dropdown window
+        popup = ctk.CTkToplevel(self)
+        popup.withdraw()
+        try:
+            popup.overrideredirect(True)
+            popup.config(bg="#030712")
+            popup.configure(fg_color="#030712")
+        except Exception:
+            pass
+
+        self.city_dropdown_popup = popup
+
+        # Dark Container Frame
+        p_frame = ctk.CTkFrame(popup, fg_color="#030712", border_width=1, border_color="#38bdf8", corner_radius=8)
+        p_frame.pack(fill="both", expand=True)
+
+        p_inner = ctk.CTkFrame(p_frame, fg_color="transparent")
+        p_inner.pack(fill="both", expand=True, padx=6, pady=6)
+
+        self.city_search_entry = ctk.CTkEntry(
+            p_inner, placeholder_text="🔍 Gõ tìm nhanh...",
+            height=28, font=ctk.CTkFont(size=11)
+        )
+        self.city_search_entry.pack(fill="x", pady=(0, 4))
+
+        lb_container = ctk.CTkFrame(p_inner, fg_color="#0b0f17", border_width=1, border_color="#1f2937", corner_radius=0)
+        lb_container.pack(fill="both", expand=True)
+
+        lb_scroll = tk.Scrollbar(lb_container, bg="#030712", troughcolor="#030712")
+        lb_scroll.pack(side="right", fill="y", padx=(0, 2), pady=2)
+
+        self.city_listbox = tk.Listbox(
+            lb_container, bg="#0b0f17", fg="#f8fafc", selectbackground="#0284c7", selectforeground="#ffffff",
+            font=("Segoe UI", 11, "bold"), bd=0, highlightthickness=0, height=8, yscrollcommand=lb_scroll.set, activestyle="none"
+        )
+        self.city_listbox.pack(side="left", fill="both", expand=True, padx=2, pady=2)
+        lb_scroll.config(command=self.city_listbox.yview)
+
+        # Mouse wheel scrolling isolation: prevent mouse wheel from scrolling main window!
+        def _on_mousewheel(event):
+            try:
+                if sys.platform == "win32":
+                    self.city_listbox.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                else:
+                    self.city_listbox.yview_scroll(int(event.delta), "units")
+            except Exception: pass
+            return "break"
+
+        self.city_listbox.bind("<MouseWheel>", _on_mousewheel)
+        self.city_search_entry.bind("<MouseWheel>", lambda e: "break")
+        popup.bind("<MouseWheel>", lambda e: "break")
+
+        self.current_city_matches = []
+
+        def _render_cities(filter_text=""):
+            self.city_listbox.delete(0, tk.END)
+            norm_filter = remove_vietnamese_accents(filter_text.strip().lower())
+            self.current_city_matches = []
+            sel_idx = 0
+            for eng, vn in VN_CITIES:
+                norm_vn = remove_vietnamese_accents(vn.lower())
+                if not norm_filter or norm_filter in norm_vn or norm_filter in eng.lower():
+                    self.current_city_matches.append((eng, vn))
+                    self.city_listbox.insert(tk.END, f"  {vn}")
+                    if eng.lower() == getattr(self, 'selected_city_eng', '').lower():
+                        sel_idx = len(self.current_city_matches) - 1
+
+            if self.current_city_matches:
+                self.city_listbox.selection_set(sel_idx)
+                self.city_listbox.see(sel_idx)
+
+        def _on_city_click(event=None):
+            try:
+                sel = self.city_listbox.curselection()
+                if sel:
+                    idx = sel[0]
+                    eng, vn = self.current_city_matches[idx]
+                    self.selected_city_eng = eng
+                    self.selected_city_vn = vn
+                    self.city_picker_btn.configure(text=f"{vn}  ▼")
+                    self.close_city_dropdown()
+            except Exception:
+                pass
+
+        self.city_listbox.bind("<ButtonRelease-1>", _on_city_click)
+        self.city_listbox.bind("<Return>", _on_city_click)
+        popup.bind("<Escape>", lambda e: self.close_city_dropdown())
+        self.city_search_entry.bind("<KeyRelease>", lambda e: _render_cities(self.city_search_entry.get()))
+        _render_cities()
+
+    def _position_and_show_city_popup(self):
+        if not hasattr(self, 'city_dropdown_popup') or self.city_dropdown_popup is None:
+            return
+        try:
+            self.update_idletasks()
+            bx = self.city_picker_btn.winfo_rootx()
+            by = self.city_picker_btn.winfo_rooty()
+            bw = self.city_picker_btn.winfo_width()
+            bh = self.city_picker_btn.winfo_height()
+            win_h = self.winfo_height()
+            win_y = self.winfo_rooty()
+
+            # Pop UP if button is in lower half of screen, otherwise Pop DOWN
+            if (by - win_y) > (win_h * 0.48):
+                py = max(0, by - 252)
+            else:
+                py = by + bh + 2
+
+            self.city_dropdown_popup.geometry(f"{bw}x250+{bx}+{py}")
+            self.city_dropdown_popup.deiconify()
+            self.city_dropdown_popup.attributes("-topmost", True)
+            self.after(60, lambda: (
+                self.city_dropdown_popup.attributes("-topmost", False) if hasattr(self, 'city_dropdown_popup') and self.city_dropdown_popup and self.city_dropdown_popup.winfo_exists() else None
+            ))
+            self.city_dropdown_popup.lift()
+            if hasattr(self, 'city_search_entry'):
+                self.city_search_entry.focus_set()
+        except Exception as e:
+            print(f"[City Popup Error] {e}")
 
     def _highlight_page_button(self, page_id):
         for pid, btn_box in enumerate(self.page_btns):
@@ -1273,65 +1735,6 @@ class SmartDeskStudioProApp(ctk.CTk):
                 else:
                     t_btn.configure(fg_color="#030712", border_color="#1f2937", border_width=1)
 
-    def _open_city_picker_dialog(self):
-        """Open a sleek Searchable City Selection Modal Dialog."""
-        self.last_user_action_time = time.time()
-        self.city_user_modified = True
-
-        dialog = ctk.CTkToplevel(self)
-        dialog.title("🔍 Chọn Thành Phố / Tỉnh Thành")
-        dialog.geometry("380x420")
-        dialog.resizable(False, False)
-        dialog.transient(self)
-        dialog.grab_set()
-
-        # Header label
-        ctk.CTkLabel(dialog, text="🌤️ Chọn Thành Phố Thời Tiết (63 Tỉnh Thành)", font=ctk.CTkFont(size=13, weight="bold"), text_color="#38bdf8").pack(pady=(12, 6))
-
-        # Search Entry
-        search_entry = ctk.CTkEntry(dialog, placeholder_text="🔍 Gõ tìm nhanh (VD: Đà Nẵng, Cần Thơ, Hà Nội)...", width=340)
-        search_entry.pack(padx=15, pady=(0, 8))
-        search_entry.focus_set()
-
-        # Scrollable Frame inside modal
-        scroll_frame = ctk.CTkScrollableFrame(dialog, width=340, height=300, fg_color="#030712", border_width=1, border_color="#1f2937")
-        scroll_frame.pack(padx=15, pady=(0, 12))
-
-        def _render_dialog_list(filter_text=""):
-            for child in scroll_frame.winfo_children():
-                child.destroy()
-            norm_filter = remove_vietnamese_accents(filter_text.strip().lower())
-            matched = []
-            for eng, vn in VN_CITIES:
-                norm_vn = remove_vietnamese_accents(vn.lower())
-                if not norm_filter or norm_filter in norm_vn or norm_filter in eng.lower():
-                    matched.append((eng, vn))
-
-            for idx, (eng, vn) in enumerate(matched):
-                row = idx // 2
-                col = idx % 2
-                is_sel = (eng.lower() == getattr(self, 'selected_city_eng', '').lower())
-                bg_col = "#0284C7" if is_sel else "#111827"
-                btn = ctk.CTkButton(
-                    scroll_frame, text=vn, font=ctk.CTkFont(size=12),
-                    height=30, fg_color=bg_col, hover_color="#1f2937", text_color="#ffffff",
-                    border_width=1, border_color="#38bdf8" if is_sel else "#1f2937",
-                    command=lambda e=eng, v=vn: _choose_city(e, v)
-                )
-                btn.grid(row=row, column=col, padx=4, pady=4, sticky="ew")
-
-            for c_i in range(2):
-                scroll_frame.columnconfigure(c_i, weight=1)
-
-        def _choose_city(eng_name, vn_name):
-            self.selected_city_eng = eng_name
-            self.selected_city_vn = vn_name
-            if hasattr(self, 'city_picker_btn'):
-                self.city_picker_btn.configure(text=f"🏙️ {vn_name}  ▼")
-            dialog.destroy()
-
-        search_entry.bind("<KeyRelease>", lambda e: _render_dialog_list(search_entry.get()))
-        _render_dialog_list()
 
     def _update_alarm_toggle_ui(self, enabled):
         self.alarm_enabled_state = enabled
@@ -1366,25 +1769,24 @@ class SmartDeskStudioProApp(ctk.CTk):
         if page_id != self.active_cyd_page:
             self.active_cyd_page = page_id
             self._highlight_page_button(page_id)
-            self.draw_sim_canvas_preview()
 
         cyd_theme = sdata.get("theme", "")
         if cyd_theme and getattr(self, 'active_cyd_theme', '') != cyd_theme:
             self.active_cyd_theme = cyd_theme
             self._highlight_theme_button(cyd_theme)
 
-        # Sync city from CYD ONLY when the city reported by CYD actually changes!
+        # Sync city from CYD immediately on connect or state update
         cyd_city = sdata.get("city", "")
         if cyd_city and hasattr(self, 'city_picker_btn'):
             c_val = cyd_city.strip()
             if c_val.lower() != getattr(self, 'last_cyd_city', '').lower():
-                if time.time() - self.last_user_action_time > 4.0:
+                if time.time() - self.last_user_action_time > 3.0 or not getattr(self, 'last_cyd_city', ''):
                     self.last_cyd_city = c_val.lower()
                     for eng, vn in VN_CITIES:
                         if eng.lower() == c_val.lower():
                             self.selected_city_eng = eng
                             self.selected_city_vn = vn
-                            self.city_picker_btn.configure(text=f"🏙️ {vn}  ▼")
+                            self.city_picker_btn.configure(text=f"{vn}  ▼")
                             break
 
         cur1 = sdata.get("cur1", "")
@@ -1612,29 +2014,6 @@ class SmartDeskStudioProApp(ctk.CTk):
                 ))
 
             time.sleep(1)
-
-    def export_json(self):
-        path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Skin Layout", "*.json")])
-        if path:
-            try:
-                with open(path, "w", encoding="utf-8") as f:
-                    json.dump(self.skin_data, f, indent=2, ensure_ascii=False)
-                tk.messagebox.showinfo("Export Success", f"Skin Layout JSON saved to:\n{path}")
-            except Exception as e:
-                tk.messagebox.showerror("Export Error", f"Failed to save JSON file: {e}")
-
-    def import_json(self):
-        path = filedialog.askopenfilename(filetypes=[("JSON Skin Layout", "*.json")])
-        if path and os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                if "pages" in data:
-                    self.skin_data = data
-                self.selected_elem_id = None; self.redraw_canvas()
-                tk.messagebox.showinfo("Import Success", "Skin Layout JSON successfully loaded!")
-            except Exception as e:
-                tk.messagebox.showerror("Import Error", f"Failed to load JSON file: {e}")
 
 def _send_control_cmd(cmd_dict, status_lbl, success_msg, err_msg):
     if app_instance:

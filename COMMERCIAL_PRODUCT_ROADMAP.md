@@ -54,7 +54,7 @@ flowchart TD
 
 ---
 
-## 🎯 4. MÔ HÌNH KINH DOANH & CHỢ SKIN (SKIN MARKETPLACE)
+## 🎯 4. MÔ HÌNH KINH DOANH & GÓI TÍNH NĂNG (PRODUCT SUITES & MONETIZATION)
 
 ### 📊 A. Phân Khúc Nhóm Khách Hàng (User Profile Suites):
 1. **Trader & Financial Investor**: Giá Vàng SJC, XAU/USD, Giá Bạc, Chứng khoán VN-Index, Crypto Ticker (BTC/ETH). Đèn nháy cảnh báo biến động giá.
@@ -62,11 +62,9 @@ flowchart TD
 3. **Office & Productivity**: Lịch âm dương xem ngày tốt xấu, Pomodoro timer, To-Do list.
 4. **Streamer & Music Enthusiast**: Album Art Spotify & Dynamic Audio Visualizer.
 
-### 💎 B. Mô Hình Doanh Thu Chợ Skin (Monetization):
-- **🆓 Free Tier**: 4 Presets cài sẵn + Công cụ kéo thả thiết kế skin trên PC.
-- **🛍️ Premium Store (19k - 49k/Skin)**: Skin thiết kế Pixel Art Anime, 3D HUD cao cấp.
-- **🎨 Creator Share 70/30**: Designer đăng bán skin thu 70%, nhà sản xuất giữ 30%.
-- **📡 VIP Data Feed (29k/tháng)**: Luồng dữ liệu Chứng Khoán VN-Index & Giá Vàng SJC tự động.
+### 💎 B. Mô Hình Doanh Thu (Monetization):
+- **🆓 Core Dashboard**: Tất cả tính năng giám sát PC, Lịch Âm Dương, Thời tiết & Tiện ích tiêu chuẩn.
+- **📡 VIP Data Feed (29k/tháng)**: Luồng dữ liệu Chứng Khoán VN-Index & Giá Vàng SJC tự động cập nhật thời gian thực.
 
 ---
 
@@ -75,6 +73,5 @@ flowchart TD
 | Bước | Hạng Mục Công Việc |
 | :---: | :--- |
 | **Bước 1** | Áp dụng thuật toán kết nối siêu tốc (< 50ms) vào `pc_utility/pc_monitor_app/main.py`. |
-| **Bước 2** | Nâng cấp giao diện Studio Kéo Thả `skin_designer_studio/main.py`: Toolbar Nổi Nhanh, Hít Lưới Snap Alignment, Color Palette Swatches. |
-| **Bước 3** | Viết module C++ `DynamicSkinManager` trên ESP32 CYD để tiếp nhận và lưu Skin JSON vào Flash LittleFS. |
-| **Bước 4** | Đóng gói bộ cài đặt `SmartDeskStudioPro_Setup.exe` thương mại hóa hoàn chỉnh. |
+| **Bước 2** | Tối ưu hóa giao diện Native UI và hệ thống Theme màu hiển thị trên ESP32 CYD. |
+| **Bước 3** | Đóng gói bộ cài đặt `SmartDeskStudioPro_Setup.exe` thương mại hóa hoàn chỉnh. |

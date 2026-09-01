@@ -127,11 +127,12 @@ void DisplayManager::update() {
     }
 
     spr.fillSprite(C_BG);
-    renderHeader();
 
     if (isAppLauncherOpen) {
+        renderHeader();
         renderAppLauncherOverlay();
     } else {
+        renderHeader();
         switch (currentPage) {
             case 0: renderPage0_WeatherClock();     break;
             case 1: renderPage1_LunarCalendar();    break;

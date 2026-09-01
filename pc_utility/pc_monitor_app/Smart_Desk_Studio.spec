@@ -1,12 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_data_files
+
+datas = [('assets', 'assets')]
+datas += collect_data_files('customtkinter')
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=datas,
+    hiddenimports=['PIL._tkinter_finder', 'customtkinter', 'psutil', 'requests', 'pystray', 'serial', 'winreg'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -32,6 +36,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='assets/app_icon.ico',
 )
 coll = COLLECT(
     exe,

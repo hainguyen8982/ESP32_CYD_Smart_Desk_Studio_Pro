@@ -3,7 +3,6 @@
 #include "NetworkManager.h"
 #include "DeskUtilities.h"
 #include "Theme.h"
-#include "DynamicSkinManager.h"
 #include <Preferences.h>
 
 PCMonitor pcMonitor;
@@ -37,15 +36,6 @@ void PCMonitor::update() {
             Serial.printf("PONG_DASHBOARD {\"page\":%d,\"theme\":\"%s\"}\n",
                           display.getCurrentPage(),
                           getCurrentThemePresetName());
-            return;
-        }
-
-        if (line.startsWith("SKIN_JSON:")) {
-            String payload = line.substring(10);
-            if (g_skinMgr.parseAndSaveSkinJSON(payload)) {
-                Serial.println("SKIN_SYNC_SUCCESS");
-                display.refreshDisplay();
-            }
             return;
         }
 
