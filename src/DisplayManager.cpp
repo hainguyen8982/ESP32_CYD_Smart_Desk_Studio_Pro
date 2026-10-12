@@ -501,49 +501,8 @@ void DisplayManager::drawWifiSignalIcon(int16_t cx, int16_t cy, int rssi, bool c
 //  PAGE 0 — MODERN GLASSMORPHISM WEATHER CLOCK (CLEAN FROSTED ACRYLIC & AMBIENT GLOW)
 // ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderModernGlassBackground() {
-    time_t now = time(NULL);
-    struct tm ti;
-    bool valid = (now >= 1600000000 && localtime_r(&now, &ti));
-    int hour = valid ? ti.tm_hour : 12;
-
-    // Ultra-clean Modern Glass Mesh Gradient (No Mario stars, No 8-bit artifacts)
-    uint8_t topR, topG, topB;
-    uint8_t botR, botG, botB;
-
-    if (hour >= 6 && hour < 17) {
-        // Day: Deep Obsidian Navy to Ambient Slate Indigo
-        topR = 10; topG = 18; topB = 36;   // #0A1224
-        botR = 18; botG = 32; botB = 58;   // #12203A
-    } else if (hour >= 17 && hour < 20) {
-        // Twilight: Deep Twilight Charcoal to Ambient Dusk Violet
-        topR = 16; topG = 12; topB = 30;   // #100C1E
-        botR = 32; botG = 20; botB = 48;   // #201430
-    } else {
-        // Night: Pure Obsidian Space to Deep Midnight Navy
-        topR = 8;  topG = 12; topB = 26;   // #080C1A
-        botR = 14; botG = 22; botB = 44;   // #0E162C
-    }
-
-    for (int y = 0; y < SCREEN_HEIGHT; y++) {
-        uint8_t r = topR + ((botR - topR) * y) / SCREEN_HEIGHT;
-        uint8_t g = topG + ((botG - topG) * y) / SCREEN_HEIGHT;
-        uint8_t b = topB + ((botB - topB) * y) / SCREEN_HEIGHT;
-        uint16_t color = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-        spr.drawFastHLine(0, y, SCREEN_WIDTH, color);
-    }
-
-    // Modern Glassmorphism Ambient Mesh Glow Orbs (Creates real glass depth & edge refraction)
-    // 1. Right Hero Ambient Cyan/Sapphire Glow Orb (Behind Weather Card)
-    spr.fillCircle(258, 90, 60, hexToRGB565("#0C233E"));
-    spr.fillCircle(258, 90, 46, hexToRGB565("#10365E"));
-    spr.fillCircle(258, 90, 32, hexToRGB565("#154C84"));
-    spr.fillCircle(258, 90, 18, hexToRGB565("#1C65B0"));
-
-    // 2. Left Ambient Royal Violet/Indigo Glow Orb (Behind Clock & Glass Badges)
-    spr.fillCircle(75, 135, 65, hexToRGB565("#160E30"));
-    spr.fillCircle(75, 135, 48, hexToRGB565("#22154A"));
-    spr.fillCircle(75, 135, 32, hexToRGB565("#321E6C"));
-    spr.fillCircle(75, 135, 16, hexToRGB565("#462A92"));
+    // 1-Shot High-Performance copy of Scenic Landscape Wallpaper to Sprite double-buffer
+    spr.pushImage(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, wallpaper_beach);
 }
 
 void DisplayManager::drawModernWeatherHero(int16_t cx, int16_t cy, uint8_t weatherType, bool isNight) {
@@ -725,10 +684,19 @@ void DisplayManager::renderPage0_WeatherClock() {
     else if (strncmp(w.main, "Rain", 4) == 0 || strncmp(w.main, "Drizzle", 7) == 0) wType = 2;
     else if (strncmp(w.main, "Thunder", 7) == 0) wType = 3;
 
-    // 1. Render Clean Modern Glassmorphism Background with Ambient Mesh Glow
+    // 1. Render Clean Scenic Landscape Wallpaper Background
     renderModernGlassBackground();
 
-    // 2. Large Hero Clock (Transparent text!)
+    // Cards & Badges (Frosted Glass Acrylic Containers with Specular Shine)
+    uint16_t cardFill   = hexToRGB565("#0A1628");     // Semi-translucent dark glass
+    uint16_t cardBorder = hexToRGB565("#1A4674");     // Crisp Glass Border
+
+    // Clock & Date Frosted Glass Container (x=14, y=20, w=188, h=96)
+    spr.fillRoundRect(14, 20, 188, 96, 12, cardFill);
+    spr.drawRoundRect(14, 20, 188, 96, 12, cardBorder);
+    spr.drawFastHLine(24, 21, 168, hexToRGB565("#88DAFF")); // Specular reflection highlight
+
+    // 2. Large Hero Clock
     char clockStr[8];
     if (valid) {
         snprintf(clockStr, sizeof(clockStr), "%02d:%02d", ti.tm_hour, ti.tm_min);
@@ -737,7 +705,7 @@ void DisplayManager::renderPage0_WeatherClock() {
     }
     spr.setTextDatum(TL_DATUM);
     spr.setTextColor(C_WHITE);
-    spr.drawString(clockStr, 20, 24, 6);
+    spr.drawString(clockStr, 24, 24, 6);
 
     // 3. Solar Date (Thu 2, 12 Thang 10) - 100% Thuan Viet
     static const char* wdays[] = {"Chu Nhat", "Thu 2", "Thu 3", "Thu 4", "Thu 5", "Thu 6", "Thu 7"};
@@ -750,7 +718,7 @@ void DisplayManager::renderPage0_WeatherClock() {
     }
     spr.setTextDatum(TL_DATUM);
     spr.setTextColor(0xD69A); // Soft cream
-    spr.drawString(dateBuf, 22, 74, 2);
+    spr.drawString(dateBuf, 24, 72, 2);
 
     // 4. Lunar Date with Can Chi (Am: 03/09 Binh Ngo)
     vn_lunar lunar;
@@ -767,12 +735,10 @@ void DisplayManager::renderPage0_WeatherClock() {
     char lunarStr[48];
     snprintf(lunarStr, sizeof(lunarStr), "Am: %02d/%02d %s %s",
              lunar.get_lunar_dd(), lunar.get_lunar_mm(), canNames[canIdx], chiNames[chiIdx]);
-    spr.setTextColor(C_YELLOW);
-    spr.drawString(lunarStr, 22, 94, 2);
+    spr.setTextColor(C_CYAN);
+    spr.drawString(lunarStr, 24, 92, 2);
 
-    // 5. Cards & Badges (Frosted Glass Acrylic Containers with Specular Shine)
-    uint16_t cardFill   = hexToRGB565("#0D192B");     // Semi-translucent dark glass
-    uint16_t cardBorder = hexToRGB565("#1A3A60");     // Crisp Glass Border
+    // 5. Badges Row (y=122)
 
     // Badge 1: Humidity (x=18, y=122, w=88, h=48)
     spr.fillRoundRect(18, 122, 88, 48, 8, cardFill);
@@ -820,13 +786,13 @@ void DisplayManager::renderPage0_WeatherClock() {
     }
     spr.drawString(fRange, 28, 200, 1);
 
-    // 6. Right Side: Modern Frosted Glass Weather Hero Panel (x=210, y=28, w=98, h=142)
-    spr.fillRoundRect(210, 28, 98, 142, 12, cardFill);
-    spr.drawRoundRect(210, 28, 98, 142, 12, cardBorder);
-    spr.drawFastHLine(220, 29, 78, hexToRGB565("#4FA3E3")); // Specular shine
+    // 6. Right Side: Modern Frosted Glass Weather Hero Panel (x=210, y=20, w=98, h=150)
+    spr.fillRoundRect(210, 20, 98, 150, 12, cardFill);
+    spr.drawRoundRect(210, 20, 98, 150, 12, cardBorder);
+    spr.drawFastHLine(220, 21, 78, hexToRGB565("#88DAFF")); // Specular shine
 
     // Modern Vector Weather Glyph inside glass panel
-    drawModernWeatherHero(259, 66, wType, isNight);
+    drawModernWeatherHero(259, 62, wType, isNight);
 
     // Big Temperature (Centered inside glass panel)
     char tempStr[16];
@@ -834,7 +800,7 @@ void DisplayManager::renderPage0_WeatherClock() {
     int16_t tw = spr.textWidth(tempStr, 6);
     int16_t totalTempW = tw + 18;
     int16_t tx = 259 - (totalTempW / 2);
-    int16_t ty = 108;
+    int16_t ty = 106;
 
     spr.setTextDatum(TL_DATUM);
     spr.setTextColor(C_WHITE);

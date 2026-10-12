@@ -5,6 +5,7 @@
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include "Config.h"
+#include "Wallpaper.h"
 
 enum DetailModalType {
     MODAL_NONE = 0,
