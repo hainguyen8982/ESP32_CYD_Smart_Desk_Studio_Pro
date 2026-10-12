@@ -10,6 +10,7 @@
 #include "TouchManager.h"
 #include "vn_lunar.h"
 #include "Theme.h"
+#include "DynamicSkinManager.h"
 #include <time.h>
 #include <qrcode.h>
 
@@ -58,7 +59,7 @@ static uint16_t getPageAccent(uint8_t page) {
 //  CONSTRUCTOR / BEGIN / NAVIGATION / UPDATE
 // ─────────────────────────────────────────────────────────────────────
 DisplayManager::DisplayManager()
-    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), isMediaPlaying(false), lastLocalMediaToggle(0), touchedMediaBtn(0), lastMediaTouchTime(0), settingsTab(0), lastRenderTime(0), spriteReady(false) {}
+    : tft(), spr(&tft), currentPage(0), currentModal(MODAL_NONE), tempAlarmHour(7), tempAlarmMin(0), calendarMonthOffset(0), isMediaPlaying(false), lastLocalMediaToggle(0), touchedMediaBtn(0), lastMediaTouchTime(0), settingsTab(0), lastRenderTime(0), spriteReady(false), navDockVisible(false), navDockShowTime(0), navDockCurrentY(242.0f), pressedNavBtn(0) {}
 
 void DisplayManager::begin() {
     loadTheme(); // Load saved theme from NVS or default Ocean Dark
@@ -100,6 +101,16 @@ void DisplayManager::setCurrentPage(uint8_t p) {
 void DisplayManager::nextPage()     { currentPage = (currentPage + 1) % TOTAL_PAGES; network.broadcastStateInstant(); }
 void DisplayManager::previousPage() { currentPage = (currentPage + TOTAL_PAGES - 1) % TOTAL_PAGES; network.broadcastStateInstant(); }
 
+void DisplayManager::showNavDock() {
+    navDockVisible = true;
+    navDockShowTime = millis();
+}
+
+void DisplayManager::hideNavDock() {
+    navDockVisible = false;
+    pressedNavBtn = 0;
+}
+
 void DisplayManager::update() {
     if (millis() - lastRenderTime < 33) return;   // ~30 fps cap
     lastRenderTime = millis();
@@ -126,12 +137,16 @@ void DisplayManager::update() {
         return;
     }
 
-    spr.fillSprite(C_BG);
-    renderHeader();
+    // Modern Glassmorphism ambient gradient background across ALL pages
+    renderModernGlassBackground();
 
     if (isAppLauncherOpen) {
+        renderHeader();
         renderAppLauncherOverlay();
+    } else if (g_skinMgr.isCustomSkinActive()) {
+        g_skinMgr.renderCurrentPageSkin(spr, currentPage);
     } else {
+        if (currentPage != 0) renderHeader();
         switch (currentPage) {
             case 0: renderPage0_WeatherClock();     break;
             case 1: renderPage1_LunarCalendar();    break;
@@ -143,6 +158,7 @@ void DisplayManager::update() {
             case 7: renderPage7_Settings();         break;
             default: renderPage0_WeatherClock();    break;
         }
+        if (currentPage == 0) renderHeader();
     }
 
     // Alarm Ringing Pop-up Modal Overlay
@@ -171,6 +187,11 @@ void DisplayManager::update() {
         spr.drawString("[ Tap screen to dismiss ]", 160, 165, 1);
     }
 
+    // Floating Nav Dock
+    if (!isModalOpen() && !touch.isCalibrating() && network.isBootComplete() && !deskUtils.isAlarmRinging()) {
+        renderFloatingNavDock();
+    }
+
     spr.pushSprite(0, 0);
 }
 
@@ -178,6 +199,13 @@ void DisplayManager::update() {
 //  HEADER  (y = 0..27,  height = 28px)
 // ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderHeader() {
+    if (currentPage == 0 && !isAppLauncherOpen) {
+        // Transparent minimalistic status bar on Page 0 (blend with twilight background)
+        drawWifiSignalIcon(280, 14, WiFi.RSSI(), network.isConnected());
+        iconLink(302, 14, pcMonitor.isConnected() ? C_CYAN : C_VDIM);
+        return;
+    }
+
     spr.fillRect(0, 0, SCREEN_WIDTH, 28, C_HDR);
 
     // ── Tiny page icon (top-left, ~14px) ─────────────────────────────
@@ -469,111 +497,371 @@ void DisplayManager::drawWifiSignalIcon(int16_t cx, int16_t cy, int rssi, bool c
 }
 
 // ─────────────────────────────────────────────────────────────────────
-//  PAGE 0 — WEATHER CLOCK
 // ─────────────────────────────────────────────────────────────────────
+//  PAGE 0 — MODERN GLASSMORPHISM WEATHER CLOCK (CLEAN FROSTED ACRYLIC & AMBIENT GLOW)
+// ─────────────────────────────────────────────────────────────────────
+void DisplayManager::renderModernGlassBackground() {
+    time_t now = time(NULL);
+    struct tm ti;
+    bool valid = (now >= 1600000000 && localtime_r(&now, &ti));
+    int hour = valid ? ti.tm_hour : 12;
+
+    // Ultra-clean Modern Glass Mesh Gradient (No Mario stars, No 8-bit artifacts)
+    uint8_t topR, topG, topB;
+    uint8_t botR, botG, botB;
+
+    if (hour >= 6 && hour < 17) {
+        // Day: Deep Obsidian Navy to Ambient Slate Indigo
+        topR = 10; topG = 18; topB = 36;   // #0A1224
+        botR = 18; botG = 32; botB = 58;   // #12203A
+    } else if (hour >= 17 && hour < 20) {
+        // Twilight: Deep Twilight Charcoal to Ambient Dusk Violet
+        topR = 16; topG = 12; topB = 30;   // #100C1E
+        botR = 32; botG = 20; botB = 48;   // #201430
+    } else {
+        // Night: Pure Obsidian Space to Deep Midnight Navy
+        topR = 8;  topG = 12; topB = 26;   // #080C1A
+        botR = 14; botG = 22; botB = 44;   // #0E162C
+    }
+
+    for (int y = 0; y < SCREEN_HEIGHT; y++) {
+        uint8_t r = topR + ((botR - topR) * y) / SCREEN_HEIGHT;
+        uint8_t g = topG + ((botG - topG) * y) / SCREEN_HEIGHT;
+        uint8_t b = topB + ((botB - topB) * y) / SCREEN_HEIGHT;
+        uint16_t color = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        spr.drawFastHLine(0, y, SCREEN_WIDTH, color);
+    }
+
+    // Modern Glassmorphism Ambient Mesh Glow Orbs (Creates real glass depth & edge refraction)
+    // 1. Right Hero Ambient Cyan/Sapphire Glow Orb (Behind Weather Card)
+    spr.fillCircle(258, 90, 60, hexToRGB565("#0C233E"));
+    spr.fillCircle(258, 90, 46, hexToRGB565("#10365E"));
+    spr.fillCircle(258, 90, 32, hexToRGB565("#154C84"));
+    spr.fillCircle(258, 90, 18, hexToRGB565("#1C65B0"));
+
+    // 2. Left Ambient Royal Violet/Indigo Glow Orb (Behind Clock & Glass Badges)
+    spr.fillCircle(75, 135, 65, hexToRGB565("#160E30"));
+    spr.fillCircle(75, 135, 48, hexToRGB565("#22154A"));
+    spr.fillCircle(75, 135, 32, hexToRGB565("#321E6C"));
+    spr.fillCircle(75, 135, 16, hexToRGB565("#462A92"));
+}
+
+void DisplayManager::drawModernWeatherHero(int16_t cx, int16_t cy, uint8_t weatherType, bool isNight) {
+    if (!isNight && weatherType == 0) {
+        // ── 1. Modern Radiant Sun (Clear Day) ─────────────────────────
+        spr.fillCircle(cx, cy, 22, hexToRGB565("#3A2A10")); // Soft ambient aura
+        spr.fillCircle(cx, cy, 14, C_YELLOW);
+        spr.drawCircle(cx, cy, 14, C_ORANGE);
+        for (int a = 0; a < 8; a++) {
+            float rad = a * 0.785398f;
+            int16_t x1 = cx + (int16_t)(cos(rad) * 17.0f);
+            int16_t y1 = cy + (int16_t)(sin(rad) * 17.0f);
+            int16_t x2 = cx + (int16_t)(cos(rad) * 24.0f);
+            int16_t y2 = cy + (int16_t)(sin(rad) * 24.0f);
+            spr.drawLine(x1, y1, x2, y2, C_YELLOW);
+            spr.drawLine(x1 + 1, y1, x2 + 1, y2, C_ORANGE);
+        }
+    } else if (isNight && weatherType == 0) {
+        // ── 2. Glowing Pearl Crescent Moon (Clear Night - Pure Geometric Vector) ──
+        spr.fillCircle(cx, cy, 24, hexToRGB565("#0F2848")); // Soft lunar aura
+        spr.fillCircle(cx, cy, 18, hexToRGB565("#173D68"));
+        spr.fillCircle(cx, cy, 14, hexToRGB565("#E0F2FE"));
+        spr.fillCircle(cx + 6, cy - 4, 13, hexToRGB565("#0D192B")); // Card cut-out
+        spr.drawCircle(cx, cy, 14, C_WHITE);
+    } else if (weatherType == 1) {
+        // ── 3. Multi-Layer 3D Glass Cloud (Partly Cloudy) ────────────
+        if (!isNight) {
+            // Sun peeking behind cloud
+            spr.fillCircle(cx + 12, cy - 10, 10, C_YELLOW);
+            spr.drawCircle(cx + 12, cy - 10, 10, C_ORANGE);
+        }
+        // Smooth Cloud Body
+        spr.fillCircle(cx - 2, cy - 5, 13, C_WHITE);
+        spr.fillCircle(cx - 12, cy + 3, 10, hexToRGB565("#DCE8F8"));
+        spr.fillCircle(cx + 10, cy + 3, 10, hexToRGB565("#DCE8F8"));
+        spr.fillRoundRect(cx - 16, cy, 32, 13, 6, hexToRGB565("#CFE0F8"));
+        spr.drawCircle(cx - 2, cy - 5, 13, C_WHITE);
+        spr.drawFastHLine(cx - 14, cy - 4, 16, C_WHITE); // Specular highlight
+    } else if (weatherType == 2) {
+        // ── 4. Storm Blue Rain Cloud + Slanted Droplets (Rain / Drizzle) ─
+        spr.fillCircle(cx - 2, cy - 5, 13, hexToRGB565("#E0F0FE"));
+        spr.fillCircle(cx - 12, cy + 3, 10, hexToRGB565("#A8CEF4"));
+        spr.fillCircle(cx + 10, cy + 3, 10, hexToRGB565("#A8CEF4"));
+        spr.fillRoundRect(cx - 16, cy, 32, 13, 6, hexToRGB565("#90BEEC"));
+        spr.drawCircle(cx - 2, cy - 5, 13, C_WHITE);
+
+        // Modern Slanted Teardrop Droplets
+        drawSlantedRaindrop(spr, cx - 12, cy + 18);
+        drawSlantedRaindrop(spr, cx,      cy + 23);
+        drawSlantedRaindrop(spr, cx + 12, cy + 18);
+    } else {
+        // ── 5. Storm Cloud + Sharp Neon Lightning Bolt (Thunderstorm) ──
+        spr.fillCircle(cx - 2, cy - 5, 13, hexToRGB565("#C8D8E8"));
+        spr.fillCircle(cx - 12, cy + 3, 10, hexToRGB565("#88A0B8"));
+        spr.fillCircle(cx + 10, cy + 3, 10, hexToRGB565("#88A0B8"));
+        spr.fillRoundRect(cx - 16, cy, 32, 13, 6, hexToRGB565("#688098"));
+
+        // Neon Yellow Lightning Bolt
+        int16_t lx = cx, ly = cy + 10;
+        spr.fillTriangle(lx + 2, ly, lx - 4, ly + 9, lx + 1, ly + 9, C_YELLOW);
+        spr.fillTriangle(lx + 1, ly + 7, lx - 5, ly + 18, lx + 4, ly + 8, C_YELLOW);
+        spr.drawPixel(lx - 2, ly + 8, C_WHITE);
+    }
+}
+
+void DisplayManager::renderFloatingNavDock() {
+    if (navDockVisible) {
+        if (millis() - navDockShowTime > 4000) {
+            hideNavDock();
+        }
+    }
+
+    // Animation interpolation
+    float targetY = navDockVisible ? 198.0f : 242.0f;
+    if (abs(navDockCurrentY - targetY) > 0.5f) {
+        navDockCurrentY += (targetY - navDockCurrentY) * 0.4f;
+    } else {
+        navDockCurrentY = targetY;
+    }
+
+    int16_t dockY = (int16_t)navDockCurrentY;
+
+    if (dockY < 238) {
+        // Wide container with ample corner margins (Eliminates all corner clipping / lem!)
+        int16_t dockX = 46;
+        int16_t dockW = 228;
+        int16_t dockH = 36;
+
+        // Container Drop Shadow & Deep Translucent Glass Fill
+        spr.drawRoundRect(dockX - 1, dockY + 1, dockW + 2, dockH, 18, 0x0000);
+        spr.fillRoundRect(dockX, dockY, dockW, dockH, 17, hexToRGB565("#0A1628"));
+        spr.drawRoundRect(dockX, dockY, dockW, dockH, 17, hexToRGB565("#1A4674"));
+        spr.drawFastHLine(dockX + 22, dockY + 1, dockW - 44, hexToRGB565("#88DAFF"));
+
+        // 3 Modern 3D Safe-Inset Buttons
+        int16_t bw = 60, bh = 26;
+
+        for (int i = 0; i < 3; i++) {
+            int16_t bx = dockX + 10 + i * 72;
+            int16_t by = dockY + 5;
+            bool isPressed = (pressedNavBtn == (i + 1));
+
+            if (!isPressed) {
+                // 3D Glass Pill Base
+                spr.fillRoundRect(bx, by, bw, bh, 13, hexToRGB565("#132846"));
+                // Top Half Specular Soft Shine
+                spr.fillRoundRect(bx + 2, by + 2, bw - 4, 11, 9, hexToRGB565("#1C3C68"));
+                // 3D Top Specular Shine Rim
+                spr.drawFastHLine(bx + 10, by + 1, bw - 20, hexToRGB565("#B4EAFF"));
+                // 3D Bottom Shadow
+                spr.drawFastHLine(bx + 10, by + bh - 2, bw - 20, 0x0000);
+                spr.drawRoundRect(bx, by, bw, bh, 13, hexToRGB565("#2B588E"));
+            } else {
+                // Glowing Neon Active Pill
+                spr.fillRoundRect(bx, by, bw, bh, 13, i == 1 ? C_YELLOW : C_CYAN);
+                spr.drawRoundRect(bx, by, bw, bh, 13, C_WHITE);
+            }
+
+            // Vector 3D Modern Icons
+            int16_t icx = bx + (bw / 2);
+            int16_t icy = by + (bh / 2);
+            uint16_t iconColor   = isPressed ? C_WHITE : (i == 1 ? C_YELLOW : C_CYAN);
+            uint16_t shadowColor = isPressed ? 0x0000  : hexToRGB565("#081220");
+
+            if (i == 0) {
+                // Button 1: Left Chevron [ ‹ ]
+                spr.drawLine(icx - 5, icy + 1, icx + 3, icy - 7, shadowColor);
+                spr.drawLine(icx - 6, icy + 1, icx + 2, icy - 7, shadowColor);
+                spr.drawLine(icx - 5, icy + 1, icx + 3, icy + 9, shadowColor);
+                spr.drawLine(icx - 6, icy + 1, icx + 2, icy + 9, shadowColor);
+                for (int t = -1; t <= 1; t++) {
+                    spr.drawLine(icx - 5 + t, icy, icx + 3 + t, icy - 8, iconColor);
+                    spr.drawLine(icx - 5 + t, icy, icx + 3 + t, icy + 8, iconColor);
+                }
+                spr.fillCircle(icx - 5, icy, 1, iconColor);
+            } else if (i == 1) {
+                // Button 2: Modern 3D Floating App Grid [ ⊞ ]
+                // Top-Left (Cyan)
+                spr.fillRect(icx - 8, icy - 8, 6, 6, isPressed ? C_WHITE : C_CYAN);
+                spr.drawPixel(icx - 7, icy - 7, C_WHITE);
+                // Top-Right (Yellow)
+                spr.fillRect(icx + 2, icy - 8, 6, 6, isPressed ? C_WHITE : C_YELLOW);
+                spr.drawPixel(icx + 3, icy - 7, C_WHITE);
+                // Bottom-Left (Green)
+                spr.fillRect(icx - 8, icy + 2, 6, 6, isPressed ? C_WHITE : C_GREEN);
+                spr.drawPixel(icx - 7, icy + 3, C_WHITE);
+                // Bottom-Right (Purple / Coral)
+                spr.fillRect(icx + 2, icy + 2, 6, 6, isPressed ? C_WHITE : C_PURPLE);
+                spr.drawPixel(icx + 3, icy + 3, C_WHITE);
+            } else {
+                // Button 3: Right Chevron [ › ]
+                spr.drawLine(icx + 5, icy + 1, icx - 3, icy - 7, shadowColor);
+                spr.drawLine(icx + 6, icy + 1, icx - 2, icy - 7, shadowColor);
+                spr.drawLine(icx + 5, icy + 1, icx - 3, icy + 9, shadowColor);
+                spr.drawLine(icx + 6, icy + 1, icx - 2, icy + 9, shadowColor);
+                for (int t = -1; t <= 1; t++) {
+                    spr.drawLine(icx + 5 + t, icy, icx - 3 + t, icy - 8, iconColor);
+                    spr.drawLine(icx + 5 + t, icy, icx - 3 + t, icy + 8, iconColor);
+                }
+                spr.fillCircle(icx + 5, icy, 1, iconColor);
+            }
+        }
+    } else {
+        // Glowing Home Indicator Pill at bottom edge when dock is hidden
+        spr.fillRoundRect(120, 234, 80, 4, 2, hexToRGB565("#355880"));
+        spr.drawFastHLine(135, 234, 50, hexToRGB565("#80B8E8"));
+    }
+}
+
 void DisplayManager::renderPage0_WeatherClock() {
     time_t now = time(NULL);
     struct tm ti;
     bool valid = (now >= 1600000000 && localtime_r(&now, &ti));
+    bool isNight = valid && (ti.tm_hour >= 20 || ti.tm_hour < 6);
 
-    // ── Giant HH:MM clock (drawn clean & transparent on C_BG) ─────────
+    const WeatherData& w = network.getWeather();
+    uint8_t wType = 0;
+    if (strncmp(w.main, "Clouds", 6) == 0) wType = 1;
+    else if (strncmp(w.main, "Rain", 4) == 0 || strncmp(w.main, "Drizzle", 7) == 0) wType = 2;
+    else if (strncmp(w.main, "Thunder", 7) == 0) wType = 3;
+
+    // 1. Render Clean Modern Glassmorphism Background with Ambient Mesh Glow
+    renderModernGlassBackground();
+
+    // 2. Large Hero Clock (Transparent text!)
     char clockStr[8];
     if (valid) {
         snprintf(clockStr, sizeof(clockStr), "%02d:%02d", ti.tm_hour, ti.tm_min);
     } else {
         strcpy(clockStr, "00:00");
     }
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_CYAN, C_BG);
-    spr.drawString(clockStr, 160, 66, 6);  // Clean, bold, centered Font 6
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_WHITE);
+    spr.drawString(clockStr, 20, 24, 6);
 
-    // ── Date row ──────────────────────────────────────────────────────
-    static const char* wdays[] = {"CN", "T2", "T3", "T4", "T5", "T6", "T7"};
+    // 3. Solar Date (Thu 2, 12 Thang 10) - 100% Thuan Viet
+    static const char* wdays[] = {"Chu Nhat", "Thu 2", "Thu 3", "Thu 4", "Thu 5", "Thu 6", "Thu 7"};
     char dateBuf[32];
     if (valid) {
-        snprintf(dateBuf, sizeof(dateBuf), "%s, %02d/%02d/%04d",
-                 wdays[ti.tm_wday], ti.tm_mday, ti.tm_mon + 1, ti.tm_year + 1900);
+        snprintf(dateBuf, sizeof(dateBuf), "%s, %02d Thang %d",
+                 wdays[ti.tm_wday], ti.tm_mday, ti.tm_mon + 1);
     } else {
-        strcpy(dateBuf, "--- , --/--/----");
+        strcpy(dateBuf, "Thu 2, 12 Thang 10");
     }
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_WHITE, C_BG);
-    spr.drawString(dateBuf, 160, 100, 2);
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(0xD69A); // Soft cream
+    spr.drawString(dateBuf, 22, 74, 2);
 
-    // ── Lunar date row ────────────────────────────────────────────────
+    // 4. Lunar Date with Can Chi (Am: 03/09 Binh Ngo)
     vn_lunar lunar;
     if (valid) {
         lunar.convertSolar2Lunar(ti.tm_mday, ti.tm_mon + 1, ti.tm_year + 1900);
     } else {
         lunar.convertSolar2Lunar(1, 1, 2026);
     }
-    drawVietnameseAmLich(160, 115, lunar.get_lunar_dd(), lunar.get_lunar_mm(), lunar.get_lunar_yy());
+    uint32_t lYear = lunar.get_lunar_yy();
+    static const char* canNames[] = {"Giap", "At", "Binh", "Dinh", "Mau", "Ky", "Canh", "Tan", "Nham", "Quy"};
+    static const char* chiNames[] = {"Ty", "Suu", "Dan", "Mao", "Thin", "Ty", "Ngo", "Mui", "Than", "Dau", "Tuat", "Hoi"};
+    int canIdx = (lYear + 6) % 10;
+    int chiIdx = (lYear + 8) % 12;
+    char lunarStr[48];
+    snprintf(lunarStr, sizeof(lunarStr), "Am: %02d/%02d %s %s",
+             lunar.get_lunar_dd(), lunar.get_lunar_mm(), canNames[canIdx], chiNames[chiIdx]);
+    spr.setTextColor(C_YELLOW);
+    spr.drawString(lunarStr, 22, 94, 2);
 
-    // ── Weather card (Spacious width = 310px, x = 5) ─────────────────
-    spr.fillRoundRect(5, 134, 310, 102, 8, C_CARD);
-    spr.drawRoundRect(5, 134, 310, 102, 8, C_CYAN);  // cyan border
+    // 5. Cards & Badges (Frosted Glass Acrylic Containers with Specular Shine)
+    uint16_t cardFill   = hexToRGB565("#0D192B");     // Semi-translucent dark glass
+    uint16_t cardBorder = hexToRGB565("#1A3A60");     // Crisp Glass Border
 
-    const WeatherData& w = network.getWeather();
-
-    // ── Left Side: Current Weather (x = 5..145) ──────────────────────
-    drawWeatherIcon(38, 185, w.main);
-
-    char tempStr[16];
-    snprintf(tempStr, sizeof(tempStr), "%.1f", w.temp);
+    // Badge 1: Humidity (x=18, y=122, w=88, h=48)
+    spr.fillRoundRect(18, 122, 88, 48, 8, cardFill);
+    spr.drawRoundRect(18, 122, 88, 48, 8, cardBorder);
+    spr.drawFastHLine(26, 123, 72, hexToRGB565("#4FA3E3")); // Specular shine
+    drawSlantedRaindrop(spr, 34, 142);
+    char humStr[12];
+    snprintf(humStr, sizeof(humStr), "%d%%", w.humidity);
     spr.setTextDatum(TL_DATUM);
-    spr.setTextColor(C_ORANGE, C_CARD);
-    spr.drawString(tempStr, 64, 140, 4);  // Font 4 ~26px
-    int tw = spr.textWidth(tempStr, 4);
-    spr.drawCircle(64 + tw + 3, 143, 2, C_ORANGE); // ° degree circle
-    spr.drawString("C", 64 + tw + 8, 140, 4);
+    spr.setTextColor(C_WHITE);
+    spr.drawString(humStr, 46, 130, 2);
+    spr.setTextColor(C_CYAN);
+    spr.drawString("RH", 46, 150, 1);
 
-    spr.setTextColor(C_WHITE, C_CARD);
-    spr.drawString(w.valid ? w.main : "Sunny", 64, 168, 2);
+    // Badge 2: Wind Speed (x=112, y=122, w=88, h=48)
+    spr.fillRoundRect(112, 122, 88, 48, 8, cardFill);
+    spr.drawRoundRect(112, 122, 88, 48, 8, cardBorder);
+    spr.drawFastHLine(120, 123, 72, hexToRGB565("#4FA3E3")); // Specular shine
+    spr.drawFastHLine(124, 142, 12, C_CYAN);
+    spr.drawFastHLine(127, 146, 10, C_CYAN);
+    spr.drawFastHLine(125, 150, 8, C_CYAN);
+    char windStr[12];
+    snprintf(windStr, sizeof(windStr), "%.0f", w.windSpeed);
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_WHITE);
+    spr.drawString(windStr, 142, 130, 2);
+    spr.setTextColor(C_CYAN);
+    spr.drawString("km/h", 142, 150, 1);
 
-    char humStr[24], windStr[24], cityStr[36];
-    snprintf(humStr, sizeof(humStr), "Hum: %d%%", w.humidity);
-    spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString(humStr, 64, 186, 1);
-
-    snprintf(windStr, sizeof(windStr), "Wind: %.1fkm/h", w.windSpeed);
-    spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString(windStr, 64, 199, 1);
-
-    snprintf(cityStr, sizeof(cityStr), "@ %s", w.valid ? w.city : DEFAULT_CITY);
-    spr.setTextColor(C_DIM, C_CARD);
-    spr.drawString(cityStr, 64, 213, 1);
-
-    // Clean spatial gap divider between left and right sections (NO line overlap or theme color issues)
-
-    // ── Right Side: 3-Day Forecast (x = 158..310) ────────────────────
-    drawVietnameseDuBao3Ngay(232, 140);
-
+    // Bottom Ambient Location Strip (x=18, y=176, w=182, h=44)
+    spr.fillRoundRect(18, 176, 182, 44, 8, cardFill);
+    spr.drawRoundRect(18, 176, 182, 44, 8, cardBorder);
+    spr.drawFastHLine(28, 177, 162, hexToRGB565("#4FA3E3")); // Specular shine
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_WHITE);
+    char locBuf[32];
+    snprintf(locBuf, sizeof(locBuf), "@ %s", w.valid ? w.city : DEFAULT_CITY);
+    spr.drawString(locBuf, 28, 183, 1);
+    spr.setTextColor(0xD69A);
+    char fRange[32];
     if (w.valid && (w.forecastTempMin[0] != 0 || w.forecastTempMax[0] != 0)) {
-        for (int i = 0; i < 3; i++) {
-            int cx = 180 + i * 52;  // Columns at x = 180, 232, 284
-
-            // Calendar Date DD/MM label
-            struct tm dayTm = ti;
-            dayTm.tm_mday += i;
-            mktime(&dayTm); // normalize tm_mday / tm_mon
-            char dStr[10];
-            snprintf(dStr, sizeof(dStr), "%02d/%02d", dayTm.tm_mday, dayTm.tm_mon + 1);
-
-            spr.setTextDatum(TC_DATUM);
-            spr.setTextColor(C_YELLOW, C_CARD);
-            spr.drawString(dStr, cx, 158, 1);
-
-            // 32px Multi-tone Weather Icon
-            uint8_t iconType = w.forecastCode[i];
-            drawMiniWeatherIcon(cx, 186, iconType);
-
-            // Temperature range
-            char fBuf[16];
-            snprintf(fBuf, sizeof(fBuf), "%.0f/%.0fC", w.forecastTempMin[i], w.forecastTempMax[i]);
-            spr.setTextColor(C_WHITE, C_CARD);
-            spr.drawString(fBuf, cx, 211, 1);
-        }
+        snprintf(fRange, sizeof(fRange), "L:%.0f C  H:%.0f C", w.forecastTempMin[0], w.forecastTempMax[0]);
+    } else {
+        snprintf(fRange, sizeof(fRange), "L:22 C  H:29 C");
     }
+    spr.drawString(fRange, 28, 200, 1);
+
+    // 6. Right Side: Modern Frosted Glass Weather Hero Panel (x=210, y=28, w=98, h=142)
+    spr.fillRoundRect(210, 28, 98, 142, 12, cardFill);
+    spr.drawRoundRect(210, 28, 98, 142, 12, cardBorder);
+    spr.drawFastHLine(220, 29, 78, hexToRGB565("#4FA3E3")); // Specular shine
+
+    // Modern Vector Weather Glyph inside glass panel
+    drawModernWeatherHero(259, 66, wType, isNight);
+
+    // Big Temperature (Centered inside glass panel)
+    char tempStr[16];
+    snprintf(tempStr, sizeof(tempStr), "%.0f", w.temp);
+    int16_t tw = spr.textWidth(tempStr, 6);
+    int16_t totalTempW = tw + 18;
+    int16_t tx = 259 - (totalTempW / 2);
+    int16_t ty = 108;
+
+    spr.setTextDatum(TL_DATUM);
+    spr.setTextColor(C_WHITE);
+    spr.drawString(tempStr, tx, ty, 6);
+
+    int16_t degX = tx + tw + 4;
+    int16_t degY = ty + 4;
+    spr.drawCircle(degX, degY, 3, C_YELLOW);
+    spr.drawCircle(degX, degY, 2, C_YELLOW);
+
+    spr.setTextColor(C_YELLOW);
+    spr.drawString("C", degX + 6, ty + 1, 4);
+
+    // Weather condition badge (x=210, y=176, w=98, h=44)
+    spr.fillRoundRect(210, 176, 98, 44, 8, cardFill);
+    spr.drawRoundRect(210, 176, 98, 44, 8, cardBorder);
+    spr.drawFastHLine(220, 177, 78, hexToRGB565("#4FA3E3"));
+
+    const char* vnCond = "Quang dang";
+    if (wType == 1) vnCond = "Nhieu may";
+    else if (wType == 2) vnCond = "Co mua";
+    else if (wType == 3) vnCond = "Sam set";
+    else if (w.valid && w.main[0]) vnCond = w.main;
+
+    spr.setTextDatum(MC_DATUM);
+    spr.setTextColor(C_CYAN);
+    spr.drawString(vnCond, 259, 198, 2);
 }
 
 
@@ -1509,12 +1797,6 @@ void DisplayManager::drawQRCode(const char* url, int x, int y, int scale) {
 //  PAGE 7 — Settings Page (SYSTEM / THEMES / WEB QR CONFIG)
 // ═══════════════════════════════════════════════════════════════════════
 void DisplayManager::renderPage7_Settings() {
-    // ── Dedicated Transparent Side Navigation Keys (No Card/Border) ──────
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_CYAN, C_BG);
-    spr.drawString("<", 16, 126, 2);
-    spr.drawString(">", 304, 126, 2);
-
     // ── Top Sub-Tab Navigation Header (3 Equal Tabs: y = 35..57) ─────
     // Tab 0: SYSTEM (x = 34..112)
     uint16_t t0_bg = (settingsTab == 0) ? C_CYAN : C_CARD;
@@ -1697,9 +1979,9 @@ void DisplayManager::renderPage7_Settings() {
 //  PAGE 6 — MEDIA CONTROL HOTKEYS (With Transparent Side Nav Keys)
 // ─────────────────────────────────────────────────────────────────────
 void DisplayManager::renderPage6_MediaControl() {
-    // ── 1. Top Live Song Title & Artist Marquee Banner (y = 32..56, h = 24px) ──
-    spr.fillRoundRect(16, 32, 288, 25, 6, C_CARD);
-    spr.drawRoundRect(16, 32, 288, 25, 6, C_CYAN);
+    // ── 1. Top Live Song Title & Artist Marquee Banner (y = 30..54, h = 24px) ──
+    spr.fillRoundRect(16, 30, 288, 24, 6, C_CARD);
+    spr.drawRoundRect(16, 30, 288, 24, 6, C_CYAN);
 
     char fullStr[160];
     if (strlen(mediaTitle) > 0) {
@@ -1716,7 +1998,7 @@ void DisplayManager::renderPage6_MediaControl() {
     if (textW <= 265) {
         spr.setTextDatum(MC_DATUM);
         spr.setTextColor(C_WHITE, C_CARD);
-        spr.drawString(fullStr, 160, 44, 2);
+        spr.drawString(fullStr, 160, 42, 2);
     } else {
         // Smooth Marquee Scrolling for long track titles
         marqueeOffset = (marqueeOffset + 2) % (textW + 80);
@@ -1725,73 +2007,67 @@ void DisplayManager::renderPage6_MediaControl() {
         // Draw inside card bounds safely
         spr.setTextDatum(ML_DATUM);
         spr.setTextColor(C_WHITE, C_CARD);
-        spr.drawString(fullStr, drawX, 44, 2);
+        spr.drawString(fullStr, drawX, 42, 2);
 
         // Draw side mask panels to keep marquee text strictly contained in banner box
-        spr.fillRect(0, 32, 18, 25, C_BG);
-        spr.fillRect(302, 32, 18, 25, C_BG);
-        spr.drawRoundRect(16, 32, 288, 25, 6, C_CYAN);
+        spr.fillRect(0, 30, 18, 24, C_BG);
+        spr.fillRect(302, 30, 18, 24, C_BG);
+        spr.drawRoundRect(16, 30, 288, 24, 6, C_CYAN);
     }
-
-    // ── Dedicated Transparent Side Navigation Keys ───────────────────
-    spr.setTextDatum(MC_DATUM);
-    spr.setTextColor(C_CYAN, C_BG);
-    spr.drawString("<", 16, 140, 2);
-    spr.drawString(">", 304, 140, 2);
 
     // Touch feedback helper
     bool isTouchActive = (millis() - lastMediaTouchTime < 350);
 
-    // ── Row 1: Track Controls (y = 65..137, height 72px) ───────────────
+    // ── Row 1: Track Controls (y = 59..127, height 68px) ───────────────
     // 1. PREV
     bool btn1Touch = isTouchActive && (touchedMediaBtn == 1);
-    spr.fillRoundRect(34, 65, 76, 72, 8, btn1Touch ? C_CYAN : C_CARD);
-    spr.drawRoundRect(34, 65, 76, 72, 8, btn1Touch ? C_WHITE : C_TRACE);
-    int cx1 = 72, cy1 = 93;
+    spr.fillRoundRect(34, 59, 76, 68, 8, btn1Touch ? C_CYAN : C_CARD);
+    spr.drawRoundRect(34, 59, 76, 68, 8, btn1Touch ? C_WHITE : C_TRACE);
+    int cx1 = 72, cy1 = 88;
     uint16_t fg1 = btn1Touch ? C_BG : C_CYAN;
     spr.fillRect(cx1 - 10, cy1 - 10, 4, 20, fg1);
     spr.fillTriangle(cx1 + 8, cy1 - 10, cx1 + 8, cy1 + 10, cx1 - 4, cy1, fg1);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg1, btn1Touch ? C_CYAN : C_CARD);
-    spr.drawString("PREV", cx1, 131, 2);
+    spr.drawString("PREV", cx1, 122, 2);
 
     // 2. PLAY / PAUSE (Dynamic Hero Center Button: x = 117..203)
     bool btn2Touch = isTouchActive && (touchedMediaBtn == 2);
-    spr.fillRoundRect(117, 65, 86, 72, 8, btn2Touch ? C_GREEN : C_CARD);
-    spr.drawRoundRect(117, 65, 86, 72, 8, btn2Touch ? C_WHITE : C_GREEN);
-    int cx2 = 160, cy2 = 93;
+    spr.fillRoundRect(117, 59, 86, 68, 8, btn2Touch ? C_GREEN : C_CARD);
+    spr.drawRoundRect(117, 59, 86, 68, 8, btn2Touch ? C_WHITE : C_GREEN);
+    int cx2 = 160, cy2 = 88;
     uint16_t fg2 = btn2Touch ? C_BG : C_GREEN;
     if (!isMediaPlaying) {
         spr.fillTriangle(cx2 - 8, cy2 - 12, cx2 - 8, cy2 + 12, cx2 + 10, cy2, fg2);
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(fg2, btn2Touch ? C_GREEN : C_CARD);
-        spr.drawString("PLAY", cx2, 131, 2);
+        spr.drawString("PLAY", cx2, 122, 2);
     } else {
         spr.fillRoundRect(cx2 - 8, cy2 - 11, 6, 22, 2, fg2);
         spr.fillRoundRect(cx2 + 3, cy2 - 11, 6, 22, 2, fg2);
         spr.setTextDatum(BC_DATUM);
         spr.setTextColor(fg2, btn2Touch ? C_GREEN : C_CARD);
-        spr.drawString("PAUSE", cx2, 131, 2);
+        spr.drawString("PAUSE", cx2, 122, 2);
     }
 
     // 3. NEXT
     bool btn3Touch = isTouchActive && (touchedMediaBtn == 3);
-    spr.fillRoundRect(210, 65, 76, 72, 8, btn3Touch ? C_CYAN : C_CARD);
-    spr.drawRoundRect(210, 65, 76, 72, 8, btn3Touch ? C_WHITE : C_TRACE);
-    int cx3 = 248, cy3 = 93;
+    spr.fillRoundRect(210, 59, 76, 68, 8, btn3Touch ? C_CYAN : C_CARD);
+    spr.drawRoundRect(210, 59, 76, 68, 8, btn3Touch ? C_WHITE : C_TRACE);
+    int cx3 = 248, cy3 = 88;
     uint16_t fg3 = btn3Touch ? C_BG : C_CYAN;
     spr.fillTriangle(cx3 - 8, cy3 - 10, cx3 - 8, cy3 + 10, cx3 + 4, cy3, fg3);
     spr.fillRect(cx3 + 6, cy3 - 10, 4, 20, fg3);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg3, btn3Touch ? C_CYAN : C_CARD);
-    spr.drawString("NEXT", cx3, 131, 2);
+    spr.drawString("NEXT", cx3, 122, 2);
 
-    // ── Row 2: Volume & Ad Controls (y = 145..217, height 72px) ────────
+    // ── Row 2: Volume & Ad Controls (y = 135..203, height 68px) ────────
     // 4. VOL -
     bool btn4Touch = isTouchActive && (touchedMediaBtn == 4);
-    spr.fillRoundRect(34, 145, 76, 72, 8, btn4Touch ? C_YELLOW : C_CARD);
-    spr.drawRoundRect(34, 145, 76, 72, 8, btn4Touch ? C_WHITE : C_TRACE);
-    int cx4 = 72, cy4 = 171;
+    spr.fillRoundRect(34, 135, 76, 68, 8, btn4Touch ? C_YELLOW : C_CARD);
+    spr.drawRoundRect(34, 135, 76, 68, 8, btn4Touch ? C_WHITE : C_TRACE);
+    int cx4 = 72, cy4 = 163;
     uint16_t fg4 = btn4Touch ? C_BG : C_YELLOW;
     spr.fillRoundRect(cx4 - 18, cy4 - 7, 7, 14, 2, fg4);
     spr.fillTriangle(cx4 - 10, cy4 - 7, cx4 - 2, cy4 - 14, cx4 - 10, cy4 + 7, fg4);
@@ -1802,14 +2078,14 @@ void DisplayManager::renderPage6_MediaControl() {
     spr.fillRect(cx4 - 1, cy4 - 10, 6, 20, btn4Touch ? C_YELLOW : C_CARD);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg4, btn4Touch ? C_YELLOW : C_CARD);
-    spr.drawString("VOL -", cx4, 211, 2);
+    spr.drawString("VOL -", cx4, 197, 2);
 
     // 5. MUTE AUDIO
     bool btn5Touch = isTouchActive && (touchedMediaBtn == 5);
     uint16_t colorMute = 0xF851; // Vibrant Red for Mute
-    spr.fillRoundRect(117, 145, 86, 72, 8, btn5Touch ? colorMute : C_CARD);
-    spr.drawRoundRect(117, 145, 86, 72, 8, btn5Touch ? C_WHITE : colorMute);
-    int cx5 = 160, cy5 = 171;
+    spr.fillRoundRect(117, 135, 86, 68, 8, btn5Touch ? colorMute : C_CARD);
+    spr.drawRoundRect(117, 135, 86, 68, 8, btn5Touch ? C_WHITE : colorMute);
+    int cx5 = 160, cy5 = 163;
     uint16_t fg5 = btn5Touch ? C_BG : colorMute;
     
     // Draw Large Bold Mute Speaker Icon (Matching VOL- / VOL+ 28px scale)
@@ -1827,13 +2103,13 @@ void DisplayManager::renderPage6_MediaControl() {
 
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg5, btn5Touch ? colorMute : C_CARD);
-    spr.drawString("MUTE", cx5, 211, 2);
+    spr.drawString("MUTE", cx5, 197, 2);
 
     // 6. VOL +
     bool btn6Touch = isTouchActive && (touchedMediaBtn == 6);
-    spr.fillRoundRect(210, 145, 76, 72, 8, btn6Touch ? C_YELLOW : C_CARD);
-    spr.drawRoundRect(210, 145, 76, 72, 8, btn6Touch ? C_WHITE : C_TRACE);
-    int cx6 = 248, cy6 = 171;
+    spr.fillRoundRect(210, 135, 76, 68, 8, btn6Touch ? C_YELLOW : C_CARD);
+    spr.drawRoundRect(210, 135, 76, 68, 8, btn6Touch ? C_WHITE : C_TRACE);
+    int cx6 = 248, cy6 = 163;
     uint16_t fg6 = btn6Touch ? C_BG : C_YELLOW;
     spr.fillRoundRect(cx6 - 20, cy6 - 7, 7, 14, 2, fg6);
     spr.fillTriangle(cx6 - 12, cy6 - 7, cx6 - 4, cy6 - 14, cx6 - 12, cy6 + 7, fg6);
@@ -1846,7 +2122,7 @@ void DisplayManager::renderPage6_MediaControl() {
     spr.fillRect(cx6 - 3, cy6 - 15, 6, 30, btn6Touch ? C_YELLOW : C_CARD);
     spr.setTextDatum(BC_DATUM);
     spr.setTextColor(fg6, btn6Touch ? C_YELLOW : C_CARD);
-    spr.drawString("VOL +", cx6, 211, 2);
+    spr.drawString("VOL +", cx6, 197, 2);
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -2198,12 +2474,12 @@ void DisplayManager::renderSplashScreen() {
     spr.setFreeFont(&FreeSansBold9pt7b);
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_YELLOW, C_CARD);
-    spr.drawString("SMART DESK DASHBOARD", 160, 20);
+    spr.drawString("SMART DESK STUDIO PRO", 160, 20);
     spr.setFreeFont(NULL); // Reset to default bitmap font
 
     spr.setTextDatum(TC_DATUM);
     spr.setTextColor(C_CYAN, C_CARD);
-    spr.drawString("Smart Weather, Lunar Calendar & PC Monitor", 160, 48, 1);
+    spr.drawString("Modern Glassmorphism Edition", 160, 48, 1);
 
     // ── Stylized Center Glowing Badge / Vector Graphic ──────────────────
     spr.fillCircle(160, 104, 22, C_TRACE);

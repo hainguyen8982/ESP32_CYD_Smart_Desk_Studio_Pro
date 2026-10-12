@@ -87,6 +87,13 @@ public:
 
     void drawQRCode(const char* url, int x, int y, int scale = 3);
 
+    // Floating Navigation Dock
+    void showNavDock();
+    void hideNavDock();
+    bool isNavDockVisible() const { return navDockVisible; }
+    uint8_t getPressedNavBtn() const { return pressedNavBtn; }
+    void setPressedNavBtn(uint8_t btn) { pressedNavBtn = btn; }
+
 private:
     // ── Page renderers ───────────────────────────────────────
     void renderHeader();
@@ -141,6 +148,9 @@ private:
 
     void renderModalSetAlarm();
     void renderModalBeepVolume();
+    void renderFloatingNavDock();
+    void renderModernGlassBackground();
+    void drawModernWeatherHero(int16_t cx, int16_t cy, uint8_t weatherType, bool isNight);
 
     // ── State ────────────────────────────────────────────────
     TFT_eSPI    tft;
@@ -161,6 +171,12 @@ private:
     uint8_t     settingsTab;
     unsigned long lastRenderTime;
     bool        spriteReady;
+
+    // Floating Nav Dock State
+    bool        navDockVisible;
+    unsigned long navDockShowTime;
+    float       navDockCurrentY;
+    uint8_t     pressedNavBtn; // 0=None, 1=Prev, 2=Home, 3=Next
 };
 
 extern DisplayManager display;

@@ -1,6 +1,9 @@
-# ESP32 CYD Smart Desk Dashboard
+# SMART DESK STUDIO PRO — Modern Glassmorphism Edition
 
-Dự án Đồng hồ thời tiết để bàn thông minh, Lịch vạn niên Âm - Dương, Giám sát thông số máy tính (PC Monitor) và Tiện ích để bàn (Pomodoro & Báo thức) thiết kế cho board **ESP32 CYD (Cheap Yellow Display - 2.8" TFT Touch)**.
+Dự án Đồng hồ để bàn thông minh với **Giao diện Kính Mờ Hiện Đại & Trẻ Trung (Modern Glassmorphism UI)**, Lịch vạn niên Âm - Dương, Giám sát PC Monitor và Tiện ích để bàn cao cấp thiết kế tối ưu cho board **ESP32 CYD (2.8" TFT 320x240)**.
+
+* **Phong cách Thiết kế**: Pure Modern Glassmorphism (Nền Gradient Chiều Sâu Mesh Glow, Khối Kính Frosted Acrylic viền phản quang Specular Highlight, Icon Vector Geometric sắc nét, Floating Navigation Dock 3D).
+* **Định danh phiên bản**: Hoàn toàn tách biệt khỏi phiên bản Retro 8-Bit (bản Retro 8-Bit Classic v1 đã được lưu trữ an toàn riêng biệt).
 
 ---
 

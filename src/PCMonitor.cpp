@@ -45,7 +45,29 @@ void PCMonitor::update() {
             if (g_skinMgr.parseAndSaveSkinJSON(payload)) {
                 Serial.println("SKIN_SYNC_SUCCESS");
                 display.refreshDisplay();
+            } else {
+                Serial.println("SKIN_SYNC_ERROR");
             }
+            return;
+        }
+
+        if (line == "GET_SKIN" || line == "READ_SKIN") {
+            if (LittleFS.exists("/active_skin.json")) {
+                File f = LittleFS.open("/active_skin.json", "r");
+                String content = f.readString();
+                f.close();
+                Serial.print("SKIN_DATA_RESP:");
+                Serial.println(content);
+            } else {
+                Serial.println("SKIN_DATA_RESP:NONE");
+            }
+            return;
+        }
+
+        if (line == "RESET_SKIN" || line == "CLEAR_SKIN") {
+            g_skinMgr.resetToDefaultSkin();
+            Serial.println("SKIN_RESET_SUCCESS");
+            display.refreshDisplay();
             return;
         }
 

@@ -15,6 +15,7 @@ static unsigned long bootBtnPressStart = 0;
 static bool bootBtnWasPressed = false;
 
 void setup() {
+    Serial.setRxBufferSize(8192);
     Serial.begin(115200);
     delay(200);
     Serial.println("\n=============================================");
@@ -195,6 +196,52 @@ void loop() {
             if (deskUtils.isAlarmRinging()) {
                 deskUtils.dismissAlarm();
 
+            } else if (display.isNavDockVisible() && evt.y >= 190) {
+                // ── Floating Navigation Dock (High Priority when Visible) ────
+                if (evt.x >= 46 && evt.x <= 118) {
+                    display.setPressedNavBtn(1);
+                    hardware.playBeep(2600, 15);
+                    display.previousPage();
+                    display.showNavDock();
+                    Serial.printf("[NavDock] Prev -> Page %d\n", display.getCurrentPage());
+                } else if (evt.x > 118 && evt.x < 198) {
+                    display.setPressedNavBtn(2);
+                    hardware.playBeep(2800, 20);
+                    if (display.getCurrentPage() == 0) {
+                        display.toggleAppLauncher();
+                    } else {
+                        display.setCurrentPage(0);
+                    }
+                    display.showNavDock();
+                    Serial.printf("[NavDock] Home/Launcher -> Page %d\n", display.getCurrentPage());
+                } else if (evt.x >= 198 && evt.x <= 274) {
+                    display.setPressedNavBtn(3);
+                    hardware.playBeep(2600, 15);
+                    display.nextPage();
+                    display.showNavDock();
+                    Serial.printf("[NavDock] Next -> Page %d\n", display.getCurrentPage());
+                } else {
+                    // Tap in dock margins -> keep dock awake
+                    display.showNavDock();
+                }
+
+            } else if (!display.isNavDockVisible() && evt.y >= 210) {
+                // ── Wake up Nav Dock from Bottom Home Bar (Available on ALL pages 0..7) ──
+                display.showNavDock();
+                hardware.playBeep(2800, 10);
+                Serial.printf("[NavDock] Woken up on Page %d via Bottom Bar\n", display.getCurrentPage());
+
+            } else if (!display.isNavDockVisible() && display.getCurrentPage() == 0 && evt.y >= 130) {
+                // On Page 0, tapping lower half also wakes up Nav Dock!
+                display.showNavDock();
+                hardware.playBeep(2800, 10);
+                Serial.println("[NavDock] Woken up on Page 0");
+
+            } else if (display.isNavDockVisible() && evt.y < 190 && evt.y >= 28) {
+                // Tapping content area while NavDock is visible -> Dismiss NavDock cleanly
+                display.hideNavDock();
+                Serial.println("[NavDock] Dismissed by tapping content area");
+
             } else if (evt.y < 28 && evt.x >= 25 && evt.x <= 240) {
                 // Quick Action 2: Tap Header Title Bar -> Open App Launcher Overlay!
                 display.toggleAppLauncher();
@@ -211,18 +258,18 @@ void loop() {
                 display.setCurrentPage(0);
                 Serial.println("[Touch] Home");
 
-            } else if (display.getCurrentPage() == 2 && evt.x >= 180 && evt.x <= 310 && evt.y >= 54 && evt.y <= 134) {
-                // Page 2: Tap Gold Chart -> Open SJC Gold Fullscreen Detail Chart
+            } else if (!g_skinMgr.isCustomSkinActive() && display.getCurrentPage() == 2 && evt.x >= 180 && evt.x <= 310 && evt.y >= 54 && evt.y <= 134) {
+                // Page 2: Tap Gold Chart -> Open SJC Gold Fullscreen Detail Chart (Native UI Only)
                 display.openDetailModal(MODAL_GOLD_SJC);
                 Serial.println("[Touch] Finance -> Opened SJC Gold Detail Chart Modal");
 
-            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 155 && evt.y <= 186) {
-                // Page 2: Tap Currency 1 Chart -> Open Currency 1 Detail Chart
+            } else if (!g_skinMgr.isCustomSkinActive() && display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 155 && evt.y <= 186) {
+                // Page 2: Tap Currency 1 Chart -> Open Currency 1 Detail Chart (Native UI Only)
                 display.openDetailModal(MODAL_CURRENCY_1);
                 Serial.println("[Touch] Finance -> Opened Currency 1 Detail Chart Modal");
 
-            } else if (display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 187 && evt.y <= 220) {
-                // Page 2: Tap Currency 2 Chart -> Open Currency 2 Detail Chart
+            } else if (!g_skinMgr.isCustomSkinActive() && display.getCurrentPage() == 2 && evt.x >= 170 && evt.x <= 310 && evt.y >= 220) {
+                // Page 2: Tap Currency 2 Chart -> Open Currency 2 Detail Chart (Native UI Only)
                 display.openDetailModal(MODAL_CURRENCY_2);
                 Serial.println("[Touch] Finance -> Opened Currency 2 Detail Chart Modal");
 
@@ -274,11 +321,7 @@ void loop() {
 
             } else if (display.getCurrentPage() == 6) {
                 // Media Control Page (Page 6)
-                if (evt.x < 32 || (evt.y < 35 && evt.x < 160)) {
-                    display.previousPage();
-                } else if (evt.x > 288 || (evt.y < 35 && evt.x >= 160)) {
-                    display.nextPage();
-                } else if (evt.y >= 48 && evt.y <= 130) {
+                if (evt.y >= 54 && evt.y <= 130) {
                     if (evt.x >= 34 && evt.x <= 110) {
                         display.setTouchedMediaBtn(1);
                         network.triggerMediaAction("prev");
@@ -293,7 +336,7 @@ void loop() {
                         network.triggerMediaAction("next");
                         hardware.playBeep(1200, 40);
                     }
-                } else if (evt.y >= 134 && evt.y <= 220) {
+                } else if (evt.y >= 132 && evt.y <= 206) {
                     if (evt.x >= 34 && evt.x <= 110) {
                         display.setTouchedMediaBtn(4);
                         network.triggerMediaAction("vol_down");
@@ -311,11 +354,7 @@ void loop() {
 
             } else if (display.getCurrentPage() == 7) {
                 // Settings Page (Page 7 - ALWAYS LAST FEATURE PAGE)
-                if (evt.x < 32 || (evt.y < 33 && evt.x < 160)) {
-                    display.previousPage();
-                } else if (evt.x > 288 || (evt.y < 33 && evt.x >= 160)) {
-                    display.nextPage();
-                } else if (evt.y >= 33 && evt.y <= 59) {
+                if (evt.y >= 33 && evt.y <= 59) {
                     if (evt.x >= 34 && evt.x <= 112) {
                         display.setSettingsTab(0);
                         hardware.playBeep(1200, 30);
@@ -359,13 +398,14 @@ void loop() {
                     }
                 }
             } else {
-                // Default: Left half = prev page, Right half = next page
-                if (evt.x < 160) {
-                    display.previousPage();
-                    Serial.printf("[Touch] Left -> Page %d\n", display.getCurrentPage());
+                // Default: Tap outside interactive widgets wakes/shows Floating Nav Dock!
+                if (!display.isNavDockVisible()) {
+                    display.showNavDock();
+                    hardware.playBeep(2800, 8);
+                    Serial.println("[Touch] Default tap -> Woke up Nav Dock");
                 } else {
-                    display.nextPage();
-                    Serial.printf("[Touch] Right -> Page %d\n", display.getCurrentPage());
+                    display.hideNavDock();
+                    Serial.println("[Touch] Default tap -> Hidden Nav Dock");
                 }
             }
         }
